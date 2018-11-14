@@ -1,0 +1,14 @@
+{
+  "SchemaVersion": 1,
+  "Name": "MCUtoMT3620toAzure",
+  "ComponentId": "82e097bd-da63-43fe-b9b4-5b1fa940fb03",
+  "EntryPoint": "/bin/app",
+  "CmdArgs": [],
+  "TargetApplicationRuntimeVersion": 1,
+  "Capabilities": {
+    "AllowedConnections": [ ],
+    "Gpio": [ 48, 14, 11 ],
+    "Uart": [ "ISU0" ],
+    "WifiConfig": false
+  }
+}

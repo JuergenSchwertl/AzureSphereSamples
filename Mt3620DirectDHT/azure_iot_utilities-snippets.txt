@@ -1,0 +1,51 @@
+/*
+	Add your IoT Hub connection oi Project Mt3620DirectDHT->References->Add Connected Service.
+	This will create azure_iot_utilities.c and azure_iot_utilities.c.
+*/
+
+/*
+	1st: Copy the function declaration below into azure_iot_utilities.h at line #34
+*/
+/// <summary>
+///     Creates and enqueues reported properties state using a prepared json string.
+///     The report is not actually sent immediately, but it is sent on the next 
+///     invocation of AzureIoT_DoPeriodicTasks().
+/// </summary>
+void AzureIoT_TwinReportStateJson(
+	char *reportedPropertiesString,
+	size_t reportedPropertiesSize);
+
+
+/* 
+	2nd: Copy the function implementation below into azure_iot_utilities.c
+*/
+
+/// <summary>
+///     Creates and enqueues reported properties state using a prepared json string.
+///     The report is not actually sent immediately, but it is sent on the next 
+///     invocation of AzureIoT_DoPeriodicTasks().
+/// </summary>
+void AzureIoT_TwinReportStateJson(
+	char *reportedPropertiesString,
+	size_t reportedPropertiesSize)
+{
+	if (iothub_client_handle == NULL) {
+		LogMessage("ERROR: client not initialized\n");
+	}
+	else {
+		if (reportedPropertiesString != NULL) {
+			if (IoTHubDeviceClient_LL_SendReportedState(iothub_client_handle,
+				(unsigned char *)reportedPropertiesString, reportedPropertiesSize,
+				reportStatusCallback, 0) != IOTHUB_CLIENT_OK) {
+				LogMessage("ERROR: failed to set reported state as '%s'.\n",
+					reportedPropertiesString);
+			}
+			else {
+				LogMessage("INFO: Reported state as '%s'.\n", reportedPropertiesString);
+			}
+		}
+		else {
+			LogMessage("ERROR: no JSON string for Device Twin reporting.\n");
+		}
+	}
+}

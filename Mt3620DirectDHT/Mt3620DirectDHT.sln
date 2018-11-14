@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27703.2026
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Mt3620DirectDHT", "Mt3620DirectDHT\Mt3620DirectDHT.vcxproj", "{70E28D56-50E5-4D97-B4B5-1758EFCAE7E3}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DHTlib", "DHTlib\DHTlib.vcxproj", "{6A46F6A2-8637-42EE-B00E-7D5257D5DCC7}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{32B2BAAB-6A22-4054-AC45-9EACC6CF2DE2}"
+	ProjectSection(SolutionItems) = preProject
+		azure_iot_utilities-snippets.txt = azure_iot_utilities-snippets.txt
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|ARM = Debug|ARM
+		Release|ARM = Release|ARM
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{70E28D56-50E5-4D97-B4B5-1758EFCAE7E3}.Debug|ARM.ActiveCfg = Debug|ARM
+		{70E28D56-50E5-4D97-B4B5-1758EFCAE7E3}.Debug|ARM.Build.0 = Debug|ARM
+		{70E28D56-50E5-4D97-B4B5-1758EFCAE7E3}.Release|ARM.ActiveCfg = Debug|ARM
+		{70E28D56-50E5-4D97-B4B5-1758EFCAE7E3}.Release|ARM.Build.0 = Debug|ARM
+		{6A46F6A2-8637-42EE-B00E-7D5257D5DCC7}.Debug|ARM.ActiveCfg = Debug|ARM
+		{6A46F6A2-8637-42EE-B00E-7D5257D5DCC7}.Debug|ARM.Build.0 = Debug|ARM
+		{6A46F6A2-8637-42EE-B00E-7D5257D5DCC7}.Release|ARM.ActiveCfg = Release|ARM
+		{6A46F6A2-8637-42EE-B00E-7D5257D5DCC7}.Release|ARM.Build.0 = Release|ARM
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3D6065DA-437A-4F5B-9E11-9A4E2ED9867C}
+	EndGlobalSection
+EndGlobal

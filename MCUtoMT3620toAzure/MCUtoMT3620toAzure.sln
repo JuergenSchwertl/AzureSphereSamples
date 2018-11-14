@@ -1,0 +1,30 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27703.2047
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MCUtoMT3620toAzure", "MCUtoMT3620toAzure\MCUtoMT3620toAzure.vcxproj", "{1BF37F45-2872-4188-B04C-B42757212EC5}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6B50830D-F592-4945-8615-3AB6A826040A}"
+	ProjectSection(SolutionItems) = preProject
+		Azure_iot_utilities-snippets.txt = Azure_iot_utilities-snippets.txt
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|ARM = Debug|ARM
+		Release|ARM = Release|ARM
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1BF37F45-2872-4188-B04C-B42757212EC5}.Debug|ARM.ActiveCfg = Debug|ARM
+		{1BF37F45-2872-4188-B04C-B42757212EC5}.Debug|ARM.Build.0 = Debug|ARM
+		{1BF37F45-2872-4188-B04C-B42757212EC5}.Release|ARM.ActiveCfg = Release|ARM
+		{1BF37F45-2872-4188-B04C-B42757212EC5}.Release|ARM.Build.0 = Release|ARM
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {AC5CF443-BCEA-44AF-88B8-6B6D07FA5DA9}
+	EndGlobalSection
+EndGlobal
