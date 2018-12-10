@@ -63,7 +63,7 @@
       <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">-lm;-lazureiot;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ClCompile>
-      <AdditionalOptions>-Werror=implicit-function-declaration  -D AZURE_IOT_HUB_CONFIGURED  -D AZURE_IOT_HUB_CONFIGURED  -D AZURE_IOT_HUB_CONFIGURED  -D AZURE_IOT_HUB_CONFIGURED %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>-Werror=implicit-function-declaration  %(AdditionalOptions)</AdditionalOptions>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">$(SysRoot)\usr\include\azureiot;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">$(SysRoot)\usr\include\azureiot;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
