@@ -13,6 +13,7 @@
 #include <applibs/uart.h>
 #include <applibs/gpio.h>
 #include <applibs/log.h>
+#include <applibs/networking.h>
 
 #include "mt3620_rdb.h"
 #include "UART_utilities.h"
@@ -43,12 +44,13 @@
 /// - log (messages shown in Visual Studio's Device Output window during debugging)
 /// </summary>
 
+/*
 #ifndef AZURE_IOT_HUB_CONFIGURED
 #error \
     "WARNING: Please add a project reference to the Connected Service first \
 (right-click References -> Add Connected Service)."
 #endif
-
+*/
 
 // File descriptors - initialized to invalid value
 static int epollFd = -1;
