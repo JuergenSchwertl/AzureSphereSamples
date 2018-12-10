@@ -94,7 +94,7 @@ void parseMessage(char *pszLine, size_t nLineLength)
 ///<summary>
 ///		checks if received temperature value is large enough to send new telemetry message to IoT hub
 ///</summary>
-void checkAndSendTelemetry()
+void checkAndSendTelemetry( void )
 {
 	// if the temperatur change is big enough, we send telemetry data
 	if ( isnan(fTemperatureLastReported) || __islessf(fTemperatureChange, fabsf(fTemperature - fTemperatureLastReported))) {
@@ -127,7 +127,7 @@ void checkAndSendTelemetry()
 ///<summary>
 ///		checks if received temperature exceeds previous temperature bounds and updates desired properties accordingly
 ///</summary>
-void checkAndUpdateDeviceTwin()
+void checkAndUpdateDeviceTwin(void)
 {
 	bool bIsTwinReportNeeded = false;
 

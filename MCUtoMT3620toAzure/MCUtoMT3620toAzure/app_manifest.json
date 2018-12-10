@@ -6,7 +6,7 @@
   "CmdArgs": [],
   "TargetApplicationRuntimeVersion": 1,
   "Capabilities": {
-    "AllowedConnections": [],
+    "AllowedConnections": [ ],
     "AllowedTcpServerPorts": [],
     "AllowedUdpServerPorts": [],
     "Gpio": [ 48, 14, 11 ],

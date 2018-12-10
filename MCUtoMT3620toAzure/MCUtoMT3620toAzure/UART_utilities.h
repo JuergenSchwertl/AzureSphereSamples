@@ -24,7 +24,7 @@ int UART_InitializeAndAddToEpoll(UART_Id uartId, int epollFd, uart_line_received
 /// <summary>
 ///		Helper function to close the previously opened UART
 ///</summary>
-void UART_Close();
+void UART_Close(void);
 
 /// <summary>
 ///     Helper function to send a fixed message via the previously opened UART.

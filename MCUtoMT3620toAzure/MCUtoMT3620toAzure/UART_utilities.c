@@ -11,6 +11,7 @@
 
 #include "mt3620_rdb.h"
 #include "UART_utilities.h"
+#include "epoll_timerfd_utilities.h"
 
 /// <summary>
 /// UART_utilities.c demonstrates how to use Epoll to handle UART events 
@@ -41,13 +42,13 @@ static size_t nBytesInBuffer = 0;
 ///     Handle UART event: read incoming data fragments into 'ring'-buffer, extract lines from buffer
 ///		and call line handler
 /// </summary>
-static void handleUartEvent()
+static void handleUartEvent(struct event_data *eventData)
 {
 	char *pszLine = NULL;
 	char *pchSegment = &receiveBuffer[nBytesInBuffer];
 
 	// Poll the UART and store the byte(s) behind already received bytes
-	ssize_t nBytesRead = read(m_UartFd, (void *)pchSegment, RECEIVE_BUFFER_SIZE - nBytesInBuffer);
+	ssize_t nBytesRead = read(eventData->fd, (void *)pchSegment, RECEIVE_BUFFER_SIZE - nBytesInBuffer);
 
 	if (nBytesRead < 0) {
 		Log_Debug("ERROR: Problem reading from UART: %s (%d).\n", strerror(errno), errno);
@@ -63,6 +64,7 @@ static void handleUartEvent()
 	memcpy(pszUart, pchSegment, (size_t)nBytesRead);
 	pszUart[nBytesRead] = '\0';
 	Log_Debug("[UART] Read: %s (%d).\n", pszUart, nBytesRead);
+	free(pszUart);
 #endif // VERBOSE
 
 	nBytesInBuffer += (size_t)nBytesRead;
@@ -102,6 +104,7 @@ static void handleUartEvent()
 	}
 }
 
+static event_data_t uartEventData = { .eventHandler = &handleUartEvent };
 
 ///<summary>
 ///		Initializes given UART port, adds (internal) event handler to Epoll and stores UART line received event handler
@@ -125,13 +128,9 @@ int UART_InitializeAndAddToEpoll(UART_Id uartId, int epollFd, uart_line_received
 		return -1;
 	}
 
-	struct epoll_event eventToAdd;
-	eventToAdd.data.ptr = &handleUartEvent;
-	eventToAdd.events = EPOLLIN;
-
 	// Register the UART file descriptor on the epoll instance referred by epollFd
 	// and register the eventHandler handler for events in epollEventMask
-	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, m_UartFd, &eventToAdd) == -1) {
+	if (RegisterEventHandlerToEpoll(epollFd, m_UartFd, &uartEventData, EPOLLIN) == -1) {
 		Log_Debug("ERROR: Could not add event to epoll instance %s (%d)\n", strerror(errno), errno);
 		return -1;
 	}
@@ -143,7 +142,7 @@ int UART_InitializeAndAddToEpoll(UART_Id uartId, int epollFd, uart_line_received
 /// <summary>
 ///		Closes the previously opened UART
 ///</summary>
-void UART_Close()
+void UART_Close(void)
 {
 	if (m_UartFd >= 0) {
 		if (close(m_UartFd) != 0) {

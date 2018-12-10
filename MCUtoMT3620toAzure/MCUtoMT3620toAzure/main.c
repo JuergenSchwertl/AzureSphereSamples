@@ -44,18 +44,20 @@
 /// - log (messages shown in Visual Studio's Device Output window during debugging)
 /// </summary>
 
-/*
 #ifndef AZURE_IOT_HUB_CONFIGURED
 #error \
     "WARNING: Please add a project reference to the Connected Service first \
 (right-click References -> Add Connected Service)."
 #endif
-*/
+
+#include "azure_iot_utilities.h"
 
 // File descriptors - initialized to invalid value
 static int epollFd = -1;
 static int gpioConnectionStateLedFds[3] = {-1,-1,-1};
 static int uartFd = -1;
+static int azureIotDoWorkTimerFd = -1;
+
 static GPIO_Id gpioConnectionStateLeds[3] = { MT3620_RDB_NETWORKING_LED_RED, 
 											  MT3620_RDB_NETWORKING_LED_GREEN, 
 											  MT3620_RDB_NETWORKING_LED_BLUE };
@@ -98,7 +100,7 @@ void setConnectionStatusLed(RGB_Color color)
 	GPIO_SetValue(gpioConnectionStateLedFds[RGB_BLUE_INDEX], (color & (1 << RGB_BLUE_INDEX)) ? GPIO_Value_Low : GPIO_Value_High);
 }
 
-void updateConnectionStatusLed()
+void updateConnectionStatusLed(void)
 {
 	RGB_Color color;
 	bool bIsNetworkReady = false;
@@ -119,6 +121,32 @@ void ConnectionToIoTHubChanged(bool bConnected)
 	updateConnectionStatusLed();
 }
 
+
+/// <summary>
+///     Hand over control periodically to the Azure IoT SDK's DoWork.
+/// </summary>
+static void AzureIotDoWorkHandler(event_data_t *eventData)
+{
+	if (ConsumeTimerFdEvent(azureIotDoWorkTimerFd) != 0) {
+		terminationRequired = true;
+		return;
+	}
+
+	updateConnectionStatusLed();
+
+	// Set up the connection to the IoT Hub client.
+	// Notes it is safe to call this function even if the client has already been set up, as in
+	//   this case it would have no effect
+	if (AzureIoT_SetupClient()) {
+		// AzureIoT_DoPeriodicTasks() needs to be called frequently in order to keep active
+		// the flow of data with the Azure IoT Hub
+		AzureIoT_DoPeriodicTasks();
+	}
+}
+
+static event_data_t azureIotEventData = { .eventHandler = &AzureIotDoWorkHandler };
+
+
 /// <summary>
 ///     Set up SIGTERM termination handler, initialize peripherals, and set up event handlers.
 /// </summary>
@@ -129,6 +157,9 @@ static int InitPeripheralsAndHandlers(void)
     memset(&action, 0, sizeof(struct sigaction));
     action.sa_handler = TerminationHandler;
     sigaction(SIGTERM, &action, NULL);
+
+	AzureIoT_SetDeviceTwinUpdateCallback(&MCU_DeviceTwinChangedHandler);
+	AzureIoT_SetConnectionStatusCallback(&ConnectionToIoTHubChanged);
 
     epollFd = CreateEpollFd();
     if (epollFd < 0) {
@@ -150,8 +181,14 @@ static int InitPeripheralsAndHandlers(void)
 		}
 	}
 
- 	AzureIoT_SetDeviceTwinUpdateCallback(&MCU_DeviceTwinChangedHandler);
-	AzureIoT_SetConnectionStatusCallback(&ConnectionToIoTHubChanged);
+	// Set up a timer for Azure IoT SDK DoWork execution.
+	static struct timespec azureIotDoWorkPeriod = { 1, 0 };
+	azureIotDoWorkTimerFd =
+		CreateTimerFdAndAddToEpoll(epollFd, &azureIotDoWorkPeriod, &azureIotEventData, EPOLLIN);
+	if (azureIotDoWorkTimerFd < 0) {
+		return -1;
+	}
+
 
     return 0;
 }
@@ -181,27 +218,9 @@ int main(int argc, char *argv[])
 
     // Use epoll to wait for events and trigger handlers, until an error or SIGTERM happens
     while (!terminationRequired) {
-		
-		updateConnectionStatusLed();
-
-		// Setup the IoT Hub client.
-		// Notes:
-		// - it is safe to call this function even if the client has already been set up, as in
-		//   this case it would have no effect;
-		// - a failure to setup the client is a fatal error.
-		if (!AzureIoT_SetupClient()) {
-			Log_Debug("ERROR: Failed to set up IoT Hub client\n");
-			break;
-		}
-
         if (WaitForEventAndCallHandler(epollFd) != 0) {
             terminationRequired = true;
         }
-
-		// AzureIoT_DoPeriodicTasks() needs to be called frequently in order to keep active
-		// the flow of data with the Azure IoT Hub
-		AzureIoT_DoPeriodicTasks();
-
 	}
 
     ClosePeripheralsAndHandlers();
