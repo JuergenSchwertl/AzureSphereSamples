@@ -25,6 +25,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'" Label="Configuration">
     <UseDebugLibraries>true</UseDebugLibraries>
+    <TargetSysroot>1</TargetSysroot>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'" Label="Configuration">
     <UseDebugLibraries>false</UseDebugLibraries>
@@ -42,11 +43,9 @@
     <ClCompile Include="main.c" />
     <ClCompile Include="epoll_timerfd_utilities.c" />
     <ClCompile Include="MCU_utilities.c" />
-    <ClCompile Include="parson.c" />
     <ClCompile Include="UART_utilities.c" />
     <ClInclude Include="epoll_timerfd_utilities.h" />
     <ClInclude Include="MCU_utilities.h" />
-    <ClInclude Include="parson.h" />
     <ClInclude Include="UART_utilities.h" />
     <UpToDateCheckInput Include="app_manifest.json" />
     <ClInclude Include="mt3620_rdb.h" />
