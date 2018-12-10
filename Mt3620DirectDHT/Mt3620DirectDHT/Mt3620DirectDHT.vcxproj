@@ -70,7 +70,7 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">$(SysRoot)\usr\include\azureiot;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile>
-      <AdditionalOptions>-Werror=implicit-function-declaration  -D AZURE_IOT_HUB_CONFIGURED  -D AZURE_IOT_HUB_CONFIGURED  -D AZURE_IOT_HUB_CONFIGURED  -D AZURE_IOT_HUB_CONFIGURED  -D AZURE_IOT_HUB_CONFIGURED  -D AZURE_IOT_HUB_CONFIGURED  -D AZURE_IOT_HUB_CONFIGURED  -D AZURE_IOT_HUB_CONFIGURED  -D AZURE_IOT_HUB_CONFIGURED  -D AZURE_IOT_HUB_CONFIGURED %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>-Werror=implicit-function-declaration  %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
   </ItemDefinitionGroup>
 </Project>
