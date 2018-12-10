@@ -17,7 +17,11 @@
 #include "led_blink_utility.h"
 #include "..\DHTlib\Inc\Public\DHTlib.h"
 
-#include "azure_iot_utilities.h"
+#ifndef AZURE_IOT_HUB_CONFIGURED
+#error \
+    "WARNING: Please add a project reference to the Connected Service first \
+(right-click References -> Add Connected Service)."
+#endif
 
 // This sample C application for a MT3620 Reference Development Board (Azure Sphere) demonstrates 
 // how to connect an Azure Sphere device to an Azure IoT Hub and 

@@ -31,13 +31,5 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <UpToDateCheckInput Include="app_manifest.json" />
-    <ClCompile Include="parson.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="parson.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>

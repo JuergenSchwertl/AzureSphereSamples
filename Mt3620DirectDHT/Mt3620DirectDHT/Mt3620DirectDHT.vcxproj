@@ -25,6 +25,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'" Label="Configuration">
     <UseDebugLibraries>true</UseDebugLibraries>
+    <TargetSysroot>1</TargetSysroot>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'" Label="Configuration">
     <UseDebugLibraries>false</UseDebugLibraries>
@@ -41,11 +42,9 @@
   <ItemGroup>
     <ClCompile Include="main.c" />
     <ClCompile Include="led_blink_utility.c" />
-    <ClCompile Include="parson.c" />
     <ClInclude Include="led_blink_utility.h" />
     <ClInclude Include="mt3620_rdb.h" />
     <ClInclude Include="applibs_versions.h" />
-    <ClInclude Include="parson.h" />
     <UpToDateCheckInput Include="app_manifest.json" />
   </ItemGroup>
   <ItemGroup>
