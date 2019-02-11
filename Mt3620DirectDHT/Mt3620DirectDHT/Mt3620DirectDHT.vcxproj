@@ -40,11 +40,15 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
   </PropertyGroup>
   <ItemGroup>
+    <ClCompile Include="epoll_timerfd_utilities.c" />
     <ClCompile Include="main.c" />
-    <ClCompile Include="led_blink_utility.c" />
-    <ClInclude Include="led_blink_utility.h" />
+    <ClCompile Include="parson.c" />
+    <ClCompile Include="rgbled_utility.c" />
+    <ClInclude Include="epoll_timerfd_utilities.h" />
     <ClInclude Include="mt3620_rdb.h" />
     <ClInclude Include="applibs_versions.h" />
+    <ClInclude Include="parson.h" />
+    <ClInclude Include="rgbled_utility.h" />
     <UpToDateCheckInput Include="app_manifest.json" />
   </ItemGroup>
   <ItemGroup>
@@ -70,7 +74,7 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">$(SysRoot)\usr\include\azureiot;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile>
-      <AdditionalOptions>-Werror=implicit-function-declaration  %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>-Werror=implicit-function-declaration %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
   </ItemDefinitionGroup>
 </Project>

@@ -8,13 +8,15 @@
 
 // applibs_versions.h defines the API struct versions to use for applibs APIs.
 #include "applibs_versions.h"
+#include "epoll_timerfd_utilities.h"
 
 #include <applibs/gpio.h>
 #include <applibs/log.h>
+#include <applibs/networking.h>
 #include <applibs/wificonfig.h>
 
 #include "mt3620_rdb.h"
-#include "led_blink_utility.h"
+#include "rgbled_utility.h"
 #include "..\DHTlib\Inc\Public\DHTlib.h"
 
 #ifndef AZURE_IOT_HUB_CONFIGURED
@@ -22,6 +24,8 @@
     "WARNING: Please add a project reference to the Connected Service first \
 (right-click References -> Add Connected Service)."
 #endif
+
+#include "azure_iot_utilities.h"
 
 // This sample C application for a MT3620 Reference Development Board (Azure Sphere) demonstrates 
 // how to connect an Azure Sphere device to an Azure IoT Hub and 
@@ -58,21 +62,40 @@
 #define JSON_BUFFER_SIZE 256
 
 // An array defining the RGB GPIOs for each LED on the device
-static const GPIO_Id ledsPins[3][3] = {
-    {MT3620_RDB_LED1_RED, MT3620_RDB_LED1_GREEN, MT3620_RDB_LED1_BLUE}, {MT3620_RDB_LED2_RED, MT3620_RDB_LED2_GREEN, MT3620_RDB_LED2_BLUE}, {MT3620_RDB_LED3_RED, MT3620_RDB_LED3_GREEN, MT3620_RDB_LED3_BLUE}};
+static const GPIO_Id ledsPins[4][3] = {
+    {MT3620_RDB_LED1_RED, MT3620_RDB_LED1_GREEN, MT3620_RDB_LED1_BLUE}, 
+	{MT3620_RDB_LED2_RED, MT3620_RDB_LED2_GREEN, MT3620_RDB_LED2_BLUE},
+	{MT3620_RDB_LED3_RED, MT3620_RDB_LED3_GREEN, MT3620_RDB_LED3_BLUE},
+	{MT3620_RDB_NETWORKING_LED_RED, MT3620_RDB_NETWORKING_LED_GREEN, MT3620_RDB_NETWORKING_LED_BLUE}
+};
+
+// Epoll file descriptors
+static int epollFd = -1;
+
+static int timerFdButtonManagement = -1;
+
+static int timerFdDHTStatus = -1;
+static int timerFdMethodReceived = -1;
+static int timerFdMessageSent = -1;
+static int timerFdAzureIotDoWork = -1;
+
 
 // Button GPIO file descriptors - initialized to invalid value
-static int messageSendButtonFd = -1;
+static int gpioFdMessageSendButton = -1;
 
 // Button state
 static GPIO_Value_Type messageSendButtonState = GPIO_Value_High;
 
 // LED state
-static RgbLed ledMethodReceived = RGBLED_INIT_VALUE;
-static RgbLed ledMessageSent = RGBLED_INIT_VALUE;
+static RgbLed ledDHTstatus = RGBLED_INIT_VALUE; // LED1
+static RgbLed ledMethodReceived = RGBLED_INIT_VALUE; // LED2
+static RgbLed ledMessageSent = RGBLED_INIT_VALUE; // LED3
 static RgbLed ledNetworkStatus = RGBLED_INIT_VALUE;
-static RgbLed *rgbLeds[] = {&ledMethodReceived, &ledMessageSent, &ledNetworkStatus};
+static RgbLed *rgbLeds[] = { &ledDHTstatus, &ledMethodReceived, &ledMessageSent, &ledNetworkStatus};
 static const size_t rgbLedsCount = sizeof(rgbLeds) / sizeof(*rgbLeds);
+
+static const struct timespec defaultLedBlinkTime = { 0, 150 * 1000 * 1000 };
+static const struct timespec nullPeriod = { 0, 0 };
 
 // json format string for reported properties
 static const char cstrReportedPropertiesJson[] = "{\"Temp_C\":\"%.2f\",\"Temp_F\":\"%.2f\",\"Humidity\":\"%.2f\"}";
@@ -80,14 +103,14 @@ static const char cstrJsonErrorNoData[] = "{ \"success\" : false, \"message\" : 
 static const char noMethodFound[] = "\"method not found '%s'\"";
 static const char cstrJsonSuccessAndData[] = "{\"success\":true,\"Temp_C\":\"%.2f\",\"Temp_F\":\"%.2f\",\"Humidity\":\"%.2f\"}";
 
-// how often we automatically send the temperature.
-static int sendTempIntervalSeconds = 15;
+//// how often we automatically send the temperature.
+//static int sendTempIntervalSeconds = 15;
 
 // Connectivity state
 static bool connectedToIoTHub = false;
 
 // Termination state
-static volatile sig_atomic_t terminationRequested = false;
+static volatile sig_atomic_t terminationRequired = false;
 
 /// <summary>
 ///     Signal handler for termination requests. This handler must be async-signal-safe.
@@ -95,33 +118,62 @@ static volatile sig_atomic_t terminationRequested = false;
 static void TerminationHandler(int signalNumber)
 {
     // Don't use Log_Debug here, as it is not guaranteed to be async signal safe
-    terminationRequested = true;
+	terminationRequired = true;
 }
 
 
+
 /// <summary>
-///     Helper function to open a file descriptor for the given GPIO as an input.
+///     Helper function to open a file descriptor for the given GPIO as input mode.
 /// </summary>
-/// <param name="button">The GPIO to which the button is attached.</param>
-/// <param name="outGpioButtonFd">File descriptor of the opened GPIO.</param>
+/// <param name="gpioId">The GPIO to open.</param>
+/// <param name="outGpioFd">File descriptor of the opened GPIO.</param>
 /// <returns>True if successful, false if an error occurred.</return>
-static bool OpenButton(GPIO_Id button, int *outGpioButtonFd)
+static bool OpenGpioFdAsInput(GPIO_Id gpioId, int *outGpioFd)
 {
-    *outGpioButtonFd = GPIO_OpenAsInput(button);
-    if (*outGpioButtonFd < 0) {
-        Log_Debug("ERROR: Could not open button GPIO\n");
-        return false;
-    }
+	*outGpioFd = GPIO_OpenAsInput(gpioId);
+	if (*outGpioFd < 0) {
+		Log_Debug("ERROR: Could not open GPIO '%d': %d (%s).\n", gpioId, errno, strerror(errno));
+		return false;
+	}
 
-    return true;
+	return true;
 }
 
 /// <summary>
-///     Helper function to read the DHT sensor valuesand create response json if jsonBuffer is available.
+///     Show details of the currently connected WiFi network.
+/// </summary>
+static void DebugPrintCurrentlyConnectedWiFiNetwork(void)
+{
+	WifiConfig_ConnectedNetwork network;
+	int result = WifiConfig_GetCurrentNetwork(&network);
+	if (result < 0) {
+		Log_Debug("INFO: Not currently connected to a WiFi network.\n");
+	}
+	else {
+		Log_Debug("INFO: Currently connected WiFi network: \n");
+		Log_Debug("INFO: SSID \"%.*s\", BSSID %02x:%02x:%02x:%02x:%02x:%02x, Frequency %dMHz.\n",
+			network.ssidLength, network.ssid, network.bssid[0], network.bssid[1],
+			network.bssid[2], network.bssid[3], network.bssid[4], network.bssid[5],
+			network.frequencyMHz);
+	}
+}
+
+/// <summary>
+///     Helper function to blink LED once.
+/// </summary>
+static void BlinkLedOnce(const RgbLed *pRgbLed, int fdLedTimer, RgbLedUtility_Colors color)
+{
+	RgbLedUtility_SetLed(pRgbLed, color);
+	SetTimerFdToSingleExpiry(fdLedTimer, &defaultLedBlinkTime);
+}
+
+/// <summary>
+///     Helper function to read the DHT sensor values and create response json if jsonBuffer is available.
 /// </summary>
 /// <param name="jsonBuffer">pointer to string buffer for json result. NULL if no json is requested</param>
 /// <param name="jsonBufferSize">length of pre-allocated json string buffer</param>
-/// <returns>True if successful, false if an error occurred.</return>
+/// <returns>True if successful, false if an error occurred.</returns>
 bool GetAndReportSensorData(char * jsonBuffer, size_t jsonBufferSize )
 {
 	DHT_SensorData * pDHT = DHT_ReadData(MT3620_GPIO0);
@@ -132,7 +184,7 @@ bool GetAndReportSensorData(char * jsonBuffer, size_t jsonBufferSize )
 		if (jsonPropertyBuffer != NULL)
 		{
 			snprintf(jsonPropertyBuffer, JSON_BUFFER_SIZE, cstrReportedPropertiesJson, pDHT->TemperatureCelsius, pDHT->TemperatureFahrenheit, pDHT->Humidity);
-			AzureIoT_TwinReportStateJson(jsonPropertyBuffer, strlen(jsonPropertyBuffer));
+			//AzureIoT_TwinReportStateJson(jsonPropertyBuffer, strlen(jsonPropertyBuffer));
 			free(jsonPropertyBuffer);
 		}
 		else {
@@ -152,7 +204,7 @@ bool GetAndReportSensorData(char * jsonBuffer, size_t jsonBufferSize )
 /// <summary>
 ///     Sends a message to the IoT Hub.
 /// </summary>
-static void SendMessageToIotHub()
+static void SendMessageToIotHub(void)
 {
     if (connectedToIoTHub) {
 		char * jsonBuffer = (char *)malloc(JSON_BUFFER_SIZE);
@@ -162,42 +214,15 @@ static void SendMessageToIotHub()
 			AzureIoT_SendMessage(jsonBuffer);
 			Log_Debug("INFO: SendMessageToIoTHub %s\n", jsonBuffer);
 			// Set the send/receive LED to blink once immediately to indicate the message has been queued
-			LedBlinkUtility_BlinkNow(&ledMessageSent, LedBlinkUtility_Colors_Green);
+			BlinkLedOnce(&ledMessageSent, timerFdMessageSent, RgbLedUtility_Colors_Green);
 		}
     } else {
 		// Send/receive LED to blink once red to indicate sensor failure
-		LedBlinkUtility_BlinkNow(&ledMessageSent, LedBlinkUtility_Colors_Red);
+		BlinkLedOnce(&ledMessageSent, timerFdMessageSent, RgbLedUtility_Colors_Red);
 		Log_Debug("WARNING: Cannot send message: not connected to the IoT Hub\n");
     }
 }
 
-/// <summary>
-///    Check for button presses and respond if one is detected
-/// </summary>
-/// <returns>0 if the check was successful, or -1 in the case of a failure</returns>
-static int CheckForButtonPresses()
-{
-	GPIO_Value_Type newGpioButtonState = GPIO_Value_Low;
-
-    // Check for a button press on messageSendButtonFd
-    int result = GPIO_GetValue(messageSendButtonFd, &newGpioButtonState);
-    if (result != 0) {
-        Log_Debug("ERROR: Could not read button GPIO\n");
-        return -1;
-    }
-
-    if (newGpioButtonState != messageSendButtonState) {
-        // If the button state has changed, then respond
-        // The button has GPIO_Value_Low when pressed and GPIO_Value_High when released
-        if (newGpioButtonState == GPIO_Value_Low) {
-            SendMessageToIotHub();
-        }
-        // Save the button's new state
-        messageSendButtonState = newGpioButtonState;
-    }
-
-    return 0;
-}
 
 
 
@@ -247,7 +272,7 @@ static int DirectMethodCall(const char *methodName, const char *payload, size_t 
             *responsePayload = jsonBuffer;
             *responsePayloadSize = strlen(jsonBuffer);
 
-			LedBlinkUtility_BlinkNow(&ledMethodReceived, LedBlinkUtility_Colors_Red);
+			BlinkLedOnce(&ledMethodReceived, timerFdMethodReceived, RgbLedUtility_Colors_Red);
         } else {
             // DHT data is available.
             result = 200;
@@ -255,7 +280,7 @@ static int DirectMethodCall(const char *methodName, const char *payload, size_t 
 
             *responsePayload = jsonBuffer;
             *responsePayloadSize = strlen(jsonBuffer);
-			LedBlinkUtility_BlinkNow(&ledMethodReceived, LedBlinkUtility_Colors_Green);
+			BlinkLedOnce(&ledMethodReceived, timerFdMethodReceived, RgbLedUtility_Colors_Green);
 		}
     } else {
         result = 404;
@@ -268,7 +293,7 @@ static int DirectMethodCall(const char *methodName, const char *payload, size_t 
             abort();
         }
         *responsePayloadSize = strlen(*responsePayload);
-		LedBlinkUtility_BlinkNow(&ledMethodReceived, LedBlinkUtility_Colors_Yellow);
+		BlinkLedOnce(&ledMethodReceived, timerFdMethodReceived, RgbLedUtility_Colors_Yellow);
 	}
 
     return result;
@@ -278,70 +303,215 @@ static int DirectMethodCall(const char *methodName, const char *payload, size_t 
 ///     IoT Hub connection status callback function.
 /// </summary>
 /// <param name="connected">'true' when the connection to the IoT Hub is established.</param>
+static void SetNetworkStatusLed(void)
+{
+	bool bActiveNetwork = false;
+	RgbLedUtility_Colors colStatus = RgbLedUtility_Colors_Red;
+
+	Networking_IsNetworkingReady(&bActiveNetwork);
+	if (bActiveNetwork)
+	{
+		if (connectedToIoTHub)
+		{
+			colStatus = RgbLedUtility_Colors_Blue;
+		}
+		else
+		{
+			colStatus = RgbLedUtility_Colors_Green;
+		}
+	}
+
+	RgbLedUtility_SetLed(&ledNetworkStatus, colStatus);
+}
+
+/// <summary>
+///     IoT Hub connection status callback function.
+/// </summary>
+/// <param name="connected">'true' when the connection to the IoT Hub is established.</param>
 static void IoTHubConnectionStatusChanged(bool connected)
 {
+	Log_Debug("[IoTHubConnectionStatusChanged]:%d.\n", (int)connected);
     connectedToIoTHub = connected;
+	SetNetworkStatusLed();
 }
+
+/// <summary>
+///    Check for button presses and respond if one is detected
+/// </summary>
+/// <returns>0 if the check was successful, or -1 in the case of a failure</returns>
+static void ButtonHandler(event_data_t *eventData)
+{
+	GPIO_Value_Type newGpioButtonState = GPIO_Value_Low;
+
+	// Check for a button press on Send Button
+	int result = GPIO_GetValue(gpioFdMessageSendButton, &newGpioButtonState);
+	if (result != 0) {
+		Log_Debug("ERROR: Could not read button GPIO\n");
+		return;
+	}
+
+	if (newGpioButtonState != messageSendButtonState) {
+		// If the button state has changed, then respond
+		// The button has GPIO_Value_Low when pressed and GPIO_Value_High when released
+		if (newGpioButtonState == GPIO_Value_Low) {
+			SendMessageToIotHub();
+		}
+		// Save the button's new state
+		messageSendButtonState = newGpioButtonState;
+	}
+
+	return;
+}
+
+/// <summary>
+///     Handle the blinking for LEDs.
+/// </summary>
+static void LedUpdateHandler(event_data_t *eventData)
+{
+	
+	if (ConsumeTimerFdEvent(eventData->fd) != 0) {
+		terminationRequired = true;
+		return;
+	}
+
+	// Clear the send/receive LED2.
+	RgbLedUtility_SetLed((RgbLed *) eventData->ptr, RgbLedUtility_Colors_Off);
+}
+
+/// <summary>
+///     Hand over control periodically to the Azure IoT SDK's DoWork.
+/// </summary>
+static void AzureIotDoWorkHandler(event_data_t *eventData)
+{
+	// Set up the connection to the IoT Hub client.
+	// Notes it is safe to call this function even if the client has already been set up, as in
+	//   this case it would have no effect
+	if (AzureIoT_SetupClient()) {
+		// AzureIoT_DoPeriodicTasks() needs to be called frequently in order to keep active
+		// the flow of data with the Azure IoT Hub
+		AzureIoT_DoPeriodicTasks();
+	}
+
+	if (ConsumeTimerFdEvent(timerFdAzureIotDoWork) != 0) {
+		terminationRequired = true;
+		return;
+	}
+
+}
+
+
+// event handler data structures. eventHandler field needs to be initialized.
+static event_data_t eventDataButtons = { .eventHandler = &ButtonHandler,.fd = -1,.ptr = NULL };
+static event_data_t eventDataMessageSentLed = { .eventHandler = &LedUpdateHandler,.fd = -1,.ptr = (void *) &ledMessageSent };
+static event_data_t eventDataMethodReceivedLed = { .eventHandler = &LedUpdateHandler,.fd = -1,.ptr = (void *) &ledMethodReceived};
+static event_data_t eventDataDHTStatusLed = { .eventHandler = &LedUpdateHandler,.fd = -1,.ptr = (void *) &ledDHTstatus };
+static event_data_t eventDataAzureIoT = { .eventHandler = &AzureIotDoWorkHandler,.fd = -1,.ptr = NULL };
+
+
 
 /// <summary>
 ///     Initialize peripherals, termination handler, and Azure IoT
 /// </summary>
 /// <returns>0 on success, or -1 on failure</returns>
-static int Init(void)
+static int InitPeripheralsAndHandlers(void)
 {
-    // Register a SIGTERM handler for termination requests
-    struct sigaction action;
-    memset(&action, 0, sizeof(struct sigaction));
-    action.sa_handler = TerminationHandler;
-    sigaction(SIGTERM, &action, NULL);
+	// Register a SIGTERM handler for termination requests
+	struct sigaction action;
+	memset(&action, 0, sizeof(struct sigaction));
+	action.sa_handler = TerminationHandler;
+	sigaction(SIGTERM, &action, NULL);
 
-    // Open button B
-    Log_Debug("Open MT3620_RDB_BUTTON_B\n");
-    if (!OpenButton(MT3620_RDB_BUTTON_B, &messageSendButtonFd)) {
-        return -1;
-    }
+	// Open button B
+	Log_Debug("INFO: Opening MT3620_RDB_BUTTON_B.\n");
+	if (!OpenGpioFdAsInput(MT3620_RDB_BUTTON_B, &gpioFdMessageSendButton)) {
+		return -1;
+	}
 
-    // Open file descriptors for the RGB LEDs and store them in the rgbLeds array (and in turn in
-    // the ledMethodReceived, ledMessageEventSending, ledNetworkStatus variables)
-    LedBlinkUtility_OpenLeds(rgbLeds, rgbLedsCount, ledsPins);
+	// Open file descriptors for the RGB LEDs and store them in the rgbLeds array (and in turn in
+	// the ledBlink, ledMessageEventSentReceived, ledNetworkStatus variables)
+	RgbLedUtility_OpenLeds(rgbLeds, rgbLedsCount, ledsPins);
 
-     // Initialize the Azure IoT SDK
-    if (!AzureIoT_Initialize()) {
-        Log_Debug("ERROR: Cannot initialize Azure IoT Hub SDK.\n");
-        return -1;
-    }
+	SetNetworkStatusLed();
 
-    // Set the Azure IoT hub related callbacks
-    //AzureIoT_SetMessageReceivedCallback(&MessageReceived);
-    //AzureIoT_SetDeviceTwinUpdateCallback(&DeviceTwinUpdate);
-    AzureIoT_SetDirectMethodCallback(&DirectMethodCall);
-    AzureIoT_SetConnectionStatusCallback(&IoTHubConnectionStatusChanged);
+	// Initialize the Azure IoT SDK
+	if (!AzureIoT_Initialize()) {
+		Log_Debug("ERROR: Cannot initialize Azure IoT Hub SDK.\n");
+		return -1;
+	}
 
-    return 0;
+	// Set the Azure IoT hub related callbacks
+	//AzureIoT_SetMessageReceivedCallback(&MessageReceived);
+	//AzureIoT_SetDeviceTwinUpdateCallback(&DeviceTwinUpdate);
+	AzureIoT_SetDirectMethodCallback(&DirectMethodCall);
+	AzureIoT_SetConnectionStatusCallback(&IoTHubConnectionStatusChanged);
+	
+	DebugPrintCurrentlyConnectedWiFiNetwork();
+
+	epollFd = CreateEpollFd();
+	if (epollFd < 0) {
+		return -1;
+	}
+
+	// Set up a timer for DHT status (LED1) blink once
+	timerFdDHTStatus =
+		CreateTimerFdAndAddToEpoll(epollFd, &nullPeriod, &eventDataDHTStatusLed, EPOLLIN);
+	if (timerFdDHTStatus < 0) {
+		return -1;
+	}
+
+	// Set up a timer for Send-Message (LED2) blink once.
+	timerFdMessageSent = CreateTimerFdAndAddToEpoll(epollFd, &nullPeriod, &eventDataMessageSentLed, EPOLLIN);
+	if (timerFdMessageSent < 0) {
+		return -1;
+	}
+
+	// Set up a timer for Direct Method Received (LED3) blink once.
+	timerFdMethodReceived = CreateTimerFdAndAddToEpoll(epollFd, &nullPeriod, &eventDataMethodReceivedLed, EPOLLIN);
+	if (timerFdMethodReceived < 0) {
+		return -1;
+	}
+
+	// Set up a timer for buttons status check
+	static struct timespec buttonsPressCheckPeriod = { 0, 10 * 1000 * 1000 }; // every 10ms
+	timerFdButtonManagement =
+		CreateTimerFdAndAddToEpoll(epollFd, &buttonsPressCheckPeriod, &eventDataButtons, EPOLLIN);
+	if (timerFdButtonManagement < 0) {
+		return -1;
+	}
+
+	// Set up a timer for Azure IoT SDK DoWork execution.
+	static struct timespec azureIotDoWorkPeriod = { 10, 0 };
+	timerFdAzureIotDoWork =
+		CreateTimerFdAndAddToEpoll(epollFd, &azureIotDoWorkPeriod, &eventDataAzureIoT, EPOLLIN);
+	if (timerFdAzureIotDoWork < 0) {
+		return -1;
+	}
+
+	return 0;
 }
 
 /// <summary>
 ///     Close peripherals and Azure IoT
 /// </summary>
-static void ClosePeripherals(void)
+static void ClosePeripheralsAndHandlers(void)
 {
-    Log_Debug("Closing GPIOs and Azure IoT\n");
+	Log_Debug("INFO: Closing GPIOs and Azure IoT client.\n");
 
-    // Close the button file descriptors
-    if (messageSendButtonFd >= 0) {
-        int result = close(messageSendButtonFd);
-        if (result != 0) {
-            Log_Debug("WARNING: Problem occurred closing messageSendButton GPIO: %s (%d).\n",
-                      strerror(errno), errno);
-        }
-    }
+	// Close all file descriptors
+	CloseFdAndPrintError(gpioFdMessageSendButton, "SendMessageButton");
+	CloseFdAndPrintError(timerFdButtonManagement, "ButtonsManagementTimer");
+	CloseFdAndPrintError(timerFdAzureIotDoWork, "IotDoWorkTimer");
+	CloseFdAndPrintError(timerFdDHTStatus, "DHTStatusLedTimer");
+	CloseFdAndPrintError(timerFdMessageSent, "MessageSentLedTimer");
+	CloseFdAndPrintError(timerFdMethodReceived, "MethodReceivedLedTimer");
+	CloseFdAndPrintError(epollFd, "Epoll");
 
-    // Close the LEDs and leave then off
-    LedBlinkUtility_CloseLeds(rgbLeds, rgbLedsCount);
+	// Close the LEDs and leave then off
+	RgbLedUtility_CloseLeds(rgbLeds, rgbLedsCount);
 
-    // Destroy the IoT Hub client
-    AzureIoT_DestroyClient();
-    AzureIoT_Deinitialize();
+	// Destroy the IoT Hub client
+	AzureIoT_DestroyClient();
+	AzureIoT_Deinitialize();
 }
 
 /// <summary>
@@ -351,63 +521,18 @@ int main(int argc, char *argv[])
 {
     Log_Debug("MT3620 direct DHT sensor application starting\n");
 
-    int initResult = Init();
-    if (initResult != 0) {
-        terminationRequested = true;
-    }
+	int initResult = InitPeripheralsAndHandlers();
+	if (initResult != 0) {
+		terminationRequired = true;
+	}
 
-    const struct timespec timespec_1ms = {0, 1000000};
-
-	time_t lastSentTemperature = time(0);
-
-    // Main loop
-    while (!terminationRequested) {
-        // Set network status LED color
-        LedBlinkUtility_Colors color =
-            (connectedToIoTHub ? LedBlinkUtility_Colors_Green : LedBlinkUtility_Colors_Off);
-        if (LedBlinkUtility_SetLed(&ledNetworkStatus, color) != 0) {
-            Log_Debug("Error: Set color for network status LED failed\n");
-            break;
-        }
-
-        // Trigger LEDs to blink as appropriate
-        if (LedBlinkUtility_BlinkLeds(rgbLeds, rgbLedsCount) != 0) {
-            Log_Debug("ERROR: Blinking LEDs failed\n");
-            break;
-        }
-
-        // Setup the IoT Hub client.
-        // Notes:
-        // - it is safe to call this function even if the client has already been set up, as in
-        //   this case it would have no effect;
-        // - a failure to setup the client is a fatal error.
-        if (!AzureIoT_SetupClient()) {
-            Log_Debug("ERROR: Failed to set up IoT Hub client\n");
-            break;
-        }
-
-        // AzureIoT_DoPeriodicTasks() needs to be called frequently in order to keep active
-        // the flow of data with the Azure IoT Hub
-        AzureIoT_DoPeriodicTasks();
-
-        if (CheckForButtonPresses() != 0) {
-            break;
-        }
-
-		// once we are connected and we have the correct time
-		// we send the temperature every sendTempIntervalSeconds
-		if (connectedToIoTHub) {
-			time_t now = time(0);
-			if (lastSentTemperature < now - sendTempIntervalSeconds) {
-				SendMessageToIotHub();
-				lastSentTemperature = time(0);
-			}
+	while (!terminationRequired) {
+		if (WaitForEventAndCallHandler(epollFd) != 0) {
+			terminationRequired = true;
 		}
-		
-        nanosleep(&timespec_1ms, NULL);
-    }
+	}
 
-    ClosePeripherals();
-    Log_Debug("Application exiting\n");
-    return 0;
+	ClosePeripheralsAndHandlers();
+	Log_Debug("INFO: Application exiting.\n");
+	return 0;
 }

@@ -1,17 +1,17 @@
 {
   "SchemaVersion": 1,
   "Name": "Mt3620DirectDHT_v0.18.11",
-  "ComponentId": "6BB78E0E-1C81-4971-8F4B-790342298415",
+  "ComponentId": "D0B43190-0101-4944-97B7-F1717906C237",
   "TargetApplicationRuntimeVersion": 1,
   "EntryPoint": "/bin/app",
   "CmdArgs": [],
   "Capabilities": {
     "AllowedConnections": [],
-    "Gpio": [ 0, 8, 9, 10, 15, 16, 17, 18, 19, 20, 12, 13 ],
+    "Gpio": [ 0, 12, 13, 8, 9, 10, 15, 16, 17, 18, 19, 20, 48, 14, 11 ],
     "Uart": [],
     "AllowedTcpServerPorts": [],
     "AllowedUdpServerPorts": [],
-    "WifiConfig": false,
+    "WifiConfig": true,
     "NetworkConfig": false,
     "SystemTime": false
   }

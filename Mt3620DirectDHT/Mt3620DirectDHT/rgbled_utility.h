@@ -11,11 +11,11 @@
 ///     Struct representing an RGB LED
 /// </summary>
 typedef struct RgbLed {
-	/// <summary>
-	///     File descriptors for GPIOs for the red, green and blue color channels comprising the RGB
-	///     LED
-	/// </summary>
-	int channel[NUM_CHANNELS];
+    /// <summary>
+    ///     File descriptors for GPIOs for the red, green and blue color channels comprising the RGB
+    ///     LED
+    /// </summary>
+    int channel[NUM_CHANNELS];
 } RgbLed;
 
 /// <summary>
@@ -30,15 +30,15 @@ typedef struct RgbLed {
 ///     Enumeration of available LED colors.
 /// </summary>
 typedef enum {
-	RgbLedUtility_Colors_Off = 0,     // 000 binary
-	RgbLedUtility_Colors_White = 7,   // 111 binary
-	RgbLedUtility_Colors_Red = 1,     // 001 binary
-	RgbLedUtility_Colors_Green = 2,   // 010 binary
-	RgbLedUtility_Colors_Blue = 4,    // 100 binary
-	RgbLedUtility_Colors_Cyan = 6,    // 110 binary
-	RgbLedUtility_Colors_Magenta = 5, // 101 binary
-	RgbLedUtility_Colors_Yellow = 3,  // 011 binary
-	RgbLedUtility_Colors_Unknown = 8  // 1000 binary
+    RgbLedUtility_Colors_Off = 0,     // 000 binary
+    RgbLedUtility_Colors_White = 7,   // 111 binary
+    RgbLedUtility_Colors_Red = 1,     // 001 binary
+    RgbLedUtility_Colors_Green = 2,   // 010 binary
+    RgbLedUtility_Colors_Blue = 4,    // 100 binary
+    RgbLedUtility_Colors_Cyan = 6,    // 110 binary
+    RgbLedUtility_Colors_Magenta = 5, // 101 binary
+    RgbLedUtility_Colors_Yellow = 3,  // 011 binary
+    RgbLedUtility_Colors_Unknown = 8  // 1000 binary
 } RgbLedUtility_Colors;
 
 /// <summary>
@@ -49,7 +49,7 @@ typedef enum {
 /// <param name="ledCount">The number of LEDs to open.</param>
 /// <param name="ledGpios">An array containing the LED GPIO definitions for each channel of the RGB
 /// LEDs to open.</param>
-int RgbLedUtility_OpenLeds(RgbLed **outLeds, size_t ledCount, const int(*ledGpios)[NUM_CHANNELS]);
+int RgbLedUtility_OpenLeds(RgbLed **outLeds, size_t ledCount, const int (*ledGpios)[NUM_CHANNELS]);
 
 /// <summary>
 ///     Closes the file descriptors provided in the 'leds' array.

@@ -18,12 +18,6 @@
     <ClCompile Include="main.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="led_blink_utility.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClInclude Include="led_blink_utility.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="applibs_versions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -31,5 +25,25 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <UpToDateCheckInput Include="app_manifest.json" />
+    <ClCompile Include="epoll_timerfd_utilities.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="rgbled_utility.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parson.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="epoll_timerfd_utilities.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="rgbled_utility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parson.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
