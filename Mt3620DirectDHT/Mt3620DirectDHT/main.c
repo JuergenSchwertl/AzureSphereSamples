@@ -194,7 +194,7 @@ bool GetSensorDataJson(char * jsonBuffer, size_t jsonBufferSize, const char * cs
 	}
 
 	// prepare json data to be sent 
-	snprintf(jsonBuffer, jsonBufferSize, cstrJsonSuccessAndData, 
+	snprintf(jsonBuffer, jsonBufferSize, cstrJsonFormat,
 				pDHT->TemperatureCelsius, pDHT->TemperatureFahrenheit, pDHT->Humidity);
 	return true;
 }
