@@ -10,6 +10,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{32B2BAAB-6A22-4054-AC45-9EACC6CF2DE2}"
 	ProjectSection(SolutionItems) = preProject
 		azure_iot_utilities-snippets.txt = azure_iot_utilities-snippets.txt
+		MT3620DirectDHT.pdf = MT3620DirectDHT.pdf
 	EndProjectSection
 EndProject
 Global

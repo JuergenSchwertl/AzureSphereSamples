@@ -59,7 +59,7 @@ DHT_SensorData * DHT_ReadData(GPIO_Id gpioPin)
 	// check if read attempt is outside 2 second window
 	if (TimerCompareLessOrEqual(&tsCurrent, &tsEarliestRead))
 	{
-		Log_Debug("ERROR: Cannot read data from DHT within 2 second delay.\n");
+		Log_Debug("[DHT] ERROR: Cannot read data from DHT within 2 second delay.\n");
 		return NULL;
 	}
 
@@ -78,7 +78,7 @@ DHT_SensorData * DHT_ReadData(GPIO_Id gpioPin)
 	/* pull pin down for 18 milliseconds! (DHT11 requires this, for DHT22, 1ms would suffice)*/
 	if ((fdGpioPin = GPIO_OpenAsOutput(gpioPin, GPIO_OutputMode_PushPull, GPIO_Value_Low)) < 0)
 	{
-		Log_Debug("ERROR: Could not open GPIO #%d as output\n", gpioPin);
+		Log_Debug("[DHT] ERROR: Could not open GPIO #%d as output\n", gpioPin);
 		return NULL;
 	};
 
@@ -88,7 +88,7 @@ DHT_SensorData * DHT_ReadData(GPIO_Id gpioPin)
 					  // prepare to read the pin
 	if ((fdGpioPin = GPIO_OpenAsInput(gpioPin)) < 0)
 	{
-		Log_Debug("ERROR: Could not open GPIO #%d as input\n", gpioPin);
+		Log_Debug("[DHT] ERROR: Could not open GPIO #%d as input\n", gpioPin);
 		return NULL;
 	};
 
@@ -101,6 +101,7 @@ DHT_SensorData * DHT_ReadData(GPIO_Id gpioPin)
 	}
 
 	if (uSampleCnt >= TIMEOUT_COUNT) {
+		Log_Debug("[DHT] ERROR: sensor timeout\n");
 		close(fdGpioPin); //free GPIO pin on timeout
 		return NULL;
 	}
@@ -154,7 +155,7 @@ DHT_SensorData * DHT_ReadData(GPIO_Id gpioPin)
 		dhtLastReading.TemperatureCelsius = c;
 		dhtLastReading.TemperatureFahrenheit = c * 1.8f + 32;
 
-		Log_Debug("DHT_ReadData() Humidity = %.1f %% Temperature = %.1f *C (%.1f *F)\n",
+		Log_Debug("[DHT] Humidity = %.1f %% Temperature = %.1f *C (%.1f *F)\n",
 			dhtLastReading.Humidity,
 			dhtLastReading.TemperatureCelsius,
 			dhtLastReading.TemperatureFahrenheit);
@@ -162,7 +163,7 @@ DHT_SensorData * DHT_ReadData(GPIO_Id gpioPin)
 		return &dhtLastReading; // OK
 	}
 	else {
-		Log_Debug("DHT_ReadData() Data not good: %d %d %d %d checksum %d!=%d, skip\n", data[0], data[1], data[2], data[3], data[0] + data[1] + data[2] + data[3], data[4]);
+		Log_Debug("[DHT] ERROR: Data not good: %d %d %d %d checksum %d!=%d, skip\n", data[0], data[1], data[2], data[3], data[0] + data[1] + data[2] + data[3], data[4]);
 		dhtLastReading.Humidity = dhtLastReading.TemperatureCelsius = dhtLastReading.TemperatureFahrenheit = -1;
 		return NULL; // NOK
 	}

@@ -4,7 +4,7 @@
 */
 
 /*
-	1st: Copy the function declaration below into azure_iot_utilities.h at line #34
+	1st: Copy the function declaration below into azure_iot_utilities.h at line #41
 */
 /// <summary>
 ///     Creates and enqueues reported properties state using a prepared json string.
@@ -17,7 +17,7 @@ void AzureIoT_TwinReportStateJson(
 
 
 /* 
-	2nd: Copy the function implementation below into azure_iot_utilities.c at line #404
+	2nd: Copy the function implementation below into azure_iot_utilities.c at line #485
 */
 
 /// <summary>

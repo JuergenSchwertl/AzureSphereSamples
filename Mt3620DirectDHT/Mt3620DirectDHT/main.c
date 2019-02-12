@@ -27,41 +27,46 @@
 
 #include "azure_iot_utilities.h"
 
-// This sample C application for a MT3620 Reference Development Board (Azure Sphere) demonstrates 
-// how to connect an Azure Sphere device to an Azure IoT Hub and 
-// read temperature and sensor data from a DHT22/DHT11 sensor.
-// To use this sample, you must first add the Azure IoT Hub Connected Service reference to the project 
-// (right-click References -> Add Connected Service -> Azure IoT Hub), which populates this project
-// with additional sample code used to communicate with an Azure IoT Hub.
+///<summary> 
+/// This sample C application for a MT3620 Reference Development Board (Azure Sphere) demonstrates 
+/// how to connect an Azure Sphere device to an Azure IoT Hub and read data from a DHT22/DHT11 sensor.
+/// It also extends the epoll_timerfd_utilities.h|event_data_t structure by an event context pointer.
+///
+/// To use this sample, you must first add the Azure IoT Hub Connected Service reference to the project 
+/// (right-click References -> Add Connected Service -> Azure IoT Hub), which populates this project
+/// with additional sample code used to communicate with an Azure IoT Hub.
+///
+/// The sample leverages these functionalities of the Azure IoT SDK C:
+/// - Device to cloud messages;
+/// - Direct Method invocation;
+/// - Device Twin management;
+///
+/// A description of the sample follows:
+/// - LED 1 flashes green when the device receives a Direct Method call and returns temperature/hiumidity data
+///   it flashes red when the sensor failed to deliver data.
+/// - Pressing button B triggers the sending of a temperatur/humidy message to the IoT Hub.
+/// - LED 2 flashes green: when button B is pressed and a
+///   message is sent; red : when the sensor failed to deliver data.
+/// - WiFi LED indicates in green when the device is connected to WiFi and blue if connection to the Azure IoT Hub has been
+///   established.
+///
+/// Direct Method related notes:
+/// - Invoking the method named "DHTReadDataMethod" (no payload required)
+///   triggers a sensor reading and returns the results
+///
+/// Device Twin related notes:
+/// - Pressing button A causes the sample to report the temperature & humidity data to the device
+///   twin on the IoT Hub.
 //
-// The sample leverages these functionalities of the Azure IoT SDK C:
-// - Device to cloud messages;
-// - Direct Method invocation;
-// - Device Twin management;
-//
-// A description of the sample follows:
-// - LED 1 flashes green when the devices retrieves a Method call and returns temperature/hiumidity data
-//   it flashes red when the sensor failed to deliver data.
-// - Pressing button B triggers the sending of a temperatur/humidy message to the IoT Hub.
-// - LED 2 flashes green when button B is pressed (and a
-//   message is sent) and flashes red when the sensor failed to deliver data.
-// - LED 3 indicates whether network connection to the Azure IoT Hub has been
-//   established.
-//
-// Direct Method related notes:
-// - Invoking the method named "DHTReadDataMethod" (no payload required)
-//   triggers a sensor reading and returns the results
-//
-// Device Twin related notes:
-// - Pressing button A causes the sample to report the temperature & humidity data to the device
-//   twin on the IoT Hub.
+/// This sample uses the API for the following Azure Sphere application libraries:
+/// - gpio (digital input for button)
+/// - log (messages shown in Visual Studio's Device Output window during debugging)
+///</summary>
 
-// This sample uses the API for the following Azure Sphere application libraries:
-// - gpio (digital input for button)
-// - log (messages shown in Visual Studio's Device Output window during debugging)
+// 256 byte buffer size for json data
 #define JSON_BUFFER_SIZE 256
 
-// An array defining the RGB GPIOs for each LED on the device
+// An array defining the RGB GPIOs for each used LED on the device
 static const GPIO_Id ledsPins[4][3] = {
     {MT3620_RDB_LED1_RED, MT3620_RDB_LED1_GREEN, MT3620_RDB_LED1_BLUE}, 
 	{MT3620_RDB_LED2_RED, MT3620_RDB_LED2_GREEN, MT3620_RDB_LED2_BLUE},
@@ -73,10 +78,10 @@ static const GPIO_Id ledsPins[4][3] = {
 static int epollFd = -1;
 
 static int timerFdButtonManagement = -1;
-
-static int timerFdDHTStatus = -1;
-static int timerFdMethodReceived = -1;
-static int timerFdMessageSent = -1;
+static int timerFdTelemetry = -1;
+static int timerFdReportedPropertiesLed = -1;
+static int timerFdMethodReceivedLed = -1;
+static int timerFdSendMessageLed = -1;
 static int timerFdAzureIotDoWork = -1;
 
 
@@ -87,24 +92,24 @@ static int gpioFdMessageSendButton = -1;
 static GPIO_Value_Type messageSendButtonState = GPIO_Value_High;
 
 // LED state
-static RgbLed ledDHTstatus = RGBLED_INIT_VALUE; // LED1
+static RgbLed ledReportedProperties = RGBLED_INIT_VALUE; // LED1
 static RgbLed ledMethodReceived = RGBLED_INIT_VALUE; // LED2
-static RgbLed ledMessageSent = RGBLED_INIT_VALUE; // LED3
+static RgbLed ledSendMessage = RGBLED_INIT_VALUE; // LED3
 static RgbLed ledNetworkStatus = RGBLED_INIT_VALUE;
-static RgbLed *rgbLeds[] = { &ledDHTstatus, &ledMethodReceived, &ledMessageSent, &ledNetworkStatus};
+static RgbLed *rgbLeds[] = { &ledReportedProperties, &ledMethodReceived, &ledSendMessage, &ledNetworkStatus};
 static const size_t rgbLedsCount = sizeof(rgbLeds) / sizeof(*rgbLeds);
 
-static const struct timespec defaultLedBlinkTime = { 0, 150 * 1000 * 1000 };
+static const struct timespec defaultLedBlinkTime = { 0, 250 * 1000 * 1000 }; // 250ms
 static const struct timespec nullPeriod = { 0, 0 };
 
-// json format string for reported properties
-static const char cstrReportedPropertiesJson[] = "{\"Temp_C\":\"%.2f\",\"Temp_F\":\"%.2f\",\"Humidity\":\"%.2f\"}";
-static const char cstrJsonErrorNoData[] = "{ \"success\" : false, \"message\" : \"could not read DHT sensor data\" }";
-static const char noMethodFound[] = "\"method not found '%s'\"";
+// json format strings
+static const char cstrJsonData[] = "{\"Temp_C\":\"%.2f\",\"Temp_F\":\"%.2f\",\"Humidity\":\"%.2f\"}";
 static const char cstrJsonSuccessAndData[] = "{\"success\":true,\"Temp_C\":\"%.2f\",\"Temp_F\":\"%.2f\",\"Humidity\":\"%.2f\"}";
+static const char cstrJsonErrorNoData[] = "{\"success\":false,\"message\":\"could not read DHT sensor data\"}";
+static const char cstrJsonMethodNotFound[] = "{\"success\":false,\"message\":\"method not found '%s'\"}";
 
-//// how often we automatically send the temperature.
-//static int sendTempIntervalSeconds = 15;
+// Telemetry interval.
+static struct timespec telemetrySendInterval = { 15, 0 }; // every 15s
 
 // Connectivity state
 static bool connectedToIoTHub = false;
@@ -169,62 +174,83 @@ static void BlinkLedOnce(const RgbLed *pRgbLed, int fdLedTimer, RgbLedUtility_Co
 }
 
 /// <summary>
-///     Helper function to read the DHT sensor values and create response json if jsonBuffer is available.
+///     Helper function to read the DHT sensor values and create response json if jsonBuffer and cstrJsonFormat is available.
 /// </summary>
-/// <param name="jsonBuffer">pointer to string buffer for json result. NULL if no json is requested</param>
+/// <param name="jsonBuffer">pointer to string buffer for json result.</param>
 /// <param name="jsonBufferSize">length of pre-allocated json string buffer</param>
 /// <returns>True if successful, false if an error occurred.</returns>
-bool GetAndReportSensorData(char * jsonBuffer, size_t jsonBufferSize )
+bool GetSensorDataJson(char * jsonBuffer, size_t jsonBufferSize, const char * cstrJsonFormat )
 {
-	DHT_SensorData * pDHT = DHT_ReadData(MT3620_GPIO0);
-	if (pDHT != NULL)
-	{
-
-		char *jsonPropertyBuffer = (char *)malloc(JSON_BUFFER_SIZE);
-		if (jsonPropertyBuffer != NULL)
-		{
-			snprintf(jsonPropertyBuffer, JSON_BUFFER_SIZE, cstrReportedPropertiesJson, pDHT->TemperatureCelsius, pDHT->TemperatureFahrenheit, pDHT->Humidity);
-			//AzureIoT_TwinReportStateJson(jsonPropertyBuffer, strlen(jsonPropertyBuffer));
-			free(jsonPropertyBuffer);
-		}
-		else {
-			Log_Debug("ERROR: failed to allocate buffer for reported state.\n");
-		}
-
-
-		if (jsonBuffer != NULL) {
-			// prepare data to be sent via AzureIoT_SendMessage
-			snprintf(jsonBuffer, jsonBufferSize, cstrJsonSuccessAndData, pDHT->TemperatureCelsius, pDHT->TemperatureFahrenheit, pDHT->Humidity);
-		}
-		return true;
+	if ((jsonBuffer == NULL) || (cstrJsonFormat==NULL))
+	{ 
+		return false;
 	}
-	return false;
+
+	DHT_SensorData * pDHT = DHT_ReadData(MT3620_GPIO0);
+	if (pDHT == NULL)
+	{
+		strncpy(jsonBuffer, cstrJsonErrorNoData, jsonBufferSize);
+		return false;
+	}
+
+	// prepare json data to be sent 
+	snprintf(jsonBuffer, jsonBufferSize, cstrJsonSuccessAndData, 
+				pDHT->TemperatureCelsius, pDHT->TemperatureFahrenheit, pDHT->Humidity);
+	return true;
 }
 
 /// <summary>
-///     Sends a message to the IoT Hub.
+///     Sends a message to Azure IoT Hub.
 /// </summary>
 static void SendMessageToIotHub(void)
 {
     if (connectedToIoTHub) {
 		char * jsonBuffer = (char *)malloc(JSON_BUFFER_SIZE);
-		if (GetAndReportSensorData(jsonBuffer, JSON_BUFFER_SIZE)) {
+		if (GetSensorDataJson(jsonBuffer, JSON_BUFFER_SIZE, cstrJsonSuccessAndData)) {
 
 			// Send a message
 			AzureIoT_SendMessage(jsonBuffer);
 			Log_Debug("INFO: SendMessageToIoTHub %s\n", jsonBuffer);
 			// Set the send/receive LED to blink once immediately to indicate the message has been queued
-			BlinkLedOnce(&ledMessageSent, timerFdMessageSent, RgbLedUtility_Colors_Green);
+			BlinkLedOnce(&ledSendMessage, timerFdSendMessageLed, RgbLedUtility_Colors_Green);
 		}
+		else
+		{
+			// Send/receive LED to blink once red to indicate sensor failure
+			BlinkLedOnce(&ledSendMessage, timerFdSendMessageLed, RgbLedUtility_Colors_Red);
+		}
+		free(jsonBuffer);
     } else {
-		// Send/receive LED to blink once red to indicate sensor failure
-		BlinkLedOnce(&ledMessageSent, timerFdMessageSent, RgbLedUtility_Colors_Red);
-		Log_Debug("WARNING: Cannot send message: not connected to the IoT Hub\n");
+		Log_Debug("[SendMessageToIoTHub]: Cannot send message: not connected to the IoT Hub\n");
     }
 }
 
+/// <summary>
+///     Report properties to Azure IoT Hub.
+/// </summary>
+static void ReportProperties(void)
+{
+	char *jsonPropertyBuffer = (char *)malloc(JSON_BUFFER_SIZE);
+	if (jsonPropertyBuffer == NULL)
+	{
+		Log_Debug("[ReportProperties] ERROR: cannot allocate buffer for reported properties");
+		return;
+	}
 
+	if (GetSensorDataJson(jsonPropertyBuffer, JSON_BUFFER_SIZE, cstrJsonData)) {
+		// report properties to Azure IoT Hub
+		Log_Debug("[ReportProperties] reported properties JSON is '%s'\n", jsonPropertyBuffer);
+		AzureIoT_TwinReportStateJson(jsonPropertyBuffer, strlen(jsonPropertyBuffer));
+		BlinkLedOnce(&ledReportedProperties, timerFdReportedPropertiesLed, RgbLedUtility_Colors_Green);
+	}
+	else
+	{
+		BlinkLedOnce(&ledReportedProperties, timerFdReportedPropertiesLed, RgbLedUtility_Colors_Red);
+	}
 
+	// cleanup heap message (required as implicit IoTHubDeviceClient_LL_SendReportedState doesn't free buffer)
+	free(jsonPropertyBuffer);
+}
 
 static void *SetupHeapMessage(const char *messageFormat, size_t maxLength, ...)
 {
@@ -254,7 +280,7 @@ static void *SetupHeapMessage(const char *messageFormat, size_t maxLength, ...)
 static int DirectMethodCall(const char *methodName, const char *payload, size_t payloadSize,
                             char **responsePayload, size_t *responsePayloadSize)
 {
-    // Prepare the payload for the response. This is a heap allocated null terminated string.
+	// Prepare the payload for the response. This is a heap allocated null terminated string.
     // The Azure IoT Hub SDK is responsible of freeing it.
     *responsePayload = NULL;  // Reponse payload content.
     *responsePayloadSize = 0; // Response payload content size.
@@ -264,36 +290,29 @@ static int DirectMethodCall(const char *methodName, const char *payload, size_t 
     if (strcmp(methodName, "DHTReadDataMethod") == 0) {
 
 		char * jsonBuffer = (char *)malloc(JSON_BUFFER_SIZE);
-		if( !GetAndReportSensorData(jsonBuffer, JSON_BUFFER_SIZE) ){
-            result = 400;
-            Log_Debug("INFO: DHTReadDataMethod: no DHT data available.\n");
-
-            strncpy( jsonBuffer, cstrJsonErrorNoData, JSON_BUFFER_SIZE);
-            *responsePayload = jsonBuffer;
-            *responsePayloadSize = strlen(jsonBuffer);
-
-			BlinkLedOnce(&ledMethodReceived, timerFdMethodReceived, RgbLedUtility_Colors_Red);
+		if( !GetSensorDataJson(jsonBuffer, JSON_BUFFER_SIZE, cstrJsonSuccessAndData) ){
+			result = 400;
+			BlinkLedOnce(&ledMethodReceived, timerFdMethodReceivedLed, RgbLedUtility_Colors_Red);
         } else {
             // DHT data is available.
-            result = 200;
-			Log_Debug("INFO: DHTReadDataMethod returns %s\n", jsonBuffer);
-
-            *responsePayload = jsonBuffer;
-            *responsePayloadSize = strlen(jsonBuffer);
-			BlinkLedOnce(&ledMethodReceived, timerFdMethodReceived, RgbLedUtility_Colors_Green);
+			result = 200;
+			BlinkLedOnce(&ledMethodReceived, timerFdMethodReceivedLed, RgbLedUtility_Colors_Green);
 		}
-    } else {
+		*responsePayload = jsonBuffer;
+		*responsePayloadSize = strlen(jsonBuffer);
+		Log_Debug("[DirectMethodCall] 'DHTReadDataMethod' returns %s\n", jsonBuffer);
+	} else {
         result = 404;
-        Log_Debug("INFO: Method not found called: '%s'.\n", methodName);
+        Log_Debug("[DirectMethodCall] unknown method '%s' called.\n", methodName);
 
-        size_t responseMaxLength = sizeof(noMethodFound) + strlen(methodName);
-        *responsePayload = SetupHeapMessage(noMethodFound, responseMaxLength, methodName);
+        size_t responseMaxLength = sizeof(cstrJsonMethodNotFound) + strlen(methodName);
+        *responsePayload = SetupHeapMessage(cstrJsonMethodNotFound, responseMaxLength, methodName);
         if (*responsePayload == NULL) {
-            Log_Debug("ERROR: Could not allocate buffer for direct method response payload.\n");
+            Log_Debug("[DirectMethodCall] ERROR: Could not allocate buffer for response payload.\n");
             abort();
         }
         *responsePayloadSize = strlen(*responsePayload);
-		BlinkLedOnce(&ledMethodReceived, timerFdMethodReceived, RgbLedUtility_Colors_Yellow);
+		BlinkLedOnce(&ledMethodReceived, timerFdMethodReceivedLed, RgbLedUtility_Colors_Yellow);
 	}
 
     return result;
@@ -346,7 +365,7 @@ static void ButtonHandler(event_data_t *eventData)
 	// Check for a button press on Send Button
 	int result = GPIO_GetValue(gpioFdMessageSendButton, &newGpioButtonState);
 	if (result != 0) {
-		Log_Debug("ERROR: Could not read button GPIO\n");
+		Log_Debug("[ButtonHandler] ERROR: Could not read button GPIO\n");
 		return;
 	}
 
@@ -354,7 +373,7 @@ static void ButtonHandler(event_data_t *eventData)
 		// If the button state has changed, then respond
 		// The button has GPIO_Value_Low when pressed and GPIO_Value_High when released
 		if (newGpioButtonState == GPIO_Value_Low) {
-			SendMessageToIotHub();
+			ReportProperties();
 		}
 		// Save the button's new state
 		messageSendButtonState = newGpioButtonState;
@@ -383,6 +402,11 @@ static void LedUpdateHandler(event_data_t *eventData)
 /// </summary>
 static void AzureIotDoWorkHandler(event_data_t *eventData)
 {
+	if (ConsumeTimerFdEvent(timerFdAzureIotDoWork) != 0) {
+		terminationRequired = true;
+		return;
+	}
+
 	// Set up the connection to the IoT Hub client.
 	// Notes it is safe to call this function even if the client has already been set up, as in
 	//   this case it would have no effect
@@ -391,21 +415,30 @@ static void AzureIotDoWorkHandler(event_data_t *eventData)
 		// the flow of data with the Azure IoT Hub
 		AzureIoT_DoPeriodicTasks();
 	}
+}
 
-	if (ConsumeTimerFdEvent(timerFdAzureIotDoWork) != 0) {
+/// <summary>
+///     Periodic telemetry interval handler.
+/// </summary>
+static void TelemetryIntervalHandler(event_data_t *eventData)
+{
+	Log_Debug("[TelemetryIntervalHandler]\n");
+
+	if (ConsumeTimerFdEvent(timerFdTelemetry) != 0) {
 		terminationRequired = true;
 		return;
 	}
 
+	SendMessageToIotHub();
 }
-
 
 // event handler data structures. eventHandler field needs to be initialized.
 static event_data_t eventDataButtons = { .eventHandler = &ButtonHandler,.fd = -1,.ptr = NULL };
-static event_data_t eventDataMessageSentLed = { .eventHandler = &LedUpdateHandler,.fd = -1,.ptr = (void *) &ledMessageSent };
+static event_data_t eventDataMessageSentLed = { .eventHandler = &LedUpdateHandler,.fd = -1,.ptr = (void *) &ledSendMessage };
 static event_data_t eventDataMethodReceivedLed = { .eventHandler = &LedUpdateHandler,.fd = -1,.ptr = (void *) &ledMethodReceived};
-static event_data_t eventDataDHTStatusLed = { .eventHandler = &LedUpdateHandler,.fd = -1,.ptr = (void *) &ledDHTstatus };
+static event_data_t eventDataReportedPropertiesLed = { .eventHandler = &LedUpdateHandler,.fd = -1,.ptr = (void *) &ledReportedProperties };
 static event_data_t eventDataAzureIoT = { .eventHandler = &AzureIotDoWorkHandler,.fd = -1,.ptr = NULL };
+static event_data_t eventDataTelemetry = { .eventHandler = &TelemetryIntervalHandler,.fd = -1,.ptr = NULL };
 
 
 
@@ -452,22 +485,22 @@ static int InitPeripheralsAndHandlers(void)
 		return -1;
 	}
 
-	// Set up a timer for DHT status (LED1) blink once
-	timerFdDHTStatus =
-		CreateTimerFdAndAddToEpoll(epollFd, &nullPeriod, &eventDataDHTStatusLed, EPOLLIN);
-	if (timerFdDHTStatus < 0) {
+	// Set up a timer for reported properties (LED1) blink once
+	timerFdReportedPropertiesLed =
+		CreateTimerFdAndAddToEpoll(epollFd, &nullPeriod, &eventDataReportedPropertiesLed, EPOLLIN);
+	if (timerFdReportedPropertiesLed < 0) {
 		return -1;
 	}
 
 	// Set up a timer for Send-Message (LED2) blink once.
-	timerFdMessageSent = CreateTimerFdAndAddToEpoll(epollFd, &nullPeriod, &eventDataMessageSentLed, EPOLLIN);
-	if (timerFdMessageSent < 0) {
+	timerFdSendMessageLed = CreateTimerFdAndAddToEpoll(epollFd, &nullPeriod, &eventDataMessageSentLed, EPOLLIN);
+	if (timerFdSendMessageLed < 0) {
 		return -1;
 	}
 
 	// Set up a timer for Direct Method Received (LED3) blink once.
-	timerFdMethodReceived = CreateTimerFdAndAddToEpoll(epollFd, &nullPeriod, &eventDataMethodReceivedLed, EPOLLIN);
-	if (timerFdMethodReceived < 0) {
+	timerFdMethodReceivedLed = CreateTimerFdAndAddToEpoll(epollFd, &nullPeriod, &eventDataMethodReceivedLed, EPOLLIN);
+	if (timerFdMethodReceivedLed < 0) {
 		return -1;
 	}
 
@@ -475,6 +508,13 @@ static int InitPeripheralsAndHandlers(void)
 	static struct timespec buttonsPressCheckPeriod = { 0, 10 * 1000 * 1000 }; // every 10ms
 	timerFdButtonManagement =
 		CreateTimerFdAndAddToEpoll(epollFd, &buttonsPressCheckPeriod, &eventDataButtons, EPOLLIN);
+	if (timerFdButtonManagement < 0) {
+		return -1;
+	}
+
+	// Set up a timer for regular telemetry send intervals
+	timerFdTelemetry =
+		CreateTimerFdAndAddToEpoll(epollFd, &telemetrySendInterval, &eventDataTelemetry, EPOLLIN);
 	if (timerFdButtonManagement < 0) {
 		return -1;
 	}
@@ -501,9 +541,9 @@ static void ClosePeripheralsAndHandlers(void)
 	CloseFdAndPrintError(gpioFdMessageSendButton, "SendMessageButton");
 	CloseFdAndPrintError(timerFdButtonManagement, "ButtonsManagementTimer");
 	CloseFdAndPrintError(timerFdAzureIotDoWork, "IotDoWorkTimer");
-	CloseFdAndPrintError(timerFdDHTStatus, "DHTStatusLedTimer");
-	CloseFdAndPrintError(timerFdMessageSent, "MessageSentLedTimer");
-	CloseFdAndPrintError(timerFdMethodReceived, "MethodReceivedLedTimer");
+	CloseFdAndPrintError(timerFdReportedPropertiesLed, "ReportedPropertiesLedTimer");
+	CloseFdAndPrintError(timerFdSendMessageLed, "MessageSentLedTimer");
+	CloseFdAndPrintError(timerFdMethodReceivedLed, "MethodReceivedLedTimer");
 	CloseFdAndPrintError(epollFd, "Epoll");
 
 	// Close the LEDs and leave then off
