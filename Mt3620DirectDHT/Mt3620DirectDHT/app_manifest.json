@@ -6,7 +6,7 @@
   "EntryPoint": "/bin/app",
   "CmdArgs": [],
   "Capabilities": {
-    "AllowedConnections": [  ],
+    "AllowedConnections": [ ],
     "Gpio": [ 0, 12, 13, 8, 9, 10, 15, 16, 17, 18, 19, 20, 48, 14, 11 ],
     "Uart": [],
     "AllowedTcpServerPorts": [],

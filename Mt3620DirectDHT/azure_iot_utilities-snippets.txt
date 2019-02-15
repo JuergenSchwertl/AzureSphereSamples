@@ -17,7 +17,7 @@ void AzureIoT_TwinReportStateJson(
 
 
 /* 
-	2nd: Copy the function implementation below into azure_iot_utilities.c at line #485
+	2nd: Copy the function implementation below into azure_iot_utilities.c at line #463
 */
 
 /// <summary>
@@ -49,3 +49,4 @@ void AzureIoT_TwinReportStateJson(
 		}
 	}
 }
+
