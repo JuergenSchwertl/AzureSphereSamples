@@ -49,9 +49,7 @@ Once you've verified that your Azure Sphere board runs your first application, y
 The Debug window should show the application starting, authenticating against Device Provisioning Service and then connecting to Azure IoT Hub.
 
 Check the main.c comments on interactions with Azure IoT Hub Device Twins, telemetry being send and available Azure IoT Hub Direct Methods.
-You may want to install the [Azure IoT SDK Device Explorer] tool
-
-![MT3620 GPIO-Ports and UARTS](./Images/MT3620_GPIO_UART.png)
+You may want to install the [Azure IoT SDK Device Explorer](https://github.com/Azure/azure-iot-sdk-csharp/releases/download/2019-1-4/SetupDeviceExplorer.msi) tool.
 
 ## Lab #3: Connecting a DHT sensor and send telemetry to Azure IoT Hub
 For the next lab we'll need [this repo](https://github.com/JuergenSchwertl/AzureSphereSamples) cloned.
@@ -74,3 +72,15 @@ For this lab you'll need the Azure Sphere Teams [Azure Sphere Samples repo](http
 
 Please follow the steps as outlined in [External MCU Update](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/ExternalMcuUpdateNrf52) 
 which uses the same [Nordic Semiconductor nRF52 Development Kit](https://www.nordicsemi.com/Software-and-Tools/Development-Kits/nRF52-DK).
+
+
+# Mt3620 Development Board pinouts
+
+## GPIOs and UARTs
+![MT3620 GPIO-Ports and UARTS](./Images/MT3620_GPIO_UART.png)
+
+## SPI
+![MT3620 GPIO-Ports and UARTS](./Images/MT3620_SPI.png)
+
+## I2C
+![MT3620 GPIO-Ports and UARTS](./Images/MT3620_I2C.png)
