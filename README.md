@@ -51,6 +51,8 @@ The Debug window should show the application starting, authenticating against De
 Check the main.c comments on interactions with Azure IoT Hub Device Twins, telemetry being send and available Azure IoT Hub Direct Methods.
 You may want to install the [Azure IoT SDK Device Explorer] tool
 
+![MT3620 GPIO-Ports and UARTS](./Images/MT3620_GPIO_UART.png)
+
 ## Lab #3: Connecting a DHT sensor and send telemetry to Azure IoT Hub
 For the next lab we'll need [this repo](https://github.com/JuergenSchwertl/AzureSphereSamples) cloned.
 Please follow the steps as outlined in [Mt3620DirectDHT.pdf](https://github.com/JuergenSchwertl/AzureSphereSamples/blob/master/Mt3620DirectDHT/MT3620DirectDHT.pdf)
