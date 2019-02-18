@@ -75,12 +75,31 @@ which uses the same [Nordic Semiconductor nRF52 Development Kit](https://www.nor
 
 
 # Mt3620 Development Board pinouts
+Most of the IO options on Azure Sphere are multiplexed between different functions.
+For reference pls. find the different functional pinouts below:
 
-## GPIOs and UARTs
-![MT3620 GPIO-Ports and UARTS](./Images/MT3620_GPIO_UART.png)
+## GPIOs
+![MT3620 GPIO-Ports and UARTS](./Images/MT3620_DVB_GPIO.png)
 
-## SPI
-![MT3620 GPIO-Ports and UARTS](./Images/MT3620_SPI.png)
+## ISU blocks
+Azure Sphere has 4 so called ISU-Blocks (**I**2C, **S**PI, **U**ART) for serial communication with peripherals.
 
-## I2C
-![MT3620 GPIO-Ports and UARTS](./Images/MT3620_I2C.png)
+For your reference pls. find the pinouts of the I2C, SPI and UART for the Azure Sphere Development Board below:
+
+### UART
+Azure Sphere allows Universal asynchronous receiver-transmitter communication either in software 
+flow control using a three-wire connection (TX->RX & RX<-TX crossed, Gnd) or with hardware flow control 
+additionally using RTS/CTS.
+
+Pls. keep in mind that Azure Sphere runs on 3.3V ! 
+
+To raise voltage levels to standard RS232 levels (+/-15V) you'll need level shifters, 
+otherwise you'll eventually fry the Sphere chip.  
+![MT3620 GPIO-Ports and UARTS](./Images/MT3620_DVB_UART.png)
+
+### I2C
+![MT3620 GPIO-Ports and UARTS](./Images/MT3620_DVB_I2C.png)
+
+### SPI
+![MT3620 GPIO-Ports and UARTS](./Images/MT3620_DVB_SPI.png)
+
