@@ -1,10 +1,10 @@
 /*
-	Add your IoT Hub connection oi Project MCUtoMt3620toAzure->References->Add Connected Service.
+	Add your IoT Hub connection oi Project Mt3620DirectDHT->References->Add Connected Service.
 	This will create azure_iot_utilities.c and azure_iot_utilities.c.
 */
 
 /*
-	1st: Copy the function declaration below into azure_iot_utilities.h at line #34
+	1st: Copy the function declaration below into azure_iot_utilities.h at line #41
 */
 /// <summary>
 ///     Creates and enqueues reported properties state using a prepared json string.
@@ -17,7 +17,7 @@ void AzureIoT_TwinReportStateJson(
 
 
 /* 
-	2nd: Copy the function implementation below into azure_iot_utilities.c at line #404
+	2nd: Copy the function implementation below into azure_iot_utilities.c at line #463
 */
 
 /// <summary>
@@ -49,3 +49,4 @@ void AzureIoT_TwinReportStateJson(
 		}
 	}
 }
+

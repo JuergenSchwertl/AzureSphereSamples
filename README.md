@@ -86,20 +86,20 @@ Azure Sphere has 4 so called ISU-Blocks (**I**2C, **S**PI, **U**ART) for serial 
 
 For your reference pls. find the pinouts of the I2C, SPI and UART for the Azure Sphere Development Board below:
 
-### UART
+### UART pinout
 Azure Sphere allows Universal asynchronous receiver-transmitter communication either in software 
 flow control using a three-wire connection (TX->RX & RX<-TX crossed, Gnd) or with hardware flow control 
 additionally using RTS/CTS.
 
 Pls. keep in mind that Azure Sphere runs on 3.3V ! 
 
-To raise voltage levels to standard RS232 levels (+/-15V) you'll need level shifters, 
-otherwise you'll eventually fry the Sphere chip.  
+To raise voltage levels to standard RS232 levels (+/-15V) or when connecting to a 5V based 
+MCU such as the Arduino UNO you'll need level shifters, otherwise you'll eventually fry the Sphere chip.  
 ![MT3620 GPIO-Ports and UARTS](./Images/MT3620_DVB_UART.png)
 
-### I2C
+### I2C pinout
 ![MT3620 GPIO-Ports and UARTS](./Images/MT3620_DVB_I2C.png)
 
-### SPI
+### SPI pinout
 ![MT3620 GPIO-Ports and UARTS](./Images/MT3620_DVB_SPI.png)
 
