@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.421
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SphereBME280", "SphereBME280\SphereBME280.vcxproj", "{028056BA-7D98-4B5C-99B4-358C0AEEF82B}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libBME280", "libBME280\libBME280.vcxproj", "{8897932A-6CCD-4EE3-872A-4A629CEF0760}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|ARM = Debug|ARM
+		Release|ARM = Release|ARM
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{028056BA-7D98-4B5C-99B4-358C0AEEF82B}.Debug|ARM.ActiveCfg = Debug|ARM
+		{028056BA-7D98-4B5C-99B4-358C0AEEF82B}.Debug|ARM.Build.0 = Debug|ARM
+		{028056BA-7D98-4B5C-99B4-358C0AEEF82B}.Release|ARM.ActiveCfg = Release|ARM
+		{028056BA-7D98-4B5C-99B4-358C0AEEF82B}.Release|ARM.Build.0 = Release|ARM
+		{8897932A-6CCD-4EE3-872A-4A629CEF0760}.Debug|ARM.ActiveCfg = Debug|ARM
+		{8897932A-6CCD-4EE3-872A-4A629CEF0760}.Debug|ARM.Build.0 = Debug|ARM
+		{8897932A-6CCD-4EE3-872A-4A629CEF0760}.Release|ARM.ActiveCfg = Release|ARM
+		{8897932A-6CCD-4EE3-872A-4A629CEF0760}.Release|ARM.Build.0 = Release|ARM
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0651536C-CE2F-4F7C-8A5E-A408564EEA8E}
+	EndGlobalSection
+EndGlobal

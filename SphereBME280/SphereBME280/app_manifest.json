@@ -1,0 +1,20 @@
+{
+  "SchemaVersion": 1,
+  "Name": "SphereBME280",
+  "ComponentId": "82a16cf9-d4e1-4235-a6e5-14ed23c4cc18",
+  "EntryPoint": "/bin/app",
+  "CmdArgs": [],
+  "Capabilities": {
+    "AllowedConnections": [ "global.azure-devices-provisioning.net", "JS-MS-Iot-Hub.azure-devices.net" ],
+    "AllowedTcpServerPorts": [],
+    "AllowedUdpServerPorts": [],
+    "Gpio": [ 8, 9, 10, 15, 16, 17, 18, 19, 20, 12, 13 ],
+    "Uart": [],
+    "I2cMaster": [ "ISU0" ],
+    "SpiMaster": [],
+    "WifiConfig": true,
+    "NetworkConfig": false,
+    "SystemTime": false,
+    "DeviceAuthentication": "c0b88764-9273-46ab-bab2-effecf13f91c"
+  }
+}
