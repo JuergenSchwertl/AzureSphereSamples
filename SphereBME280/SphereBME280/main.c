@@ -67,7 +67,10 @@
 
 // An array defining the RGB GPIOs for each LED on the device
 static const GPIO_Id ledsPins[3][3] = {
-    {MT3620_RDB_LED1_RED, MT3620_RDB_LED1_GREEN, MT3620_RDB_LED1_BLUE}, {MT3620_RDB_LED2_RED, MT3620_RDB_LED2_GREEN, MT3620_RDB_LED2_BLUE}, {MT3620_RDB_LED3_RED, MT3620_RDB_LED3_GREEN, MT3620_RDB_LED3_BLUE}};
+    {MT3620_RDB_LED1_RED, MT3620_RDB_LED1_GREEN, MT3620_RDB_LED1_BLUE}, 
+	{MT3620_RDB_LED2_RED, MT3620_RDB_LED2_GREEN, MT3620_RDB_LED2_BLUE}, 
+	{MT3620_RDB_NETWORKING_LED_RED, MT3620_RDB_NETWORKING_LED_GREEN, MT3620_RDB_NETWORKING_LED_BLUE}
+};
 
 static size_t blinkIntervalIndex = 0;
 static RgbLedUtility_Colors ledBlinkColor = RgbLedUtility_Colors_Blue;
@@ -93,12 +96,13 @@ static const int AzureIoTMaxReconnectPeriodSeconds = 10 * 60;
 
 static int azureIoTPollPeriodSeconds = -1;
 
+static const char strJsonFormat[] = "{\"temperature\":%0.2f,\"pressure\":%0.2f,\"humidity\":%0.2f}";
 
 // LED state
 static RgbLed led1 = RGBLED_INIT_VALUE;
 static RgbLed led2 = RGBLED_INIT_VALUE;
-static RgbLed led3 = RGBLED_INIT_VALUE;
-static RgbLed *rgbLeds[] = {&led1, &led2, &led3};
+static RgbLed ledNetwork = RGBLED_INIT_VALUE;
+static RgbLed *rgbLeds[] = {&led1, &led2, &ledNetwork };
 static const size_t rgbLedsCount = sizeof(rgbLeds) / sizeof(*rgbLeds);
 
 // Default blinking rate of LED1
@@ -194,12 +198,20 @@ static void SetLedRate(const struct timespec *rate)
 static void SendMessageToIoTHub(void)
 {
     if (connectedToIoTHub) {
-        // Send a message
-        AzureIoT_SendMessage("Hello from Azure IoT sample!");
+		bme280_data_t bmeData;
+		char strJsonData[128];
+		if (BME280_GetSensorData(&bmeData) == 0)
+		{
+			snprintf(strJsonData, sizeof(strJsonData), strJsonFormat,
+				bmeData.temperature, bmeData.pressure, bmeData.humidity);
+			Log_Debug("[SendMessage] %s\r\n",strJsonData);
+			AzureIoT_SendMessage(strJsonData);
 
-        // Set the send/receive LED2 to blink once immediately to indicate the message has been
-        // queued.
-        BlinkLed2Once();
+			// Set the send/receive LED2 to blink once immediately to indicate the message has been
+			// queued.
+			BlinkLed2Once();
+		}
+        // Send a message
     } else {
         Log_Debug("WARNING: Cannot send message: not connected to the IoT Hub.\n");
     }
@@ -395,7 +407,7 @@ static void Led1UpdateHandler(EventData *eventData)
     // Set network status with LED3 color.
     RgbLedUtility_Colors color =
         (connectedToIoTHub ? RgbLedUtility_Colors_Green : RgbLedUtility_Colors_Off);
-    RgbLedUtility_SetLed(&led3, color);
+    RgbLedUtility_SetLed(&ledNetwork, color);
 
     // Trigger LED to blink as appropriate.
     blinkingLedState = !blinkingLedState;
@@ -460,7 +472,6 @@ static void ButtonPollTimerHandler(EventData *eventData)
     // If the button is pressed, send a message to the IoT Hub.
     static GPIO_Value_Type messageButtonState;
     if (IsButtonPressed(sendMessageButtonGpioFd, &messageButtonState)) {
-		BME280_GetSensorData();
         SendMessageToIoTHub();
     }
 }

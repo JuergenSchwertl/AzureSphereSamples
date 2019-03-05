@@ -49,7 +49,7 @@ int8_t user_i2c_read(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len)
 	ssize_t rslt = I2CMaster_WriteThenRead(i2cFd, (I2C_DeviceAddress) (dev.dev_id), &reg_addr, 1, data, len);
 	//write(i2cFd, &reg_addr, 1);
 	//read(i2cFd, data, len);
-	return (int8_t) rslt;
+	return (rslt != -1) ? BME280_OK : BME280_E_COMM_FAIL;
 }
 
 void user_delay_ms(uint32_t period)
@@ -60,14 +60,19 @@ void user_delay_ms(uint32_t period)
 
 int8_t user_i2c_write(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len)
 {
+	ssize_t rslt = -1;
 	uint8_t *buf;
+
 	buf = malloc((size_t)len + 1);
-	buf[0] = reg_addr;
-	memcpy(buf + 1, data, (size_t)len);
-	ssize_t rslt = I2CMaster_Write(i2cFd, (I2C_DeviceAddress) dev.dev_id, data, (size_t)len+1);
-	//write(i2cFd, buf, len + 1);
-	free(buf);
-	return (int8_t)rslt;
+	if (buf != NULL)
+	{
+		buf[0] = reg_addr;
+		memcpy(buf + 1, data, (size_t)len);
+		rslt = I2CMaster_Write(i2cFd, (I2C_DeviceAddress)dev.dev_id, data, (size_t)len + 1);
+		//write(i2cFd, buf, len + 1);
+		free(buf);
+	}
+	return (rslt != -1) ? BME280_OK : BME280_E_COMM_FAIL;
 }
 
 
@@ -76,9 +81,11 @@ int8_t user_i2c_write(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len)
 void print_sensor_data(struct bme280_data *comp_data)
 {
 #ifdef BME280_FLOAT_ENABLE
-	Log_Debug("temp %0.2f, p %0.2f, hum %0.2f\r\n", comp_data->temperature, comp_data->pressure, comp_data->humidity);
+	Log_Debug("Temperature: %0.2f °C, Pressure: %0.2f Pa, Humidity: %0.2f %%\r\n", 
+		comp_data->temperature, comp_data->pressure, comp_data->humidity);
 #else
-	Log_Debug("temp %ld, p %ld, hum %ld\r\n", comp_data->temperature, comp_data->pressure, comp_data->humidity);
+	Log_Debug("Temperature: %ld [°C * 100], Pressure: %ld [Pa], Humidity: %ld [%% * 100]\r\n", 
+		comp_data->temperature, comp_data->pressure, comp_data->humidity);
 #endif
 }
 
@@ -107,21 +114,29 @@ int BME280_Init(I2C_InterfaceId i2cInterfaceId, I2C_DeviceAddress i2cDeviceAddr)
 	return i2cFd;
 }
 
-
-void BME280_GetSensorData( void )
-{
+///<summary>
+/// Reads temperature [°C], pressure [Pa] and humidity [%] from BME280 sensor
+///</summary>
+///<param name="pData">pointer to <see href="bme280_data_t">bme280_data_t</see> structure receiving output</param>
+///<returns>0 if successful, -1 if error</returns>
+int BME280_GetSensorData(bme280_data_t *pData) {
 	int8_t rslt = BME280_OK;
-	struct bme280_data comp_data;
-
 	uint8_t settings_sel = BME280_OSR_PRESS_SEL | BME280_OSR_TEMP_SEL | BME280_OSR_HUM_SEL | BME280_FILTER_SEL;
 	rslt = bme280_set_sensor_settings(settings_sel, &dev);
 
 	rslt = bme280_set_sensor_mode(BME280_FORCED_MODE, &dev);
 	user_delay_ms(40);
+#ifndef BME280_FLOAT_ENABLE
+	struct bme280_data comp_data;
 	rslt = bme280_get_sensor_data(BME280_ALL, &comp_data, &dev);
+	print_sensor_data(&comp_data);
+	/// [JSchwert] work in progress to get the compressed data structure converted
+#else
+	rslt = bme280_get_sensor_data(BME280_ALL, (struct bme280_data *) pData, &dev);
+	print_sensor_data((struct bme280_data *) pData);
+#endif
 	if (rslt != BME280_OK)
 	{
 		return;
 	}
-	print_sensor_data(&comp_data);
 }
