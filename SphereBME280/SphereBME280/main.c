@@ -86,8 +86,12 @@ static int buttonPollTimerFd = -1;
 static int led1BlinkTimerFd = -1;
 static int led2BlinkTimerFd = -1;
 static int azureIoTDoWorkTimerFd = -1;
+static int telemetryTimerFd = -1;
 
 static int i2cBME280Fd = -1;
+
+
+static const struct timespec telemetryTimerIntervals = {10, 0};
 
 // Azure IoT poll periods
 static const int AzureIoTDefaultPollPeriodSeconds = 5;
@@ -111,7 +115,8 @@ static bool blinkingLedState;
 
 // A null period to not start the timer when it is created with CreateTimerFdAndAddToEpoll.
 static const struct timespec nullPeriod = {0, 0};
-static const struct timespec defaultBlinkTimeLed2 = {0, 150 * 1000 * 1000};
+static const struct timespec defaultBlinkTimeLed2 = {0, 300 * 1000 * 1000};
+static const struct timespec errorBlinkTimeLed2 = { 1, 0 };
 
 // Connectivity state
 static bool connectedToIoTHub = false;
@@ -149,10 +154,10 @@ static void DebugPrintCurrentlyConnectedWiFiNetwork(void)
 /// <summary>
 ///     Helper function to blink LED2 once.
 /// </summary>
-static void BlinkLed2Once(void)
+static void BlinkLed2Once( RgbLedUtility_Colors color )
 {
-    RgbLedUtility_SetLed(&led2, RgbLedUtility_Colors_Red);
-    SetTimerFdToSingleExpiry(led2BlinkTimerFd, &defaultBlinkTimeLed2);
+    RgbLedUtility_SetLed(&led2,color);
+    SetTimerFdToSingleExpiry(led2BlinkTimerFd, ((color == RgbLedUtility_Colors_Red) ? &defaultBlinkTimeLed2 : &defaultBlinkTimeLed2));
 }
 
 /// <summary>
@@ -203,18 +208,19 @@ static void SendMessageToIoTHub(void)
 		if (BME280_GetSensorData(&bmeData) == 0)
 		{
 			snprintf(strJsonData, sizeof(strJsonData), strJsonFormat,
-				bmeData.temperature, bmeData.pressure, bmeData.humidity);
+				bmeData.temperature, bmeData.pressure/100.0, bmeData.humidity); // rebase pressure to hPa
 			Log_Debug("[SendMessage] %s\r\n",strJsonData);
 			AzureIoT_SendMessage(strJsonData);
 
 			// Set the send/receive LED2 to blink once immediately to indicate the message has been
 			// queued.
-			BlinkLed2Once();
+			BlinkLed2Once( RgbLedUtility_Colors_Green );
 		}
         // Send a message
     } else {
         Log_Debug("WARNING: Cannot send message: not connected to the IoT Hub.\n");
-    }
+		BlinkLed2Once(RgbLedUtility_Colors_Red);
+	}
 }
 
 /// <summary>
@@ -224,7 +230,7 @@ static void SendMessageToIoTHub(void)
 static void MessageReceived(const char *payload)
 {
     // Set the send/receive LED2 to blink once immediately to indicate a message has been received.
-    BlinkLed2Once();
+	BlinkLed2Once(RgbLedUtility_Colors_Blue);
 }
 
 /// <summary>
@@ -235,30 +241,23 @@ static void MessageReceived(const char *payload)
 /// properties received from the Azure IoT Hub.</param>
 static void DeviceTwinUpdate(JSON_Object *desiredProperties)
 {
-    JSON_Value *blinkRateJson = json_object_get_value(desiredProperties, "LedBlinkRateProperty");
+	static const char cstrValuePath[] = "LedBlinkRateProperty.value";
+	if (json_object_dothas_value_of_type(desiredProperties, cstrValuePath, JSONNumber))
+	{
+		size_t desiredBlinkRate = (size_t)json_object_dotget_number(desiredProperties, cstrValuePath);
 
-    // If the attribute is missing or its type is not a number.
-    if (blinkRateJson == NULL) {
-        Log_Debug(
-            "INFO: A device twin update was received that did not contain the property "
-            "\"LedBlinkRateProperty\".\n");
-    } else if (json_value_get_type(blinkRateJson) != JSONNumber) {
-        Log_Debug(
-            "INFO: Device twin desired property \"LedBlinkRateProperty\" was received with "
-            "incorrect type; it must be an integer.\n");
-    } else {
-        // Get the value of the LedBlinkRateProperty and print it.
-        size_t desiredBlinkRate = (size_t)json_value_get_number(blinkRateJson);
+		blinkIntervalIndex = desiredBlinkRate % blinkIntervalsCount; // Clamp value to [0..blinkIntervalsCount) .
 
-        blinkIntervalIndex =
-            desiredBlinkRate % blinkIntervalsCount; // Clamp value to [0..blinkIntervalsCount) .
+		Log_Debug("[DeviceTwinUpdate] Received desired value %zu for LedBlinkRateProperty, setting it to %zu.\n",
+			desiredBlinkRate, blinkIntervalIndex);
 
-        Log_Debug("INFO: Received desired value %zu for LedBlinkRateProperty, setting it to %zu.\n",
-                  desiredBlinkRate, blinkIntervalIndex);
-
-        blinkingLedPeriod = blinkIntervals[blinkIntervalIndex];
-        SetLedRate(&blinkIntervals[blinkIntervalIndex]);
-    }
+		blinkingLedPeriod = blinkIntervals[blinkIntervalIndex];
+		SetLedRate(&blinkIntervals[blinkIntervalIndex]);
+		BlinkLed2Once(RgbLedUtility_Colors_Blue);
+	} else {
+		Log_Debug( "[DeviceTwinUpdate] received update with incorrect data:\n");
+		BlinkLed2Once(RgbLedUtility_Colors_Red);
+	}
 }
 
 /// <summary>
@@ -405,8 +404,13 @@ static void Led1UpdateHandler(EventData *eventData)
     }
 
     // Set network status with LED3 color.
-    RgbLedUtility_Colors color =
-        (connectedToIoTHub ? RgbLedUtility_Colors_Green : RgbLedUtility_Colors_Off);
+	RgbLedUtility_Colors color = RgbLedUtility_Colors_Red;
+	bool bNetworkReady = false;
+	Networking_IsNetworkingReady(&bNetworkReady);
+	if (bNetworkReady)
+	{
+		color = (connectedToIoTHub ? RgbLedUtility_Colors_Blue : RgbLedUtility_Colors_Green);
+	}
     RgbLedUtility_SetLed(&ledNetwork, color);
 
     // Trigger LED to blink as appropriate.
@@ -521,11 +525,25 @@ static void AzureIoTDoWorkHandler(EventData *eventData)
     }
 }
 
+/// <summary>
+///     Handle telemetry timer event.
+/// </summary>
+static void TelemetryTimerHandler(EventData *eventData)
+{
+	if (ConsumeTimerFdEvent(eventData->fd) != 0) {
+		terminationRequired = true;
+		return;
+	}
+
+	SendMessageToIoTHub();
+}
+
 // event handler data structures. Only the event handler field needs to be populated.
 static EventData buttonPollTimerEventData = {.eventHandler = &ButtonPollTimerHandler};
 static EventData led1EventData = {.eventHandler = &Led1UpdateHandler};
 static EventData led2EventData = {.eventHandler = &Led2UpdateHandler};
 static EventData azureIoTEventData = {.eventHandler = &AzureIoTDoWorkHandler};
+static EventData telemetryTimerEventData = { .eventHandler = &TelemetryTimerHandler };
 
 /// <summary>
 ///     Initialize peripherals, termination handler, and Azure IoT
@@ -595,6 +613,14 @@ static int InitPeripheralsAndHandlers(void)
     if (buttonPollTimerFd < 0) {
         return -1;
     }
+
+
+	// Set up a timer for telemetry intervals
+	telemetryTimerFd = CreateTimerFdAndAddToEpoll(epollFd, &telemetryTimerIntervals,
+		&telemetryTimerEventData, EPOLLIN);
+	if (telemetryTimerFd < 0) {
+		return -1;
+	}
 
     // Set up a timer for Azure IoT SDK DoWork execution.
     azureIoTPollPeriodSeconds = AzureIoTDefaultPollPeriodSeconds;

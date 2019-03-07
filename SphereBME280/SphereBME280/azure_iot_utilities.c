@@ -604,6 +604,9 @@ static void twinCallback(DEVICE_TWIN_UPDATE_STATE updateState, const unsigned ch
     // Add the null terminator at the end.
     nullTerminatedJsonString[nullTerminatedJsonSize - 1] = 0;
 
+	// JSCHWERT
+	LogMessage(nullTerminatedJsonString);
+
     JSON_Value *rootProperties = NULL;
     rootProperties = json_parse_string(nullTerminatedJsonString);
     if (rootProperties == NULL) {
