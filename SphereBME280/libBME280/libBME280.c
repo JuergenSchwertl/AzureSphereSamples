@@ -8,6 +8,7 @@
 #include "bme280_defs.h"
 #include "bme280.h"
 
+#define VERBOSE 1
 
 ///<summary>
 /// This is an Azure Sphere wrapper library for the Bosch BME280 
@@ -42,11 +43,11 @@ struct bme280_dev dev = {
 		delay_ms : user_delay_ms,
 		calib_data : {0},
 		settings : {
-			osr_h: BME280_OVERSAMPLING_1X,
-			osr_p : BME280_OVERSAMPLING_1X,
-			osr_t : BME280_OVERSAMPLING_1X,
-			filter : BME280_FILTER_COEFF_OFF,
-			standby_time : BME280_STANDBY_TIME_250_MS
+			osr_h: BME280_OVERSAMPLING_8X,
+			osr_p : BME280_OVERSAMPLING_8X,
+			osr_t : BME280_OVERSAMPLING_8X,
+			filter : BME280_FILTER_COEFF_16,
+			standby_time : BME280_STANDBY_TIME_500_MS
 		}
 };
 
@@ -58,15 +59,15 @@ int8_t user_i2c_read(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len)
 {
 	ssize_t rslt = I2CMaster_WriteThenRead(i2cFd, (I2C_DeviceAddress) (dev.dev_id), &reg_addr, 1, data, len);
 
-	Log_Debug("[I2C read] ");
-	for (ssize_t i = 0; i < rslt; i++)
+#ifdef VERBOSE
+	Log_Debug("[I2C read ] reg 0x%0.2x :", (unsigned int)reg_addr);
+	for (ssize_t i = 0; i < len; i++)
 	{
-		Log_Debug("%2x ", (unsigned int) data[i]);
+		Log_Debug(" %0.2x", (unsigned int) data[i]);
 	}
 	Log_Debug("\n");
+#endif
 
-	//write(i2cFd, &reg_addr, 1);
-	//read(i2cFd, data, len);
 	return (rslt != -1) ? BME280_OK : BME280_E_COMM_FAIL;
 }
 
@@ -79,15 +80,25 @@ void user_delay_ms(uint32_t period)
 int8_t user_i2c_write(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len)
 {
 	ssize_t rslt = -1;
-	uint8_t *buf;
+	size_t len2 = (size_t)len + 1;
+	uint8_t *buf = malloc(len2);
 
-	buf = malloc((size_t)len + 1);
 	if (buf != NULL)
 	{
 		buf[0] = reg_addr;
 		memcpy(buf + 1, data, (size_t)len);
-		rslt = I2CMaster_Write(i2cFd, (I2C_DeviceAddress)dev.dev_id, data, (size_t)len + 1);
-		//write(i2cFd, buf, len + 1);
+
+#ifdef VERBOSE
+		Log_Debug("[I2C write] reg 0x%0.2x :", (unsigned int)buf[0]);
+		for (ssize_t i = 1; i < len2; i++)
+		{
+			Log_Debug(" %0.2x", (unsigned int)buf[i]);
+		}
+		Log_Debug("\n");
+#endif
+
+		rslt = I2CMaster_Write(i2cFd, (I2C_DeviceAddress)dev.dev_id, buf, len2);
+		
 		free(buf);
 	}
 	return (rslt != -1) ? BME280_OK : BME280_E_COMM_FAIL;
@@ -121,7 +132,7 @@ int BME280_Init(I2C_InterfaceId i2cInterfaceId, I2C_DeviceAddress i2cDeviceAddr)
 	{
 		return -1;
 	}
-	dev.dev_id = (uint8_t) i2cDeviceAddr & 0x7F;
+	dev.dev_id = (uint8_t) i2cDeviceAddr;
 	
 	if ((rslt = bme280_init(&dev)) != BME280_OK)
 	{
@@ -129,7 +140,13 @@ int BME280_Init(I2C_InterfaceId i2cInterfaceId, I2C_DeviceAddress i2cDeviceAddr)
 	}
 
 	uint8_t settings_sel = BME280_OSR_PRESS_SEL | BME280_OSR_TEMP_SEL | BME280_OSR_HUM_SEL | BME280_FILTER_SEL | BME280_STANDBY_SEL;
+
 	if ((rslt = bme280_set_sensor_settings(settings_sel, &dev)) != BME280_OK)
+	{
+		return -1;
+	}
+
+	if ((rslt = bme280_set_sensor_mode(BME280_NORMAL_MODE, &dev)) != BME280_OK)
 	{
 		return -1;
 	}
@@ -145,17 +162,7 @@ int BME280_Init(I2C_InterfaceId i2cInterfaceId, I2C_DeviceAddress i2cDeviceAddr)
 ///<returns>0 if successful, -1 if error</returns>
 int BME280_GetSensorData(bme280_data_t *pData) {
 	int8_t rslt = BME280_OK;
-	//uint8_t settings_sel = BME280_OSR_PRESS_SEL | BME280_OSR_TEMP_SEL | BME280_OSR_HUM_SEL | BME280_FILTER_SEL;
-	//rslt = bme280_set_sensor_settings(settings_sel, &dev);
 
-	//rslt = bme280_set_sensor_mode(BME280_FORCED_MODE, &dev);
-
-	if ((rslt = bme280_set_sensor_mode(BME280_FORCED_MODE, &dev)) != BME280_OK)
-	{
-		return -1;
-	}
-	
-	user_delay_ms(40);
 #ifndef BME280_FLOAT_ENABLE
 	struct bme280_data comp_data;
 	rslt = bme280_get_sensor_data(BME280_ALL, &comp_data, &dev);
@@ -163,6 +170,7 @@ int BME280_GetSensorData(bme280_data_t *pData) {
 	/// [JSchwert] work in progress to get the compressed data structure converted
 #else
 	rslt = bme280_get_sensor_data(BME280_ALL, (struct bme280_data *) pData, &dev);
+
 	print_sensor_data((struct bme280_data *) pData);
 #endif
 	if (rslt != BME280_OK)

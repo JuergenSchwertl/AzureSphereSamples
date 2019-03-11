@@ -596,6 +596,10 @@ int8_t bme280_get_sensor_data(uint8_t sensor_comp, struct bme280_data *comp_data
 	rslt = null_ptr_check(dev);
 
 	if ((rslt == BME280_OK) && (comp_data != NULL)) {
+
+		// [JSchwert]: Read calibration data
+		rslt = get_calib_data(dev);
+
 		/* Read the pressure and temperature data from the sensor */
 		rslt = bme280_get_regs(BME280_DATA_ADDR, reg_data, BME280_P_T_H_DATA_LEN, dev);
 
@@ -831,6 +835,7 @@ static int8_t write_power_mode(uint8_t sensor_mode, const struct bme280_dev *dev
 
 	/* Read the power mode register */
 	rslt = bme280_get_regs(reg_addr, &sensor_mode_reg_val, 1, dev);
+
 	/* Set the power mode */
 	if (rslt == BME280_OK) {
 		sensor_mode_reg_val = BME280_SET_BITS_POS_0(sensor_mode_reg_val, BME280_SENSOR_MODE, sensor_mode);

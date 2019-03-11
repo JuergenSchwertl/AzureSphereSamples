@@ -18,12 +18,14 @@
 #include "libBME280.h"
 
 // This sample C application for a MT3620 Reference Development Board (Azure Sphere) demonstrates how to
-// connect an Azure Sphere device to an Azure IoT Hub. To use this sample, you must first
-// add the Azure IoT Hub Connected Service reference to the project (right-click
-// References -> Add Connected Service -> Azure IoT Hub), which populates this project
-// with additional sample code used to communicate with an Azure IoT Hub.
+// connect an Azure Sphere device to Azure IoT Central. To use this sample, you must first
+// run the ShowIoTCentralConfig.exe from <see href="https://github.com/Azure/azure-sphere-samples/tree/master/Samples/AzureIoT/Tools" />
+// which outputs the required "AllowedConnections" property for the Manifest (app_manifest.json) .
+// You will also need to update the "DeviceAuthentication" property in the manifest 
+// with your Azure Sphere TenantID. To find your TenantId, i.e. run the Azure Sphere Command line
+//		azsphere tenant show-selected
 //
-// The sample leverages these functionalities of the Azure IoT SDK C:
+// The sample leverages these functionalities of the Azure IoT SDK C together with Azure IoT Central:
 // - Device to cloud messages;
 // - Cloud to device messages;
 // - Direct Method invocation;
@@ -33,11 +35,11 @@
 // - LED 1 blinks constantly.
 // - Pressing button A toggles the rate at which LED 1 blinks
 //   between three values.
-// - Pressing button B triggers the sending of a message to the IoT Hub.
+// - Pressing button B triggers reading sensor data and sending a message to the IoT Hub.
 // - LED 2 flashes red when button B is pressed (and a
 //   message is sent) and flashes yellow when a message is received.
-// - LED 3 indicates whether network connection to the Azure IoT Hub has been
-//   established.
+// - NETWORK LED indicates whether network connection to the Azure IoT Hub has been
+//   established (Red:No Network, Green:WiFi, Blue:IoT Hub connected).
 //
 // Direct Method related notes:
 // - Invoking the method named "LedColorControlMethod" with a payload containing '{"color":"red"}'
@@ -45,13 +47,14 @@
 //
 // Device Twin related notes:
 // - Setting LedBlinkRateProperty in the Device Twin to a value from 0 to 2 causes the sample to
-//   update the blink rate of LED 1 accordingly, e.g '{"LedBlinkRateProperty": 2}';
+//   update the blink rate of LED 1 accordingly, e.g '{"LedBlinkRateProperty": { "value" : 2 }}';
 // - Upon receipt of the LedBlinkRateProperty desired value from the IoT hub, the sample updates
 //   the device twin on the IoT hub with the new value for LedBlinkRateProperty.
 // - Pressing button A causes the sample to report the blink rate to the device
 //   twin on the IoT Hub.
 
 // This sample uses the API for the following Azure Sphere application libraries:
+// - i2c (serial port for BME280 sensor);
 // - gpio (digital input for button);
 // - log (messages shown in Visual Studio's Device Output window during debugging);
 // - wificonfig (configure WiFi settings);
@@ -100,7 +103,12 @@ static const int AzureIoTMaxReconnectPeriodSeconds = 10 * 60;
 
 static int azureIoTPollPeriodSeconds = -1;
 
-static const char strJsonFormat[] = "{\"temperature\":%0.2f,\"pressure\":%0.2f,\"humidity\":%0.2f}";
+static const char cstrJsonTelemetry[] = "{\"temperature\":%0.2f,\"pressure\":%0.2f,\"humidity\":%0.2f}";
+//static const char cstrJsonEvent[] = "{\"event\":\"%s\"}";
+static const char cstrJsonEvent[] = "{\"%s\":\"occurred\"}";
+static const char cstrEvtConnected[] = "connect";
+static const char cstrEvtButtonB[] = "buttonB";
+static const char cstrEvtButtonA[] = "buttonA";
 
 // LED state
 static RgbLed led1 = RGBLED_INIT_VALUE;
@@ -198,27 +206,51 @@ static void SetLedRate(const struct timespec *rate)
 }
 
 /// <summary>
-///     Sends a message to the IoT Hub.
+///     Sends an event to Azure IoT Central
 /// </summary>
-static void SendMessageToIoTHub(void)
+static void SendEventMessage(const char * cstrEvent)
+{
+	if (connectedToIoTHub) {
+		char strJsonData[128];
+		snprintf(strJsonData, sizeof(strJsonData), cstrJsonEvent, cstrEvent);
+		Log_Debug("[Send] %s\r\n", strJsonData);
+
+		// Send a message
+		AzureIoT_SendMessage(strJsonData);
+
+		// Set the send/receive LED2 to blink once immediately to indicate 
+		// the message has been queued.
+		BlinkLed2Once(RgbLedUtility_Colors_Green);
+	}
+	else {
+		Log_Debug("[Send] not connected to IoT Central: no event sent.\n");
+		BlinkLed2Once(RgbLedUtility_Colors_Red);
+	}
+}
+
+/// <summary>
+///     Sends a telemetry message to Azure IoT Central.
+/// </summary>
+static void SendTelemetryMessage(void)
 {
     if (connectedToIoTHub) {
 		bme280_data_t bmeData;
 		char strJsonData[128];
 		if (BME280_GetSensorData(&bmeData) == 0)
 		{
-			snprintf(strJsonData, sizeof(strJsonData), strJsonFormat,
+			snprintf(strJsonData, sizeof(strJsonData), cstrJsonTelemetry,
 				bmeData.temperature, bmeData.pressure/100.0, bmeData.humidity); // rebase pressure to hPa
-			Log_Debug("[SendMessage] %s\r\n",strJsonData);
+			Log_Debug("[Send] %s\r\n",strJsonData);
+
+			// Send a message
 			AzureIoT_SendMessage(strJsonData);
 
-			// Set the send/receive LED2 to blink once immediately to indicate the message has been
-			// queued.
+			// Set the send/receive LED2 to blink once immediately to indicate 
+			// the message has been queued.
 			BlinkLed2Once( RgbLedUtility_Colors_Green );
 		}
-        // Send a message
     } else {
-        Log_Debug("WARNING: Cannot send message: not connected to the IoT Hub.\n");
+		Log_Debug("[Send] not connected to IoT Central: no telemtry sent.\n");
 		BlinkLed2Once(RgbLedUtility_Colors_Red);
 	}
 }
@@ -391,6 +423,10 @@ colorNotFound:
 static void IoTHubConnectionStatusChanged(bool connected)
 {
     connectedToIoTHub = connected;
+	if (connectedToIoTHub)
+	{
+		SendEventMessage(cstrEvtConnected);
+	}
 }
 
 /// <summary>
@@ -466,17 +502,19 @@ static void ButtonPollTimerHandler(EventData *eventData)
         return;
     }
 
-    // If the button is pressed, change the LED blink interval, and update the Twin Device.
+    // If the button A is pressed, change the LED blink interval, and update the Twin Device.
     static GPIO_Value_Type blinkButtonState;
     if (IsButtonPressed(ledBlinkRateButtonGpioFd, &blinkButtonState)) {
         blinkIntervalIndex = (blinkIntervalIndex + 1) % blinkIntervalsCount;
         SetLedRate(&blinkIntervals[blinkIntervalIndex]);
+		SendEventMessage(cstrEvtButtonA);
     }
 
-    // If the button is pressed, send a message to the IoT Hub.
+    // If the button B is pressed, send a message to the IoT Hub.
     static GPIO_Value_Type messageButtonState;
     if (IsButtonPressed(sendMessageButtonGpioFd, &messageButtonState)) {
-        SendMessageToIoTHub();
+		SendEventMessage(cstrEvtButtonB);
+		SendTelemetryMessage();
     }
 }
 
@@ -535,7 +573,7 @@ static void TelemetryTimerHandler(EventData *eventData)
 		return;
 	}
 
-	SendMessageToIoTHub();
+	SendTelemetryMessage();
 }
 
 // event handler data structures. Only the event handler field needs to be populated.
