@@ -79,7 +79,7 @@ Most of the IO options on Azure Sphere are multiplexed between different functio
 For reference pls. find the different functional pinouts below:
 
 ## GPIOs
-![MT3620 GPIO-Ports](./Images/MT3620_DVB_GPIO.png)
+[![MT3620 GPIO-Ports](./Images/MT3620_DVB_GPIO_sm.png)](./Images/MT3620_DVB_GPIO.png)
 
 ## ISU blocks
 Azure Sphere has 4 so called ISU-Blocks (**I**2C, **S**PI, **U**ART) for serial communication with peripherals.
@@ -95,13 +95,11 @@ Pls. keep in mind that Azure Sphere runs on 3.3V !
 
 To raise voltage levels to standard RS232 levels (+/-15V) or when connecting to a 5V based 
 MCU such as the Arduino UNO you'll need level shifters, otherwise you'll eventually fry the Sphere chip.  
-![MT3620 UARTS](./Images/MT3620_DVB_UART_sm.png)
+[![MT3620 UARTS](./Images/MT3620_DVB_UART_sm.png)](./Images/MT3620_DVB_UART.png)
 
 ### I2C pinout
-![MT3620 I2C Ports](./Images/MT3620_DVB_I2C_sm.png)
-
+[![MT3620 I2C Ports](./Images/MT3620_DVB_I2C_sm.png)](./Images/MT3620_DVB_I2C.png)
 ### SPI pinout
-![MT3620 SPI-Ports](./Images/MT3620_DVB_SPI_sm.png)
 [![MT3620 SPI-Ports](./Images/MT3620_DVB_SPI_sm.png)](./Images/MT3620_DVB_SPI.png)
 
 # Disclaimer
