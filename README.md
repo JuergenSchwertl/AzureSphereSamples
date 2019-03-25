@@ -79,7 +79,7 @@ Most of the IO options on Azure Sphere are multiplexed between different functio
 For reference pls. find the different functional pinouts below:
 
 ## GPIOs
-![MT3620 GPIO-Ports and UARTS](./Images/MT3620_DVB_GPIO.png)
+![MT3620 GPIO-Ports](./Images/MT3620_DVB_GPIO.png)
 
 ## ISU blocks
 Azure Sphere has 4 so called ISU-Blocks (**I**2C, **S**PI, **U**ART) for serial communication with peripherals.
@@ -95,11 +95,29 @@ Pls. keep in mind that Azure Sphere runs on 3.3V !
 
 To raise voltage levels to standard RS232 levels (+/-15V) or when connecting to a 5V based 
 MCU such as the Arduino UNO you'll need level shifters, otherwise you'll eventually fry the Sphere chip.  
-![MT3620 GPIO-Ports and UARTS](./Images/MT3620_DVB_UART.png)
+![MT3620 UARTS](./Images/MT3620_DVB_UART_sm.png)
 
 ### I2C pinout
-![MT3620 GPIO-Ports and UARTS](./Images/MT3620_DVB_I2C.png)
+![MT3620 I2C Ports](./Images/MT3620_DVB_I2C_sm.png)
 
 ### SPI pinout
-![MT3620 GPIO-Ports and UARTS](./Images/MT3620_DVB_SPI.png)
+![MT3620 SPI-Ports](./Images/MT3620_DVB_SPI_sm.png)
+[![MT3620 SPI-Ports](./Images/MT3620_DVB_SPI_sm.png)](./Images/MT3620_DVB_SPI.png)
 
+# Disclaimer
+
+## Sample code – No Warranties
+THE SAMPLE CODE SOFTWARE IS PROVIDED “AS IS” AND WITHOUT WARRANTY.TO THE MAXIMUM EXTENT 
+PERMITTED BY LAW, MICROSOFT DISCLAIMS ANY AND ALL OTHER WARRANTIES, WHETHER EXPRESS OR 
+IMPLIED, INCLUDING, BUT NOT LIMITED TO, ANY IMPLIED WARRANTIES OF MERCHANTABILITY, 
+NON - INFRINGEMENT, OR FITNESS FOR A PARTICULAR PURPOSE, WHETHER ARISING BY A COURSE 
+OF DEALING, USAGE OR TRADE PRACTICE OR COURSE OF PERFORMANCE.
+In no event shall Microsoft, its licensors, the authors or copyright holders be liable 
+for any claim, damages or other liability, whether in an action of contract, tort or 
+otherwise, arising from, out of or in connection with the software or the use thereof.
+
+This code may contain errors and/or may not operate correctly. Microsoft undertakes no 
+duty to correct any errors or update the software.Your use of this code is optional and 
+subject to any license provided therewith or referenced therein, if any.Microsoft does 
+not provide you with any license or other rights to any Microsoft product or service 
+through the code provided to you.
