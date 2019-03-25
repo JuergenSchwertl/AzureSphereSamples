@@ -178,5 +178,7 @@ int BME280_GetSensorData(bme280_data_t *pData) {
 		return -1;
 	}
 
+	rslt = bme280_get_sensor_data(BME280_PRESS, (struct bme280_data *) pData, &dev);
+
 	return 0;
 }

@@ -505,7 +505,13 @@ static void ButtonPollTimerHandler(EventData *eventData)
     // If the button A is pressed, change the LED blink interval, and update the Twin Device.
     static GPIO_Value_Type blinkButtonState;
     if (IsButtonPressed(ledBlinkRateButtonGpioFd, &blinkButtonState)) {
-        blinkIntervalIndex = (blinkIntervalIndex + 1) % blinkIntervalsCount;
+
+
+		bme280_data_t data;
+		BME280_GetSensorData(&data);
+
+		
+		blinkIntervalIndex = (blinkIntervalIndex + 1) % blinkIntervalsCount;
         SetLedRate(&blinkIntervals[blinkIntervalIndex]);
 		SendEventMessage(cstrEvtButtonA);
     }
@@ -669,7 +675,7 @@ static int InitPeripheralsAndHandlers(void)
         return -1;
     }
 
-	i2cBME280Fd = BME280_Init(MT3620_I2C_ISU0, GROOVE_BME280_I2C_ADDRESS);
+	i2cBME280Fd = BME280_Init(MT3620_I2C_ISU2, GROOVE_BME280_I2C_ADDRESS);
 	if (i2cBME280Fd < 0) {
 		return -1;
 	}
