@@ -3,6 +3,7 @@
 #include <time.h>
 #include <memory.h>
 #include <applibs/log.h>
+#include <applibs/i2c.h>
 
 #include "libBME280.h"
 #include "bme280_defs.h"
@@ -119,40 +120,39 @@ void print_sensor_data(struct bme280_data *comp_data)
 }
 
 ///<summary>
-///Initialize I2C interface and BME280 sensor at device address
+///Initialize BME280 sensor at device address
 ///</summary>
-///<param name="i2cInterfaceId">Interface Id of Azure Sphere I2C ISU block</param>
-///<param name="i2cDeviceAddr">I2C bus address of BME 280 sensor</param>
-///<returns>i2c file descriptor if successful, -1 if error</returns>
-int BME280_Init(I2C_InterfaceId i2cInterfaceId, I2C_DeviceAddress i2cDeviceAddr)
+///<param name="i2cInterfaceFd">Interface Id of Azure Sphere I2C ISU block</param>
+///<param name="onPrimaryI2CAddress">use primary I2C bus address of BME 280 sensor</param>
+///<returns>true if successful, false if error</returns>
+bool BME280_Init(int i2cInterfaceFd, bool onPrimaryI2CAddress)
 {
 	int8_t rslt = BME280_OK;
-	
-	if ((i2cFd = I2CMaster_Open(i2cInterfaceId)) < 0)
-	{
-		return -1;
-	}
-	dev.dev_id = (uint8_t) i2cDeviceAddr;
+
+	i2cFd = i2cInterfaceFd;
+	dev.dev_id = onPrimaryI2CAddress ? BME280_I2C_ADDR_PRIM : BME280_I2C_ADDR_SEC;
 	
 	if ((rslt = bme280_init(&dev)) != BME280_OK)
 	{
-		return -1;
+		Log_Debug("ERROR: could not initialize BME280");
+		return false;
 	}
 
 	uint8_t settings_sel = BME280_OSR_PRESS_SEL | BME280_OSR_TEMP_SEL | BME280_OSR_HUM_SEL | BME280_FILTER_SEL | BME280_STANDBY_SEL;
 
 	if ((rslt = bme280_set_sensor_settings(settings_sel, &dev)) != BME280_OK)
 	{
-		return -1;
+		Log_Debug("ERROR: could not set BME280 sensor settings");
+		return false;
 	}
 
 	if ((rslt = bme280_set_sensor_mode(BME280_NORMAL_MODE, &dev)) != BME280_OK)
 	{
-		return -1;
+		Log_Debug("ERROR: could not set BME280 sensor mode");
+		return false;
 	}
 
-	Log_Debug("[BME280] initialisation completed.\n");
-	return i2cFd;
+	return true;
 }
 
 ///<summary>
@@ -162,23 +162,23 @@ int BME280_Init(I2C_InterfaceId i2cInterfaceId, I2C_DeviceAddress i2cDeviceAddr)
 ///<returns>0 if successful, -1 if error</returns>
 int BME280_GetSensorData(bme280_data_t *pData) {
 	int8_t rslt = BME280_OK;
+	struct bme280_data comp_data;
 
 #ifndef BME280_FLOAT_ENABLE
-	struct bme280_data comp_data;
 	rslt = bme280_get_sensor_data(BME280_ALL, &comp_data, &dev);
-	print_sensor_data(&comp_data);
-	/// [JSchwert] work in progress to get the compressed data structure converted
+	pData->temperature = ((double)comp_data.temperature) / 100;
+	pData->humidity = ((double)comp_data.humidity) / 1000;
+	pData->pressure = ((double)comp_data.pressure) / 1000;
 #else
-	rslt = bme280_get_sensor_data(BME280_ALL, (struct bme280_data *) pData, &dev);
-
-	print_sensor_data((struct bme280_data *) pData);
+	rslt = bme280_get_sensor_data(BME280_ALL, &comp_data, &dev);
+	pData->temperature = comp_data.temperature;
+	pData->humidity = comp_data.humidity;
+	pData->pressure = comp_data.pressure / 100.0; // normalize to hPa
 #endif
 	if (rslt != BME280_OK)
 	{
 		return -1;
 	}
-
-	rslt = bme280_get_sensor_data(BME280_PRESS, (struct bme280_data *) pData, &dev);
-
+	print_sensor_data(&comp_data);
 	return 0;
 }

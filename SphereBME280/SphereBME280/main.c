@@ -124,7 +124,7 @@ static bool blinkingLedState;
 // A null period to not start the timer when it is created with CreateTimerFdAndAddToEpoll.
 static const struct timespec nullPeriod = {0, 0};
 static const struct timespec defaultBlinkTimeLed2 = {0, 300 * 1000 * 1000};
-static const struct timespec errorBlinkTimeLed2 = { 1, 0 };
+//static const struct timespec errorBlinkTimeLed2 = { 1, 0 };
 
 // Connectivity state
 static bool connectedToIoTHub = false;
@@ -239,7 +239,7 @@ static void SendTelemetryMessage(void)
 		if (BME280_GetSensorData(&bmeData) == 0)
 		{
 			snprintf(strJsonData, sizeof(strJsonData), cstrJsonTelemetry,
-				bmeData.temperature, bmeData.pressure/100.0, bmeData.humidity); // rebase pressure to hPa
+				bmeData.temperature, bmeData.pressure, bmeData.humidity); //
 			Log_Debug("[Send] %s\r\n",strJsonData);
 
 			// Send a message
@@ -675,8 +675,15 @@ static int InitPeripheralsAndHandlers(void)
         return -1;
     }
 
-	i2cBME280Fd = BME280_Init(MT3620_I2C_ISU2, GROOVE_BME280_I2C_ADDRESS);
-	if (i2cBME280Fd < 0) {
+	Log_Debug("INFO: Opening MT3620_I2C_ISU2.\n");
+	if ((i2cBME280Fd = I2CMaster_Open(MT3620_I2C_ISU2)) < 0)
+	{
+		return -1;
+	}
+
+	Log_Debug("INFO: Initializing BME280 I2C sensor on primary address.\n");
+	bool bInitSuccessful = BME280_Init(i2cBME280Fd, GROOVE_BME280_I2C_ADDRESS);
+	if (!bInitSuccessful) {
 		return -1;
 	}
 

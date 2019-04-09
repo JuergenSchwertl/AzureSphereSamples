@@ -42,8 +42,8 @@
   <PropertyGroup Label="UserMacros" />
   <ItemDefinitionGroup>
     <ClCompile>
-      <AdditionalOptions>-Werror=implicit-function-declaration %(AdditionalOptions)</AdditionalOptions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">_POSIX_C_SOURCE;%(PreprocessorDefinitions);__BME280_FLOAT_ENABLE</PreprocessorDefinitions>
+      <AdditionalOptions>-Werror=implicit-function-declaration %(AdditionalOptions) -Wa,-adhln=$(IntDir)%(filename).s -g -fverbose-asm </AdditionalOptions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">_POSIX_C_SOURCE;%(PreprocessorDefinitions);zzBME280_FLOAT_ENABLE</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>

@@ -440,9 +440,9 @@ int8_t bme280_set_regs(uint8_t *reg_addr, const uint8_t *reg_data, uint8_t len, 
 				/* Interleave register address w.r.t data for
 				burst write*/
 				interleave_reg_addr(reg_addr, temp_buff, reg_data, len);
-				temp_len = ((len * 2) - 1);
+				temp_len = (uint16_t)(((uint16_t)len * 2) - 1);
 			} else {
-				temp_len = len;
+				temp_len = (uint16_t)len;
 			}
 			rslt = dev->write(dev->dev_id, reg_addr[0], temp_buff, temp_len);
 			/* Check for communication error */
@@ -1196,21 +1196,54 @@ static void interleave_reg_addr(const uint8_t *reg_addr, uint8_t *temp_buff, con
  */
 static void parse_temp_press_calib_data(const uint8_t *reg_data, struct bme280_dev *dev)
 {
-	struct bme280_calib_data *calib_data = &dev->calib_data;
-
-	calib_data->dig_T1 = BME280_CONCAT_BYTES(reg_data[1], reg_data[0]);
-	calib_data->dig_T2 = (int16_t)BME280_CONCAT_BYTES(reg_data[3], reg_data[2]);
-	calib_data->dig_T3 = (int16_t)BME280_CONCAT_BYTES(reg_data[5], reg_data[4]);
-	calib_data->dig_P1 = BME280_CONCAT_BYTES(reg_data[7], reg_data[6]);
-	calib_data->dig_P2 = (int16_t)BME280_CONCAT_BYTES(reg_data[9], reg_data[8]);
-	calib_data->dig_P3 = (int16_t)BME280_CONCAT_BYTES(reg_data[11], reg_data[10]);
-	calib_data->dig_P4 = (int16_t)BME280_CONCAT_BYTES(reg_data[13], reg_data[12]);
-	calib_data->dig_P5 = (int16_t)BME280_CONCAT_BYTES(reg_data[15], reg_data[14]);
-	calib_data->dig_P6 = (int16_t)BME280_CONCAT_BYTES(reg_data[17], reg_data[16]);
-	calib_data->dig_P7 = (int16_t)BME280_CONCAT_BYTES(reg_data[19], reg_data[18]);
-	calib_data->dig_P8 = (int16_t)BME280_CONCAT_BYTES(reg_data[21], reg_data[20]);
-	calib_data->dig_P9 = (int16_t)BME280_CONCAT_BYTES(reg_data[23], reg_data[22]);
-	calib_data->dig_H1 = reg_data[25];
+	//[JSchwert] use builtin ARM intrinsics to convert big-endian to little-endian
+	register const uint8_t * data = reg_data;
+	register struct bme280_calib_data *calib_data = &dev->calib_data;
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+	calib_data->dig_T1 = __builtin_bswap16(*((unsigned short *)&data[0]));
+	calib_data->dig_T2 = (int16_t)__builtin_bswap16(*((unsigned short *)&data[2]));
+	calib_data->dig_T3 = (int16_t)__builtin_bswap16(*((unsigned short *)&data[4]));
+	calib_data->dig_P1 = __builtin_bswap16(*((unsigned short *)&data[6]));
+	calib_data->dig_P2 = (int16_t)__builtin_bswap16(*((unsigned short *)&data[8]));;
+	calib_data->dig_P3 = (int16_t)__builtin_bswap16(*((unsigned short *)&data[10]));
+	calib_data->dig_P4 = (int16_t)__builtin_bswap16(*((unsigned short *)&data[12]));
+	calib_data->dig_P5 = (int16_t)__builtin_bswap16(*((unsigned short *)&data[14]));
+	calib_data->dig_P6 = (int16_t)__builtin_bswap16(*((unsigned short *)&data[16]));
+	calib_data->dig_P7 = (int16_t)__builtin_bswap16(*((unsigned short *)&data[18]));
+	calib_data->dig_P8 = (int16_t)__builtin_bswap16(*((unsigned short *)&data[20]));
+	calib_data->dig_P9 = (int16_t)__builtin_bswap16(*((unsigned short *)&data[22]));
+	calib_data->dig_H1 = data[25];
+#else
+	calib_data->dig_T1 = *((unsigned short *)&data[0]);
+	calib_data->dig_T2 = (int16_t)(*((unsigned short *)&data[2]));
+	calib_data->dig_T3 = (int16_t)(*((unsigned short *)&data[4]));
+	calib_data->dig_P1 = *((unsigned short *)&data[6]);
+	calib_data->dig_P2 = (int16_t)(*((unsigned short *)&data[8]));;
+	calib_data->dig_P3 = (int16_t)(*((unsigned short *)&data[10]));
+	calib_data->dig_P4 = (int16_t)(*((unsigned short *)&data[12]));
+	calib_data->dig_P5 = (int16_t)(*((unsigned short *)&data[14]));
+	calib_data->dig_P6 = (int16_t)(*((unsigned short *)&data[16]));
+	calib_data->dig_P7 = (int16_t)(*((unsigned short *)&data[18]));
+	calib_data->dig_P8 = (int16_t)(*((unsigned short *)&data[20]));
+	calib_data->dig_P9 = (int16_t)(*((unsigned short *)&data[22]));
+	calib_data->dig_H1 = data[25];
+#endif
+	////[JSchwert] originally this was using complex byte shifting 
+	//struct bme280_calib_data *calib_data = &dev->calib_data;
+	//
+	//calib_data->dig_T1 = BME280_CONCAT_BYTES(reg_data[1], reg_data[0]);
+	//calib_data->dig_T2 = (int16_t)BME280_CONCAT_BYTES(reg_data[3], reg_data[2]);
+	//calib_data->dig_T3 = (int16_t)BME280_CONCAT_BYTES(reg_data[5], reg_data[4]);
+	//calib_data->dig_P1 = BME280_CONCAT_BYTES(reg_data[7], reg_data[6]);
+	//calib_data->dig_P2 = (int16_t)BME280_CONCAT_BYTES(reg_data[9], reg_data[8]);
+	//calib_data->dig_P3 = (int16_t)BME280_CONCAT_BYTES(reg_data[11], reg_data[10]);
+	//calib_data->dig_P4 = (int16_t)BME280_CONCAT_BYTES(reg_data[13], reg_data[12]);
+	//calib_data->dig_P5 = (int16_t)BME280_CONCAT_BYTES(reg_data[15], reg_data[14]);
+	//calib_data->dig_P6 = (int16_t)BME280_CONCAT_BYTES(reg_data[17], reg_data[16]);
+	//calib_data->dig_P7 = (int16_t)BME280_CONCAT_BYTES(reg_data[19], reg_data[18]);
+	//calib_data->dig_P8 = (int16_t)BME280_CONCAT_BYTES(reg_data[21], reg_data[20]);
+	//calib_data->dig_P9 = (int16_t)BME280_CONCAT_BYTES(reg_data[23], reg_data[22]);
+	//calib_data->dig_H1 = reg_data[25];
 
 }
 
@@ -1221,21 +1254,32 @@ static void parse_temp_press_calib_data(const uint8_t *reg_data, struct bme280_d
 static void parse_humidity_calib_data(const uint8_t *reg_data, struct bme280_dev *dev)
 {
 	struct bme280_calib_data *calib_data = &dev->calib_data;
-	int16_t dig_H4_lsb;
-	int16_t dig_H4_msb;
-	int16_t dig_H5_lsb;
-	int16_t dig_H5_msb;
+	//int16_t dig_H4_lsb;
+	//int16_t dig_H4_msb;
+	//int16_t dig_H5_lsb;
+	//int16_t dig_H5_msb;
 
-	calib_data->dig_H2 = (int16_t)BME280_CONCAT_BYTES(reg_data[1], reg_data[0]);
+	//[JSchwert] use builtin ARM intrinsic to convert big-endian to little-endian
+	//calib_data->dig_H2 = (int16_t)BME280_CONCAT_BYTES(reg_data[1], reg_data[0]);
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+	calib_data->dig_H2 = (int16_t)__builtin_bswap16(*((unsigned short *)&reg_data[0]));
+#else
+	calib_data->dig_H2 = (int16_t)(*((unsigned short *)&reg_data[0]));
+#endif
 	calib_data->dig_H3 = reg_data[2];
 
-	dig_H4_msb = (int16_t)(int8_t)reg_data[3] * 16;
-	dig_H4_lsb = (int16_t)(reg_data[4] & 0x0F);
-	calib_data->dig_H4 = dig_H4_msb | dig_H4_lsb;
+	//dig_H4_msb = (int16_t)(int8_t)reg_data[3] * 16;
+	//dig_H4_lsb = (int16_t)(reg_data[4] & 0x0F);
+	//calib_data->dig_H4 = dig_H4_msb | dig_H4_lsb;
 
-	dig_H5_msb = (int16_t)(int8_t)reg_data[5] * 16;
-	dig_H5_lsb = (int16_t)(reg_data[4] >> 4);
-	calib_data->dig_H5 = dig_H5_msb | dig_H5_lsb;
+	//[JSchwert]
+	calib_data->dig_H4 = (int16_t)((((int16_t)reg_data[3]) << 4) | ((int16_t)(reg_data[4] & 0x0F)));
+
+	//dig_H5_msb = (int16_t)(int8_t)reg_data[5] * 16;
+	//dig_H5_lsb = (int16_t)(reg_data[4] >> 4);
+	//calib_data->dig_H5 = dig_H5_msb | dig_H5_lsb;
+	calib_data->dig_H5 = (int16_t)((((int16_t)reg_data[5]) << 4) | ((int16_t)((reg_data[4] >> 4) & 0x0F)));
+
 	calib_data->dig_H6 = (int8_t)reg_data[6];
 }
 

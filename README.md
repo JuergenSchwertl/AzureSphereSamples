@@ -27,7 +27,7 @@ To follow the code samples please clone the following GitHub repositories:
 ## Lab Getting started
 Please follow the steps as outlined in [Install Azure Sphere](https://docs.microsoft.com/en-us/azure-sphere/install/overview)
 * [Install the Azure Sphere SDK](https://docs.microsoft.com/en-us/azure-sphere/install/install) and set up your development board
-* [Install the 18.11 OS release](https://docs.microsoft.com/en-us/azure-sphere/install/install-1811-os)
+* [Install the latest Azure Sphere OS release](https://docs.microsoft.com/en-us/azure-sphere/install/install-os)
 * [Set up an account](https://docs.microsoft.com/en-us/azure-sphere/install/azure-directory-account) to authenticate with Microsoft Azure
 * [Claim your device](https://docs.microsoft.com/en-us/azure-sphere/install/claim-device)
 * [Configure Wi-Fi](https://docs.microsoft.com/en-us/azure-sphere/install/configure-wifi)
