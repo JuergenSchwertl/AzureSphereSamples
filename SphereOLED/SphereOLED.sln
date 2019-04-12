@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.489
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SphereOLED", "SphereOLED\SphereOLED.vcxproj", "{10F4D4BF-9E70-4812-A5E3-7D73F805B942}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OLEDlib", "OLEDlib\OLEDlib.vcxproj", "{E981E727-95D0-4C7C-B511-C967295DEB3A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|ARM = Debug|ARM
+		Release|ARM = Release|ARM
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{10F4D4BF-9E70-4812-A5E3-7D73F805B942}.Debug|ARM.ActiveCfg = Debug|ARM
+		{10F4D4BF-9E70-4812-A5E3-7D73F805B942}.Debug|ARM.Build.0 = Debug|ARM
+		{10F4D4BF-9E70-4812-A5E3-7D73F805B942}.Release|ARM.ActiveCfg = Release|ARM
+		{10F4D4BF-9E70-4812-A5E3-7D73F805B942}.Release|ARM.Build.0 = Release|ARM
+		{E981E727-95D0-4C7C-B511-C967295DEB3A}.Debug|ARM.ActiveCfg = Debug|ARM
+		{E981E727-95D0-4C7C-B511-C967295DEB3A}.Debug|ARM.Build.0 = Debug|ARM
+		{E981E727-95D0-4C7C-B511-C967295DEB3A}.Release|ARM.ActiveCfg = Release|ARM
+		{E981E727-95D0-4C7C-B511-C967295DEB3A}.Release|ARM.Build.0 = Release|ARM
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B225F404-935D-405B-AD04-AD135EF3051B}
+	EndGlobalSection
+EndGlobal
