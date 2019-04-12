@@ -5,7 +5,7 @@
   "EntryPoint": "/bin/app",
   "CmdArgs": [],
   "Capabilities": {
-    "AllowedConnections": [ "global.azure-devices-provisioning.net", "iotc-fa52149d-5584-4424-8189-f36d910f5902.azure-devices.net" ],
+    "AllowedConnections": [  ],
     "AllowedTcpServerPorts": [],
     "AllowedUdpServerPorts": [],
     "Gpio": [ 8, 9, 10, 15, 16, 17, 18, 19, 20, 12, 13, 48, 14, 11 ],
@@ -14,7 +14,6 @@
     "SpiMaster": [],
     "WifiConfig": true,
     "NetworkConfig": false,
-    "SystemTime": false,
-    "DeviceAuthentication": "c0b88764-9273-46ab-bab2-effecf13f91c"
+    "SystemTime": false
   }
 }

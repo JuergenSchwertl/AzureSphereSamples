@@ -41,12 +41,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
   </PropertyGroup>
   <ItemGroup>
-    <ClCompile Include="azure_iot_utilities.c" />
     <ClCompile Include="main.c" />
-    <ClCompile Include="parson.c" />
     <ClCompile Include="rgbled_utility.c" />
-    <ClInclude Include="azure_iot_utilities.h" />
-    <ClInclude Include="parson.h" />
     <ClInclude Include="rgbled_utility.h" />
     <ClInclude Include="mt3620_rdb.h" />
     <ClInclude Include="applibs_versions.h" />
@@ -77,7 +73,7 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|ARM'"> $(SysRoot)\usr\include\azureiot;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile>
-      <AdditionalOptions>-Werror=implicit-function-declaration  -D AZURE_IOT_HUB_CONFIGURED %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>-Werror=implicit-function-declaration  %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
   </ItemDefinitionGroup>
 </Project>

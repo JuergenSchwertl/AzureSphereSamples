@@ -4,7 +4,7 @@ Azure Sphere Samples for connected MCU and DHT sensor.
 
 Prerequisites:
 Please make sure to have a Windows 10 laptop capable of running Visual Studio 2017 (at least Visual Studio 
-CS Community Edition v15.7, most current version is 15.9.7) with Azure Sphere SDK already installed and a free
+CS Community Edition v15.7 or newer) with Azure Sphere SDK already installed and a free
 USB port available. 
 * Visual Studio 2017 Download: https://visualstudio.microsoft.com/vs/
 * Azure Sphere SDK: https://aka.ms/azurespheresdkdownload
