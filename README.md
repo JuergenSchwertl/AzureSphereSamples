@@ -64,7 +64,7 @@ Please follow the steps as outlined in [MCUtoMt3620ToAzure.pdf](https://github.c
 ## Lab #5: Bluetooth provisioning of WiFi Credentials
 For this lab you'll need the Azure Sphere Teams [Azure Sphere Samples repo](https://github.com/Azure/azure-sphere-samples/) cloned.
 
-Please follow the steps as outlined in [BLE-based Wi-Fi setup](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/WifiConfigViaBle) 
+Please follow the steps as outlined in [WifiSetupAndDeviceControlViaBle](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/WifiSetupAndDeviceControlViaBle) 
 to connect the [Nordic Semiconductor nRF52 Development Kit](https://www.nordicsemi.com/Software-and-Tools/Development-Kits/nRF52-DK)
 
 ## Lab #6: Updating an external MCU Firmware
@@ -72,6 +72,11 @@ For this lab you'll need the Azure Sphere Teams [Azure Sphere Samples repo](http
 
 Please follow the steps as outlined in [External MCU Update](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/ExternalMcuUpdateNrf52) 
 which uses the same [Nordic Semiconductor nRF52 Development Kit](https://www.nordicsemi.com/Software-and-Tools/Development-Kits/nRF52-DK).
+
+## Lab #7: Connecting an I2C sensor (Bosch BME280) and send telemetry to Azure IoT Central
+For the next lab we'll need [this repo](https://github.com/JuergenSchwertl/AzureSphereSamples) cloned.
+Please follow the steps as outlined in [Mt3620DirectDHT.pdf](https://github.com/JuergenSchwertl/AzureSphereSamples/blob/master/Mt3620DirectDHT/MT3620DirectDHT.pdf)
+to connect the DHT sensor and send telemetry data. It also contains hints to extend the ePoll event_data_t structure to enable event context handling.
 
 
 # Mt3620 Development Board pinouts
