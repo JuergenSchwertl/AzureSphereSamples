@@ -3,13 +3,13 @@ This repo contains sources and links for Azure Sphere Bootcamp labs, amongst oth
 Azure Sphere Samples for connected MCU and DHT sensor.
 
 Prerequisites:
-Please make sure to have a Windows 10 laptop capable of running Visual Studio 2017 (at least Visual Studio 
-CS Community Edition v15.7 or newer) with Azure Sphere SDK already installed and a free
+Please make sure to have a Windows 10 laptop capable of running Visual Studio 2019 or Visual Studio 2017 (at least Visual Studio 
+CS Community Edition v15.9 or newer) with Azure Sphere SDK already installed and a free
 USB port available. 
-* Visual Studio 2017 Download: https://visualstudio.microsoft.com/vs/
+* Visual Studio 2019 Download: https://visualstudio.microsoft.com/vs/
 * Azure Sphere SDK: https://aka.ms/azurespheresdkdownload
 
-Although the SDK package is ~100MB, during the installation it may download up to 1GB of Visual Studio 
+Although the SDK package is ~150MB, during the installation it may download up to 1GB of Visual Studio 
 Components, so we strongly recommend to have the SDK preinstalled.
 
 You will also need an active Azure subscription and a user account with subscription admin rights to add 
@@ -31,6 +31,12 @@ Please follow the steps as outlined in [Install Azure Sphere](https://docs.micro
 * [Set up an account](https://docs.microsoft.com/en-us/azure-sphere/install/azure-directory-account) to authenticate with Microsoft Azure
 * [Claim your device](https://docs.microsoft.com/en-us/azure-sphere/install/claim-device)
 * [Configure Wi-Fi](https://docs.microsoft.com/en-us/azure-sphere/install/configure-wifi)
+
+**Please note**
+> If you setup your account to create an Azure Sphere tenant, you will need to use a user account in your own Azure Active Directory.
+> I.e. if you accidentally choose your Microsoft Account ( myname@outlook.com ) it would try to create a tenant in the Outlook.com directory
+> where you likely won't have sufficient user permissions to add Enterprise Applications!
+> If you choose to use your corporate account, make sure your AAD administrator has setup your account with the appropriate permissions.
 
 ## Lab #1: Setup Azure IoT Hub and Azure IoT Hub Device Provisioning Service
 Please follow the steps as outlined in [Set up an IoT Hub for Azure Sphere](https://docs.microsoft.com/en-us/azure-sphere/app-development/setup-iot-hub).
