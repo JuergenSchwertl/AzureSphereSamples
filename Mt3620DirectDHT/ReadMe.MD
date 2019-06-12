@@ -127,7 +127,7 @@ Line 22ff are now commented out as the Add Connected Service wizard added a defi
  (RightClick Mt3620DirectDHT-Project->Properties and go to Configuration Properties->C/C++->All Options and check "Additional Options" to 
 contain "-D AZURE_IOT_HUB_CONFIGURED".
 
-![MT3620DirectDHT-main.c](./images/DHT_Main_Includes.png)
+![MT3620DirectDHT-main.c](./images/DHT_Main_Includes.PNG)
 
 Lines 176ff reads the sensor data from the hard coded GPIO (GPIO0) and converts to json format.
 
