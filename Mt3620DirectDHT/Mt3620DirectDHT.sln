@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27703.2026
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29001.49
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Mt3620DirectDHT", "Mt3620DirectDHT\Mt3620DirectDHT.vcxproj", "{70E28D56-50E5-4D97-B4B5-1758EFCAE7E3}"
 EndProject
@@ -11,6 +11,19 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		azure_iot_utilities-snippets.txt = azure_iot_utilities-snippets.txt
 		MT3620DirectDHT.pdf = MT3620DirectDHT.pdf
+		ReadMe.MD = ReadMe.MD
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "images", "images", "{0729BF2A-540E-48D6-9BFC-033AD7E167F7}"
+	ProjectSection(SolutionItems) = preProject
+		images\DHT_ButtonOutput.PNG = images\DHT_ButtonOutput.PNG
+		images\DHT_MessageReceived.PNG = images\DHT_MessageReceived.PNG
+		images\DHT_MethodOutput.PNG = images\DHT_MethodOutput.PNG
+		images\DHT_ReadDataMethod.PNG = images\DHT_ReadDataMethod.PNG
+		images\DHT_TwinReportJSon.PNG = images\DHT_TwinReportJSon.PNG
+		images\DHT_Wiring.png = images\DHT_Wiring.png
+		images\Lab_DirectDHT.png = images\Lab_DirectDHT.png
+		images\VS_Add_Connected_Service.png = images\VS_Add_Connected_Service.png
 	EndProjectSection
 EndProject
 Global
@@ -30,6 +43,9 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{0729BF2A-540E-48D6-9BFC-033AD7E167F7} = {32B2BAAB-6A22-4054-AC45-9EACC6CF2DE2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {3D6065DA-437A-4F5B-9E11-9A4E2ED9867C}
