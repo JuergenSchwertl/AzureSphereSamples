@@ -59,7 +59,7 @@ You may want to install the [Azure IoT SDK Device Explorer](https://github.com/A
 
 ## Lab #3: Connecting a DHT sensor and send telemetry to Azure IoT Hub
 For the next lab we'll need [this repo](https://github.com/JuergenSchwertl/AzureSphereSamples) cloned.
-Please follow the steps as outlined in [Mt3620DirectDHT](./Mt3620DirectDHT/ReadMe.md)
+Please follow the steps as outlined in [Mt3620DirectDHT](./Mt3620DirectDHT/ReadMe.MD)
 to connect the DHT sensor and send telemetry data. It also contains hints to extend the ePoll event_data_t structure to enable event context handling.
 
 ## Lab #4: Connecting another MCU through UART
