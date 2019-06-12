@@ -4,7 +4,7 @@
   "ComponentId": "D0B43190-0101-4944-97B7-F1717906C237",
   "TargetApplicationRuntimeVersion": 2,
   "EntryPoint": "/bin/app",
-  "CmdArgs": [ ],
+  "CmdArgs": [  ],
   "Capabilities": {
     "AllowedConnections": [  ],
     "Gpio": [ 0, 12, 13, 8, 9, 10, 15, 16, 17, 18, 19, 20, 48, 14, 11 ],
