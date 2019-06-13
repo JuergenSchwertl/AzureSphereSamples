@@ -24,7 +24,7 @@ Assemble the hardware by attaching the DHT sensor to the MT3620, using the follo
 
 ![MT3620 with connected DHT11 sensor](./images/Lab_DirectDHT.png)
 
-For information on the pinout of the board see [GPIO pinout](../#gpios).
+For information on the pinout of the board see [GPIO pinout](../README.MD#gpios).
 
 ### Modifying the code
 
@@ -164,7 +164,7 @@ to consume some cycles, the counter loop though may miss one or more state trans
 If you run this sample application for a while, you'll see that every once in a while the sensor reading reports an error reading the data.
 
 ---
-[Back to root](../)
+[Back to root](../README.MD)
 
 
 

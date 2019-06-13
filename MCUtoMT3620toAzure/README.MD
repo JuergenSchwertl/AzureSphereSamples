@@ -54,7 +54,7 @@ You can use Azure Sphere 3.3V power out and ground to power the auxiliary MCU.
 
 ![NodeMCU wired up](./images/Lab_UART_Jumpers.png "NodeMCU wiring")
  
-For information on the pinout of the board see [GPIO pinout](../#uart-pinout).
+For information on the pinout of the board see [GPIO pinout](../README.MD#uart-pinout).
 
 ## Wiring the devices (for Arduino UNO R3)
 
@@ -206,14 +206,14 @@ Lines 19 - 20 include UART and MCU utilities that are not part of the Azure Sphe
 [MCUtoMT3620toAzure/main.c Line 19ff](./MCUtoMT3620toAzure/main.c#L169)
  
 ## Reviewing the code (*UART_utilities.c*)
-?
-[*UART_utilities.c* `UART_InitializeAndAddToEpoll`](MCUtoMT3620toAzure/UART_utilities.c#L116) configures the settings for the UART, 
+
+[`UART_InitializeAndAddToEpoll`](MCUtoMT3620toAzure/UART_utilities.c#L116) configures the settings for the UART, 
 opens the UART file descriptor and registers the epoll event handler.
 >Make sure you have added the "ISU0" capability in the *appmanifest.json*.
  
-[*UART_utilities.c* `handleUartEvent`](MCUtoMT3620toAzure/UART_utilities.c#L45) reads incoming data from the UART into the ring buffer 
+[`handleUartEvent`](MCUtoMT3620toAzure/UART_utilities.c#L45) reads incoming data from the UART into the ring buffer 
 and then searches the buffer for `LINE_DELIMITER` characters. For each received line it calls another event handler
- ([*MCU_utilities.c* `MCU_ParseDataToIotHub`](./MCUtoMT3620toAzure/MCU_utilities.c#L173)).
+ ([*MCU_utilities.c*`MCU_ParseDataToIotHub`](./MCUtoMT3620toAzure/MCU_utilities.c#L173)).
  
 You can add the following line to *UART_utilities.h* to get more verbose output on the fragments that are being read in the event handler. 
 ```C
@@ -222,15 +222,15 @@ You can add the following line to *UART_utilities.h* to get more verbose output 
 
 ## Reviewing the code (*MCU_utilities.c*)
 
-[*MCU_utilities.c* `MCU_ParseDataToIotHub`](./MCUtoMT3620toAzure/MCU_utilities.c#L173) parses the incoming line in the 
-format "key:value;key:value" in [*MCU_utilities.c* `parseMessage`](./MCUtoMT3620toAzure/MCU_utilities.c#L78) and extract the Temperature and
-Humidity in [*MCU_utilities.c* `parseKeyValue`](./MCUtoMT3620toAzure/MCU_utilities.c#L58) and then sends the values to IoT Hub in 
-[*MCU_utilities.c* `checkAndSendTelemetry`](./MCUtoMT3620toAzure/MCU_utilities.c#L97) and potentially updates the Device Twin 
-in [*MCU_utilities.c* `checkAndUpdateDeviceTwin`](./MCUtoMT3620toAzure/MCU_utilities.c#L130).
+[`MCU_ParseDataToIotHub`](./MCUtoMT3620toAzure/MCU_utilities.c#L173) parses the incoming line in the 
+format "key:value;key:value" in [`parseMessage`](./MCUtoMT3620toAzure/MCU_utilities.c#L78) and extract the Temperature and
+Humidity in [`parseKeyValue`](./MCUtoMT3620toAzure/MCU_utilities.c#L58) and then sends the values to IoT Hub in 
+[`checkAndSendTelemetry`](./MCUtoMT3620toAzure/MCU_utilities.c#L97) and potentially updates the Device Twin 
+in [`checkAndUpdateDeviceTwin`](./MCUtoMT3620toAzure/MCU_utilities.c#L130).
 
 
 You may continue reviewing both *UART_utilities.h/UART_utilities.c* and *MCU_utilities.h/ MCU_utilities.c* as time allows.
 
 ---
 
-[Back to root](../)
+[Back to root](../README.MD)
