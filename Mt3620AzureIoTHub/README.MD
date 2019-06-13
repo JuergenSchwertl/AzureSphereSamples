@@ -1,11 +1,10 @@
-# Lab Azure IoT Hub
+# Lab #1 Azure IoT Hub connected application
 
 Once you've verified that your Azure Sphere board runs your first application and you've setup Azure IoT Hub and the 
 Azure IoT Hub Device Provisioning Service, you're ready to go to connect Azure Sphere to Azure IoT Hub:
 
-
-Step 1.	In Visual Studio, open Mt3620DirectDHT\Mt3620DirectDHT.sln
-Step 2.	In the Solution Explorer, under the Mt3620DirectDHT solution, right click on Reference and “Add Connected Service” as shown below:
+Step 1.	In Visual Studio, open Mt3620AzureIoTHub\Mt3620AzureIoTHub.sln
+Step 2.	In the Solution Explorer, under the Mt3620AzureIoTHub solution, right click on Reference and “Add Connected Service” as shown below:
 
 ![Add Connected Service](./images/VS_Add_Connected_Service.png)
 

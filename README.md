@@ -1,4 +1,4 @@
-# AzureSphereSamples
+# AzureSphereSamples for 19.05 Azure Sphere SDK
 This repo contains sources and links for Azure Sphere Bootcamp labs, amongst others 
 Azure Sphere Samples for connected MCU and DHT sensor.
 
@@ -20,7 +20,7 @@ Enterprise Application entries to your Azure Active Directory and create Azure R
 amongst others potentially.
 
 To follow the code samples please clone the following GitHub repositories:
-* [This repo](https://github.com/JuergenSchwertl/AzureSphereSamples)
+* [This AzureSphereSamples repo](https://github.com/JuergenSchwertl/AzureSphereSamples)
 * [The Azure Sphere Samples Repo](https://github.com/Azure/azure-sphere-samples/)
 
 
@@ -50,7 +50,7 @@ Please follow the steps as outlined in [Set up an IoT Hub for Azure Sphere](http
 > application template is no longer available in the 19.05 version of the SDK I've thus included it here as a ready made project.
 > For the next lab you'll therefore need [this repo](https://github.com/JuergenSchwertl/AzureSphereSamples) cloned.
 
-Please follow the steps outlined in [Azure IoT Hub Sample for Mt3620 RDB (Azure Sphere)](./Mt3620AzureIoTHub) to connect Azure Sphere to Azure IoT Hub.
+Please follow the steps outlined in [Mt3620AzureIoTHub](./Mt3620AzureIoTHub) to connect Azure Sphere to Azure IoT Hub.
 
 ## Lab #3: Connecting a DHT sensor and send telemetry to Azure IoT Hub
 Please follow the steps as outlined in [Mt3620DirectDHT](./Mt3620DirectDHT)
@@ -74,7 +74,7 @@ Please follow the steps as outlined in [External MCU Update](https://github.com/
 which uses the same [Nordic Semiconductor nRF52 Development Kit](https://www.nordicsemi.com/Software-and-Tools/Development-Kits/nRF52-DK).
 
 ## Lab #7: Connecting an I2C sensor (Bosch BME280) and send telemetry to Azure IoT Central
-For the next lab we'll need [this repo](https://github.com/JuergenSchwertl/AzureSphereSamples) cloned.
+For the next lab we'll need [this AzureSphereSamples repo](https://github.com/JuergenSchwertl/AzureSphereSamples) cloned.
 Please follow the steps as outlined in [Mt3620DirectDHT.pdf](https://github.com/JuergenSchwertl/AzureSphereSamples/blob/master/Mt3620DirectDHT/MT3620DirectDHT.pdf)
 to connect the DHT sensor and send telemetry data. It also contains hints to extend the ePoll event_data_t structure to enable event context handling.
 
