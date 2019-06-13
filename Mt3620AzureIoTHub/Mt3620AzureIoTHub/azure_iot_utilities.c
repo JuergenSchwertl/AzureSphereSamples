@@ -18,7 +18,7 @@
 // String containing the scope id of the Device Provisioning Service
 // used to provision the app with the IoT hub hostname and the device id.
 //
-static const char scopeId[] = "0ne0002304B";
+static const char scopeId[] = "[enter your DPS Scope ID here]";
 
 /// <summary>
 ///     Function invoked to provide the result of the Device Twin reported properties
