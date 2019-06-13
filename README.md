@@ -59,13 +59,13 @@ You may want to install the [Azure IoT SDK Device Explorer](https://github.com/A
 
 ## Lab #3: Connecting a DHT sensor and send telemetry to Azure IoT Hub
 For the next lab we'll need [this repo](https://github.com/JuergenSchwertl/AzureSphereSamples) cloned.
-Please follow the steps as outlined in [Mt3620DirectDHT](./Mt3620DirectDHT/ReadMe.MD)
+Please follow the steps as outlined in [Mt3620DirectDHT](./Mt3620DirectDHT)
 to connect the DHT sensor and send telemetry data. It also contains hints to extend the ePoll event_data_t structure to enable event context handling.
 
 ## Lab #4: Connecting another MCU through UART
 In this lab we'll connect a NodeMCU sending telemetry data through UART to Azure Sphere acting as a cloud gateway.
 
-Please follow the steps as outlined in [MCUtoMt3620ToAzure.pdf](https://github.com/JuergenSchwertl/AzureSphereSamples/blob/master/MCUtoMT3620toAzure/MCUtoMT3620toAzure.pdf) to run this lab.
+Please follow the steps as outlined in [MCUtoMt3620ToAzure](./MCUtoMT3620toAzure) to run this lab.
 
 ## Lab #5: Bluetooth provisioning of WiFi Credentials
 For this lab you'll need the Azure Sphere Teams [Azure Sphere Samples repo](https://github.com/Azure/azure-sphere-samples/) cloned.

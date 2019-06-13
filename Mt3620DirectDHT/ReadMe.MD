@@ -24,7 +24,7 @@ Assemble the hardware by attaching the DHT sensor to the MT3620, using the follo
 
 ![MT3620 with connected DHT11 sensor](./images/Lab_DirectDHT.png)
 
-For information on the pinout of the board see [GPIO pinout](https://github.com/JuergenSchwertl/AzureSphereSamples#gpios).
+For information on the pinout of the board see [GPIO pinout](../#gpios).
 
 ### Modifying the code
 
@@ -59,7 +59,8 @@ Make sure that the output shows updates to both `AllowedConnections` and `Device
 static const char scopeId[] = "[Enter your DPS scope ID here]";
 ```
 
-> You can find the DPS Scope ID in the [DPS settings in the Azure Portal](https://ms.portal.azure.com/#blade/HubsExtension/BrowseResourceBlade/resourceType/Microsoft.Devices%2FProvisioningServices)
+> You can find the DPS Scope ID in the [DPS settings in the Azure Portal](https://ms.portal.azure.com/#blade/HubsExtension/BrowseResourceBlade/resourceType/Microsoft.Devices%2FProvisioningServices).
+> The Add Connected Service wizard also provides the Scope ID in the *appmanifest.json* as `"CmdArgs"`-property.
 
 Step 3. Open *azure_iot_utilities.h* on or about line **#41** and add the following code as shown below 
 (you can copy these lines also from *azure_iot_utilities-snippets.txt* from the Solution Items folder)
@@ -160,13 +161,10 @@ This is the typical way how you would implement this in a micro-controller since
 Azure Sphere, your high level application runs within a Linux process and may be preempted by the operating system at any time. If the OS chooses 
 to consume some cycles, the counter loop though may miss one or more state transitions and the sensor reading fails.
 
-If you run this sample application for a while, you'll see that every once in a while the sensor reading may fail reading the data.
-
-
-
+If you run this sample application for a while, you'll see that every once in a while the sensor reading reports an error reading the data.
 
 ---
-[Back to root](../README.md)
+[Back to root](../)
 
 
 
