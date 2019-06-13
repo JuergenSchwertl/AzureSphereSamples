@@ -1,7 +1,6 @@
 ## Lab #3: Connecting a DHT sensor and send telemetry to Azure IoT Hub
-For this lab we'll need [this repo](https://github.com/JuergenSchwertl/AzureSphereSamples) cloned.
-Please follow the steps as outlined in [Mt3620DirectDHT.pdf](https://github.com/JuergenSchwertl/AzureSphereSamples/blob/master/Mt3620DirectDHT/MT3620DirectDHT.pdf)
-to connect the DHT sensor and send telemetry data. It also contains hints to extend the ePoll event_data_t structure to enable event context handling.
+For this lab we'll need [this repo](https://github.com/JuergenSchwertl/AzureSphereSamples) cloned. It also contains hints 
+to extend the ePoll event_data_t structure to enable event context handling.
 
 ![MT3620 with connected DHT11 sensor](./images/DHT_Wiring.png)
 
@@ -24,7 +23,7 @@ Assemble the hardware by attaching the DHT sensor to the MT3620, using the follo
 
 ![MT3620 with connected DHT11 sensor](./images/Lab_DirectDHT.png)
 
-For information on the pinout of the board see [GPIO pinout](../README.MD#gpios).
+For information on the pinout of the board see [GPIO pinout](https://github.com/JuergenSchwertl/AzureSphereSamples#gpios).
 
 ### Modifying the code
 
@@ -59,7 +58,7 @@ Make sure that the output shows updates to both `AllowedConnections` and `Device
 static const char scopeId[] = "[Enter your DPS scope ID here]";
 ```
 
-> You can find the DPS Scope ID in the [DPS settings in the Azure Portal](https://ms.portal.azure.com/#blade/HubsExtension/BrowseResourceBlade/resourceType/Microsoft.Devices%2FProvisioningServices).
+> You can find the DPS Scope ID in the [DPS settings in the Azure Portal](https://portal.azure.com/#blade/HubsExtension/BrowseResourceBlade/resourceType/Microsoft.Devices%2FProvisioningServices).
 > The Add Connected Service wizard also provides the Scope ID in the *appmanifest.json* as `"CmdArgs"`-property.
 
 Step 3. Open *azure_iot_utilities.h* on or about line **#41** and add the following code as shown below 
@@ -164,7 +163,7 @@ to consume some cycles, the counter loop though may miss one or more state trans
 If you run this sample application for a while, you'll see that every once in a while the sensor reading reports an error reading the data.
 
 ---
-[Back to root](../README.MD)
+[Back to root](https://github.com/JuergenSchwertl/AzureSphereSamples#lab-3-connecting-a-dht-sensor-and-send-telemetry-to-azure-iot-hub)
 
 
 

@@ -1,4 +1,4 @@
-# AzureSphereSamples
+# AzureSphereSamples for 19.05 Azure Sphere SDK
 This repo contains sources and links for Azure Sphere Bootcamp labs, amongst others 
 Azure Sphere Samples for connected MCU and DHT sensor.
 
@@ -20,7 +20,7 @@ Enterprise Application entries to your Azure Active Directory and create Azure R
 amongst others potentially.
 
 To follow the code samples please clone the following GitHub repositories:
-* [This repo](https://github.com/JuergenSchwertl/AzureSphereSamples)
+* [This AzureSphereSamples repo](https://github.com/JuergenSchwertl/AzureSphereSamples)
 * [The Azure Sphere Samples Repo](https://github.com/Azure/azure-sphere-samples/)
 
 
@@ -38,27 +38,21 @@ Please follow the steps as outlined in [Install Azure Sphere](https://docs.micro
 > where you likely won't have sufficient user permissions to add Enterprise Applications!
 > If you choose to use your corporate account, make sure your AAD administrator has setup your account with the appropriate permissions.
 
+Please follow the steps outlined in [Quickstart: Build the Blink sample application](https://docs.microsoft.com/en-us/azure-sphere/quickstarts/qs-blink-application) 
+to prepare your Azure Sphere Board for development sideloading and build your first application.
+
 ## Lab #1: Setup Azure IoT Hub and Azure IoT Hub Device Provisioning Service
 Please follow the steps as outlined in [Set up an IoT Hub for Azure Sphere](https://docs.microsoft.com/en-us/azure-sphere/app-development/setup-iot-hub).
 
 ## Lab #2: Azure IoT Hub connected Azure Sphere Application
-Please follow the steps outlined in [Quickstart: Build the Blink sample application](https://docs.microsoft.com/en-us/azure-sphere/quickstarts/qs-blink-application) 
-to prepare your Azure Sphere Board for development sideloading and build your first application.
+**Pls note**
+> The 19.02 version of the Azure Sphere SDK contained the "Azure IoT Hub Sample for Mt3620 RDB (Azure Sphere)" application template. Since this 
+> application template is no longer available in the 19.05 version of the SDK I've thus included it here as a ready made project.
+> For the next lab you'll therefore need [this repo](https://github.com/JuergenSchwertl/AzureSphereSamples) cloned.
 
-Once you've verified that your Azure Sphere board runs your first application, you're ready to go to connect Azure Sphere to Azure IoT Hub:
-* Create a new Visual Studio Solution using the "Azure IoT Hub Sample for Mt3620 RDB (Azure Sphere)"
-* In the "Solution Explorer" in Visual Studio, RightClick on the "References"-folder in your project and select "Add Connected Service"
-* Press "Device Connectivity with Azure Sphere"
-* In the "Device Connectivity with Azure Sphere"-wizard, select your Subscription, 
-* Connection Type: "Device Provisioning Service" and your previously created Device provisioning service from the list
-* Hit F5 to build, deploy the application to your Azure Sphere DEvice and run the application. 
-The Debug window should show the application starting, authenticating against Device Provisioning Service and then connecting to Azure IoT Hub.
-
-Check the main.c comments on interactions with Azure IoT Hub Device Twins, telemetry being send and available Azure IoT Hub Direct Methods.
-You may want to install the [Azure IoT SDK Device Explorer](https://github.com/Azure/azure-iot-sdk-csharp/releases/download/2019-1-4/SetupDeviceExplorer.msi) tool.
+Please follow the steps outlined in [Mt3620AzureIoTHub](./Mt3620AzureIoTHub) to connect Azure Sphere to Azure IoT Hub.
 
 ## Lab #3: Connecting a DHT sensor and send telemetry to Azure IoT Hub
-For the next lab we'll need [this repo](https://github.com/JuergenSchwertl/AzureSphereSamples) cloned.
 Please follow the steps as outlined in [Mt3620DirectDHT](./Mt3620DirectDHT)
 to connect the DHT sensor and send telemetry data. It also contains hints to extend the ePoll event_data_t structure to enable event context handling.
 
@@ -80,7 +74,7 @@ Please follow the steps as outlined in [External MCU Update](https://github.com/
 which uses the same [Nordic Semiconductor nRF52 Development Kit](https://www.nordicsemi.com/Software-and-Tools/Development-Kits/nRF52-DK).
 
 ## Lab #7: Connecting an I2C sensor (Bosch BME280) and send telemetry to Azure IoT Central
-For the next lab we'll need [this repo](https://github.com/JuergenSchwertl/AzureSphereSamples) cloned.
+For the next lab we'll need [this AzureSphereSamples repo](https://github.com/JuergenSchwertl/AzureSphereSamples) cloned.
 Please follow the steps as outlined in [Mt3620DirectDHT.pdf](https://github.com/JuergenSchwertl/AzureSphereSamples/blob/master/Mt3620DirectDHT/MT3620DirectDHT.pdf)
 to connect the DHT sensor and send telemetry data. It also contains hints to extend the ePoll event_data_t structure to enable event context handling.
 

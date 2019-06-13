@@ -11,9 +11,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{1bf37f45-2872-4188-b04c-b42757212ec5}</ProjectGuid>
+    <ProjectGuid>{0078fef9-f61d-42ce-a1f9-ed7cca23a1a8}</ProjectGuid>
     <Keyword>AzureSphere</Keyword>
-    <RootNamespace>MCUtoMT3620toAzure</RootNamespace>
+    <RootNamespace>Mt3620AzureIoTHub</RootNamespace>
     <MinimumVisualStudioVersion>15.0</MinimumVisualStudioVersion>
     <ApplicationType>Linux</ApplicationType>
     <ApplicationTypeRevision>1.0</ApplicationTypeRevision>
@@ -29,6 +29,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'" Label="Configuration">
     <UseDebugLibraries>false</UseDebugLibraries>
+    <TargetSysroot>1</TargetSysroot>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings" />
@@ -42,18 +43,16 @@
   <ItemGroup>
     <ClCompile Include="azure_iot_utilities.c" />
     <ClCompile Include="main.c" />
-    <ClCompile Include="epoll_timerfd_utilities.c" />
-    <ClCompile Include="MCU_utilities.c" />
     <ClCompile Include="parson.c" />
-    <ClCompile Include="UART_utilities.c" />
+    <ClCompile Include="rgbled_utility.c" />
     <ClInclude Include="azure_iot_utilities.h" />
-    <ClInclude Include="epoll_timerfd_utilities.h" />
-    <ClInclude Include="MCU_utilities.h" />
     <ClInclude Include="parson.h" />
-    <ClInclude Include="UART_utilities.h" />
-    <UpToDateCheckInput Include="app_manifest.json" />
+    <ClInclude Include="rgbled_utility.h" />
     <ClInclude Include="mt3620_rdb.h" />
     <ClInclude Include="applibs_versions.h" />
+    <ClCompile Include="epoll_timerfd_utilities.c" />
+    <ClInclude Include="epoll_timerfd_utilities.h" />
+    <UpToDateCheckInput Include="app_manifest.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
@@ -61,15 +60,19 @@
     <Link>
       <LibraryDependencies>applibs;pthread;gcc_s;c</LibraryDependencies>
       <AdditionalOptions>-Wl,--no-undefined -nodefaultlibs %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">.\azureiot\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'"> .\azureiot\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">-lm;-lazureiot;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">.\azureiot\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Release|ARM'"> .\azureiot\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">-lm;-lazureiot;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ClCompile>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'"> $(SysRoot)\usr\include\azureiot;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|ARM'"> $(SysRoot)\usr\include\azureiot;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile>
       <AdditionalOptions>-Werror=implicit-function-declaration  %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">$(SysRoot)\usr\include\azureiot;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">$(SysRoot)\usr\include\azureiot;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
 </Project>

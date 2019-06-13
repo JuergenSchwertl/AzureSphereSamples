@@ -1,0 +1,19 @@
+{
+  "SchemaVersion": 1,
+  "Name": "Mt3620AzureIoTHub",
+  "ComponentId": "b9fc7bea-fd4f-4610-b483-7b47119121d0",
+  "EntryPoint": "/bin/app",
+  "CmdArgs": [ ],
+  "Capabilities": {
+    "AllowedConnections": [ ],
+    "AllowedTcpServerPorts": [],
+    "AllowedUdpServerPorts": [],
+    "Gpio": [ 8, 9, 10, 15, 16, 17, 18, 19, 20, 12, 13 ],
+    "Uart": [],
+    "I2cMaster": [],
+    "SpiMaster": [],
+    "WifiConfig": true,
+    "NetworkConfig": false,
+    "SystemTime": false
+  }
+}

@@ -18,25 +18,25 @@
     <ClCompile Include="main.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClInclude Include="applibs_versions.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClCompile Include="epoll_timerfd_utilities.c">
+    <ClCompile Include="rgbled_utility.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClInclude Include="epoll_timerfd_utilities.h">
+    <ClInclude Include="rgbled_utility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="applibs_versions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="mt3620_rdb.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <UpToDateCheckInput Include="app_manifest.json" />
-    <ClCompile Include="UART_utilities.c">
+    <ClCompile Include="epoll_timerfd_utilities.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MCU_utilities.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
+    <ClInclude Include="epoll_timerfd_utilities.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClCompile Include="azure_iot_utilities.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -45,12 +45,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="UART_utilities.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="MCU_utilities.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="azure_iot_utilities.h">
       <Filter>Header Files</Filter>
     </ClInclude>
