@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27703.2026
+VisualStudioVersion = 15.0.28307.572
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Mt3620DirectDHT", "Mt3620DirectDHT\Mt3620DirectDHT.vcxproj", "{70E28D56-50E5-4D97-B4B5-1758EFCAE7E3}"
 EndProject
@@ -11,6 +11,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		azure_iot_utilities-snippets.txt = azure_iot_utilities-snippets.txt
 		MT3620DirectDHT.pdf = MT3620DirectDHT.pdf
+		ReadMe.MD = ReadMe.MD
 	EndProjectSection
 EndProject
 Global

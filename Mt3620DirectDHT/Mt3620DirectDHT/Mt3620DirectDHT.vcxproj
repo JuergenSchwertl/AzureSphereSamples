@@ -25,7 +25,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'" Label="Configuration">
     <UseDebugLibraries>true</UseDebugLibraries>
-    <TargetSysroot>1</TargetSysroot>
+    <TargetSysroot>2</TargetSysroot>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'" Label="Configuration">
     <UseDebugLibraries>false</UseDebugLibraries>
@@ -40,12 +40,16 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
   </PropertyGroup>
   <ItemGroup>
+    <ClCompile Include="azure_iot_utilities.c" />
     <ClCompile Include="epoll_timerfd_utilities.c" />
     <ClCompile Include="main.c" />
+    <ClCompile Include="parson.c" />
     <ClCompile Include="rgbled_utility.c" />
+    <ClInclude Include="azure_iot_utilities.h" />
     <ClInclude Include="epoll_timerfd_utilities.h" />
     <ClInclude Include="mt3620_rdb.h" />
     <ClInclude Include="applibs_versions.h" />
+    <ClInclude Include="parson.h" />
     <ClInclude Include="rgbled_utility.h" />
     <UpToDateCheckInput Include="app_manifest.json" />
   </ItemGroup>
@@ -72,7 +76,7 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">$(SysRoot)\usr\include\azureiot;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile>
-      <AdditionalOptions>-Werror=implicit-function-declaration  %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>-Werror=implicit-function-declaration   %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
   </ItemDefinitionGroup>
 </Project>
