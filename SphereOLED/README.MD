@@ -5,4 +5,4 @@ is connected through the I2C interface.
 
 ---
 
-[Back to root](https://github.com/JuergenSchwertl/AzureSphereSamples#Lab8
+[Back to root](https://github.com/JuergenSchwertl/AzureSphereSamples#Lab8)
