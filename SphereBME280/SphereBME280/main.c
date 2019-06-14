@@ -60,12 +60,6 @@
 // - wificonfig (configure WiFi settings);
 // - azureiot (interaction with Azure IoT services)
 
-#ifndef AZURE_IOT_HUB_CONFIGURED
-#error \
-    "WARNING: Please add a project reference to the Connected Service first \
-(right-click References -> Add Connected Service)."
-#endif
-
 #include "azure_iot_utilities.h"
 
 // An array defining the RGB GPIOs for each LED on the device
