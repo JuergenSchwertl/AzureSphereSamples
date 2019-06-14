@@ -73,10 +73,18 @@ For this lab you'll need the Azure Sphere Teams [Azure Sphere Samples repo](http
 Please follow the steps as outlined in [External MCU Update](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/ExternalMcuUpdateNrf52) 
 which uses the same [Nordic Semiconductor nRF52 Development Kit](https://www.nordicsemi.com/Software-and-Tools/Development-Kits/nRF52-DK).
 
-## Lab #7: Connecting an I2C sensor (Bosch BME280) and send telemetry to Azure IoT Central
-For the next lab we'll need [this AzureSphereSamples repo](https://github.com/JuergenSchwertl/AzureSphereSamples) cloned.
-Please follow the steps as outlined in [Mt3620DirectDHT.pdf](https://github.com/JuergenSchwertl/AzureSphereSamples/blob/master/Mt3620DirectDHT/MT3620DirectDHT.pdf)
-to connect the DHT sensor and send telemetry data. It also contains hints to extend the ePoll event_data_t structure to enable event context handling.
+## Lab #7: Connecting an I2C sensor (Bosch BME280) and send telemetry to Azure IoT Central {Lab7}
+In this lab we will connect an I2C based sensor and send telemetry data to **Azure IoT Central**. In this example it is the 
+Bosch BME280 temperature/humidity/pressure sensor.
+
+Please follow the steps as outlined in [SphereBME280](./SphereBME280) to run this lab.
+
+## Lab #8: Using an OLED Display with Azure Sphere {Lab8}
+In this lab we will connect an I2C connected OLED display based on the [Solomon Systech SSD130x](http://www.solomon-systech.com/en/product/...ic/oled-driver-controller/ssd1308/).
+One example is the [Grove - OLED Display 0.96 Inch](http://wiki.seeedstudio.com/Grove-OLED_Display_0.96inch/) 
+available through SeeedStudio.
+
+Please follow the steps as outlined in [SphereOLED](./SphereOLED) to run this lab.
 
 
 # Mt3620 Development Board pinouts
