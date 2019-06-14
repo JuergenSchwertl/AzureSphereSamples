@@ -37,12 +37,24 @@
     <ClCompile Include="MCU_utilities.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="azure_iot_utilities.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="parson.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="UART_utilities.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="MCU_utilities.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="azure_iot_utilities.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parson.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
