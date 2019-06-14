@@ -127,4 +127,4 @@ Step 4. Run the application and see telemetry visualized in the dashboard.
 
 ---
 
-[Back to root](https://github.com/JuergenSchwertl/AzureSphereSamples#lab-7
+[Back to root](https://github.com/JuergenSchwertl/AzureSphereSamples#Lab7
