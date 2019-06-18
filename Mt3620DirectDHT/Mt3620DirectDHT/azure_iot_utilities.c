@@ -461,36 +461,6 @@ cleanup:
 }
 
 /// <summary>
-///     Creates and enqueues reported properties state using a prepared json string.
-///     The report is not actually sent immediately, but it is sent on the next 
-///     invocation of AzureIoT_DoPeriodicTasks().
-/// </summary>
-void AzureIoT_TwinReportStateJson(
-	char* reportedPropertiesString,
-	size_t reportedPropertiesSize)
-{
-	if (iothubClientHandle == NULL) {
-		LogMessage("ERROR: client not initialized\n");
-	}
-	else {
-		if (reportedPropertiesString != NULL) {
-			if (IoTHubDeviceClient_LL_SendReportedState(iothubClientHandle,
-				(unsigned char*)reportedPropertiesString, reportedPropertiesSize,
-				reportStatusCallback, 0) != IOTHUB_CLIENT_OK) {
-				LogMessage("ERROR: failed to set reported state as '%s'.\n",
-					reportedPropertiesString);
-			}
-			else {
-				LogMessage("INFO: Reported state as '%s'.\n", reportedPropertiesString);
-			}
-		}
-		else {
-			LogMessage("ERROR: no JSON string for Device Twin reporting.\n");
-		}
-	}
-}
-
-/// <summary>
 ///     Sets a callback function invoked whenever a message is received from IoT Hub.
 /// </summary>
 /// <param name="callback">The callback function invoked when a message is received</param>
