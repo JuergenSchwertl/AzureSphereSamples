@@ -152,7 +152,7 @@ The DHTlib project implements a static library to read the sensor data from a DH
 single wire protocol, where a 18ms low pulse from the Azure Sphere GPIO-port (configured as output) to pull the line to 0 to 
 initialize the data transfer.
 Then the DHT starts sending data after a 80탎 low and 80탎 high preamble. Each bit to be transferred is indicated by a 50탎 low, followed
-by a  26-28 탎ec indicating a "0" bit ro a 70 탎ec indicating a "1" bit.
+by a  26-28 탎ec indicating a "0" bit or a 70 탎ec indicating a "1" bit.
 To disect that protocol DHTlib.c implements a mechanism called bit-banging, checking the line state in a counter loop looking for 
 state transitions. 
 
