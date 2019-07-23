@@ -102,12 +102,12 @@
 /********************************************************/
 
 #ifndef BME280_FLOAT_ENABLE
-/* #define BME280_FLOAT_ENABLE */
+//	#define BME280_FLOAT_ENABLE  // uncomment if floating point accuracy is needed
 #endif
 
 #ifndef BME280_FLOAT_ENABLE
 #ifndef BME280_64BIT_ENABLE
-#define BME280_64BIT_ENABLE
+// #define BME280_64BIT_ENABLE  // uncomment if 64Bit operations possible (higher accuracy for preassure readings)
 #endif
 #endif
 

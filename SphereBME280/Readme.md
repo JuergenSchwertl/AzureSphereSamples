@@ -43,7 +43,8 @@ Obtain your Azure Sphere Tenant Id by opening an Azure Sphere Developer Command 
 ## Seting up Azure IoT Central
 Before we get there, we first need to add an application to Azure oT Central. The 
 Azure Sphere Documentation has an extensive description on how to set it up under 
-[Set up Azure IoT Central to work with Azure Sphere](https://docs.microsoft.com/en-us/azure-sphere/app-development/setup-iot-central).
+[Set up Azure IoT Central to work with Azure Sphere](https://docs.microsoft.com/en-us/azure-sphere/app-development/setup-iot-central
+).
 
 Apart from creating the IoT Central application itself, the remaining steps will look fairly familiar: 
 Setting up the certificate chain for DPS inside Azure IoT Central.

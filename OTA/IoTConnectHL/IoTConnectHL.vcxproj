@@ -11,9 +11,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{8897932a-6ccd-4ee3-872a-4a629cef0760}</ProjectGuid>
+    <ProjectGuid>{f7ee42db-a08a-419d-9d13-ac79298c3b44}</ProjectGuid>
     <Keyword>AzureSphere</Keyword>
-    <RootNamespace>libBME280</RootNamespace>
+    <RootNamespace>IoTConnectHL</RootNamespace>
     <MinimumVisualStudioVersion>15.0</MinimumVisualStudioVersion>
     <ApplicationType>Linux</ApplicationType>
     <ApplicationTypeRevision>1.0</ApplicationTypeRevision>
@@ -21,38 +21,47 @@
     <LinuxProjectType>{D51BCBC9-82E9-4017-911E-C93873C4EA2B}</LinuxProjectType>
     <DebugMachineType>Device</DebugMachineType>
     <PlatformToolset>GCC_AzureSphere_1_0</PlatformToolset>
-    <ProjectPublicIncludePath>$(MSBuildProjectDirectory)\Inc\Public</ProjectPublicIncludePath>
-    <PublicIncludePath>$(MSBuildProjectDirectory)\Inc\Public</PublicIncludePath>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'" Label="Configuration">
     <UseDebugLibraries>true</UseDebugLibraries>
     <TargetSysroot>2+Beta1905</TargetSysroot>
-    <ConfigurationType>StaticLibrary</ConfigurationType>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'" Label="Configuration">
     <UseDebugLibraries>false</UseDebugLibraries>
-    <TargetSysroot>1</TargetSysroot>
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <TargetSysroot>2</TargetSysroot>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings" />
   <ImportGroup Label="Shared" />
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
-  <ItemDefinitionGroup>
-    <ClCompile>
-      <AdditionalOptions>-Werror=implicit-function-declaration %(AdditionalOptions) -Wa,-adhln=$(IntDir)%(filename).s -g -fverbose-asm </AdditionalOptions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">_POSIX_C_SOURCE;%(PreprocessorDefinitions); </PreprocessorDefinitions>
-    </ClCompile>
-  </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="bme280.c" />
-    <ClCompile Include="libBME280.c" />
-    <ClInclude Include="bme280.h" />
-    <ClInclude Include="bme280_defs.h" />
-    <ClInclude Include="Inc\Public\libBME280.h" />
+    <ClCompile Include="azure_iot_utilities.c" />
+    <ClCompile Include="epoll_timerfd_utilities.c" />
+    <ClCompile Include="intercore_utilities.c" />
+    <ClCompile Include="main.c" />
+    <ClCompile Include="parson.c" />
+    <UpToDateCheckInput Include="app_manifest.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="applibs_versions.h" />
+    <ClInclude Include="azure_iot_utilities.h" />
+    <ClInclude Include="epoll_timerfd_utilities.h" />
+    <ClInclude Include="intercore_utilities.h" />
+    <ClInclude Include="mt3620.h" />
+    <ClInclude Include="mt3620_rdb.h" />
+    <ClInclude Include="parson.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalOptions>-Werror=implicit-function-declaration %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <LibraryDependencies>applibs;pthread;gcc_s;c</LibraryDependencies>
+      <AdditionalOptions>-Wl,--no-undefined -nodefaultlibs %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
 </Project>

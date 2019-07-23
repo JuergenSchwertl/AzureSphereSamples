@@ -1,0 +1,14 @@
+{
+  "SchemaVersion": 1,
+  "Name" : "IoTConnectHL",
+  "ComponentId" : "33e04e8f-a020-4af8-80d0-8064343e0616",
+  "EntryPoint": "/bin/app",
+  "CmdArgs": [],
+  "Capabilities": {
+    "AllowedConnections": [],
+    "Gpio": [ 9 ],
+    "Uart": [],
+    "WifiConfig": false
+  },
+  "ApplicationType":"Default"
+}
