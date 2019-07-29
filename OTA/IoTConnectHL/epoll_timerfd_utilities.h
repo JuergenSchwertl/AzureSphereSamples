@@ -28,10 +28,6 @@ typedef struct EventData {
     /// The file descriptor that generated the event.
     /// </summary>
     int fd;
-	/// <summary>
-	/// Event context.
-	/// </summary>
-	void * eventContext;
 } EventData;
 
 /// <summary>

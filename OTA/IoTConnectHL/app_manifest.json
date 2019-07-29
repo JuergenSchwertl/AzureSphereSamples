@@ -1,14 +1,15 @@
 {
   "SchemaVersion": 1,
-  "Name" : "IoTConnectHL",
-  "ComponentId" : "33e04e8f-a020-4af8-80d0-8064343e0616",
+  "Name": "IoTConnectHL",
+  "ComponentId": "33e04e8f-a020-4af8-80d0-8064343e0616",
   "EntryPoint": "/bin/app",
-  "CmdArgs": [],
+  "CmdArgs": [ "0ne0002304B" ],
   "Capabilities": {
-    "AllowedConnections": [],
+    "AllowedConnections": [ "global.azure-devices-provisioning.net", "JS-MS-Iot-Hub.azure-devices.net" ],
     "Gpio": [ 9 ],
     "Uart": [],
-    "WifiConfig": false
+    "WifiConfig": false,
+    "DeviceAuthentication": "c0b88764-9273-46ab-bab2-effecf13f91c"
   },
-  "ApplicationType":"Default"
+  "ApplicationType": "Default"
 }

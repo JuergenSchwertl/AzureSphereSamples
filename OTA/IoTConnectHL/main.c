@@ -64,23 +64,25 @@
 #define BLUE_SPHERE_COMPONENTID		"07562362-3FEC-46C8-B0AF-DB9507F32748"
 
 // forward decalration of inter-core communications message handler
-void IntercoreMessageHandler(const char* pstrComponentId, void* pMessage, size_t nSize);
+void IntercoreMessageHandler(const char* pstrComponentId, const void * pMessage, ssize_t iSize);
 
 
-static InterCoreComms_t iccRedSphere = {
+static InterCoreEventData iccRedSphere = {
 	.ComponentId = RED_SPHERE_COMPONENTID,
-	.SocketFd = -1,
 	.MessageHandler = IntercoreMessageHandler };
 
-static InterCoreComms_t iccGreenSphere = {
+static InterCoreEventData iccGreenSphere = {
 	.ComponentId = GREEN_SPHERE_COMPONENTID,
-	.SocketFd = -1,
 	.MessageHandler = IntercoreMessageHandler };
 
-static InterCoreComms_t iccBlueSphere = {
+static InterCoreEventData iccBlueSphere = {
 	.ComponentId = BLUE_SPHERE_COMPONENTID,
-	.SocketFd = -1,
 	.MessageHandler = IntercoreMessageHandler };
+
+
+// the application sideload timer handler period
+static const struct timespec tsSideloadTimer = { 5, 0 };
+static const char strPingMessage[] = "PING";
 
 // Led blink rate and range
 static unsigned int uLedBlinkRate = 0;
@@ -119,8 +121,21 @@ static void TerminationHandler(int signalNumber)
 }
 
 
-void IntercoreMessageHandler(const char* pstrComponentId, void* pMessage, size_t nSize)
+void IntercoreMessageHandler(const char* pstrComponentId, const void * pMessage, ssize_t iSize)
 {
+	
+}
+
+
+void ApplicationCheckTimerHandler(EventData * pEvent)
+{
+	if (iccRedSphere.SocketFd != -1) {
+		if (InterCore_SendMessage(&iccRedSphere, strPingMessage, sizeof(strPingMessage)) == -1) {
+			InterCore_UnregisterHandler();
+		}
+	} else {
+		InterCore_RegisterHandler(fdEpoll, &evdataRedInterCoreEvent, &iccRedSphere);
+	}
 
 }
 
@@ -262,15 +277,16 @@ static int DirectMethodCall(const char *methodName, const char *payload, size_t 
 	return 404; // HTTP status code 404: not found.
 }
 
+
 /// <summary>
 ///     IoT Hub connection status callback function.
 /// </summary>
 /// <param name="connected">'true' when the connection to the IoT Hub is established.</param>
 static void IoTHubConnectionStatusChanged(bool connected)
 {
-    connectedToIoTHub = connected;
+	Log_Debug("[IoTHubConnectionStatusChanged]:%d.\n", (int)connected);
+	connectedToIoTHub = connected;
 }
-
 
 /// <summary>
 ///     Check whether a given button has just been pressed.
@@ -359,8 +375,10 @@ static void AzureIoTDoWorkHandler(EventData *eventData)
 }
 
 // event handler data structures. Only the event handler field needs to be populated.
-static EventData buttonPollTimerEventData = {.eventHandler = &ButtonPollTimerHandler};
-static EventData azureIoTEventData = {.eventHandler = &AzureIoTDoWorkHandler};
+static EventData buttonPollTimerEventData = {.eventHandler = &ButtonPollTimerHandler };
+static EventData azureIoTEventData = {.eventHandler = &AzureIoTDoWorkHandler };
+static EventData evdataAppCheckTimer = { .eventHandler = &ApplicationCheckTimerHandler };
+
 
 /// <summary>
 ///     Initialize peripherals, termination handler, and Azure IoT
@@ -385,6 +403,8 @@ static int InitPeripheralsAndHandlers(void)
         Log_Debug("ERROR: Cannot initialize Azure IoT Hub SDK.\n");
         return -1;
     }
+
+	
 
     // Set the Azure IoT hub related callbacks
     AzureIoT_SetMessageReceivedCallback(&MessageReceived);

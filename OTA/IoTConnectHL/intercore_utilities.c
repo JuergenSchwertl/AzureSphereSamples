@@ -9,9 +9,11 @@
 	// - log (messages shown in Visual Studio's Device Output window during debugging);
 	// - application (establish a connection with a real-time capable application).
 
+#include <bits/alltypes.h>
 #include <errno.h>
 #include <sys/time.h>
 #include <sys/socket.h>
+#include <string.h>
 
 #include <applibs/log.h>
 #include <applibs/application.h>
@@ -19,57 +21,45 @@
 #include "intercore_utilities.h"
 #include "epoll_timerfd_utilities.h"
 
-// Component IDs of realtime capable partner apps
-static const char strRedSphereComponentID[] = "F4E25978-6152-447B-A2A1-64577582F327";
-static const char strGreenSphereComponentID[] = "7E5FAB32-801C-4EDF-A1AA-9263652AA6BD";
-static const char strBlueSphereComponentID[] = "07562362-3FEC-46C8-B0AF-DB9507F32748";
 
-// List of component id's and socket file descriptors this high-level app knows about
-static InterCoreComms_t iccRedSphere = {
-	.ComponentId = "F4E25978-6152-447B-A2A1-64577582F327",
-	.SocketFd = -1,
-	.MessageHandler = NULL
-};
-
-static InterCoreComms_t iccGreenSphere = { 
-	.ComponentId = "7E5FAB32-801C-4EDF-A1AA-9263652AA6BD",
-	.SocketFd = -1,
-	.MessageHandler = NULL };
-
-static InterCoreComms_t iccBlueSphere = { 
-	.ComponentId = "07562362-3FEC-46C8-B0AF-DB9507F32748",
-	.SocketFd = -1,
-	.MessageHandler = NULL };
-
-static const int nMaxComponent = sizeof(Components) / sizeof(InterCoreComms_t);
-
-IntercoreMessageHandler fnHandleMessage = NULL;
+	// Set timeout, to handle case where real-time capable application does not respond.
+static const struct timeval recvTimeout = { .tv_sec = 5,.tv_usec = 0 };
 
 // <summary>Helper function to print socket error and close socket</summary>
-static void handleSocketError(InterCoreComms_t* pComm)
+static void handleSocketError(InterCoreEventData * pIcEventData)
 {
-	Log_Debug("[InterCore] : ERROR: Unable to send/receive message: %d (%s); closing socket.\n", errno, strerror(errno));
-	close(pComm->SocketFd);
-	pComm->SocketFd = -1;
+	Log_Debug("[InterCore] ERROR: Unable to send/receive message: %d (%s); closing socket.\n", errno, strerror(errno));
+	InterCore_UnregisterHandler(pIcEventData);
+
+	// permission denied: app has been uninstalled
+	if (errno == 1) {
+		pIcEventData->State = InterCoreState_AppNotInstalled;
+	}
+	// app exists but doesn't run (i.e. stopped state)
+	if (errno == 104)
+	{
+		pIcEventData->State = InterCoreState_AppUnresponsive;
+	}
 }
 
 /// <summary>
 ///     Sends message to real-time capable application.
 /// </summary>
-/// <param name="pComm">address of InterCoreComms_t structure containing socket file descriptor</param>
+/// <param name="pIcEventData">address of InterCoreEventData_t structure</param>
 /// <param name="pMessage">pointer to message to transmit via inter-core mailslot</param>
 /// <param name="nSize">number of bytes to send</param>
-static int InterCore_SendMessage(InterCoreComms_t* pComm, const void *pMessage, size_t nSize)
+/// <returns>number of bytes sent or -1 on error</returns>
+static int InterCore_SendMessage(InterCoreEventData* pIcEventData, const void *pMessage, size_t nSize)
 {
-	if (pMessage == NULL || pComm == NULL || pComm->SocketFd < 0)
+	if (pMessage == NULL || pIcEventData == NULL || pIcEventData->_evt.fd < 0)
 	{
 		return -1; // nothing to send or socket missing/closed
 	}
 	Log_Debug("[InterCore] Sending: %s\n", (const char *)pMessage);
 
-	int bytesSent = send(pComm->SocketFd, pMessage, nSize, 0);
+	int bytesSent = send(pIcEventData->_evt.fd, pMessage, nSize, 0);
 	if (bytesSent == -1) {
-		handleSocketError(pComm);
+		handleSocketError(pIcEventData);
 	}
 	return bytesSent;
 }
@@ -77,44 +67,85 @@ static int InterCore_SendMessage(InterCoreComms_t* pComm, const void *pMessage, 
 /// <summary>
 ///     Handle socket event by reading incoming data from real-time capable application.
 /// </summary>
-static void socketEventHandler(EventData* eventData)
+/// <param name="eventData">pointer to EventData structure containing eventContext</param>
+static void intercoreEventHandler(InterCoreEventData * pIcEventData)
 {
 	// Read response from real-time capable application.
-	char rxBuf[32];
-	int bytesReceived = recv(eventData->fd, rxBuf, sizeof(rxBuf), 0);
+	char rxBuf[INTERCORE_RECV_BUFFER_SIZE];
+	ssize_t bytesReceived = recv(pIcEventData->_evt.fd, rxBuf, sizeof(rxBuf), 0);
+	Log_Debug("[InterCore] Received %d bytes.\n", bytesReceived);
 
-	if (bytesReceived == -1) {
-		handleSocketError( (InterCoreComms_t *) eventData->eventContext );
+	if( bytesReceived < 0 ) {
+		handleSocketError( pIcEventData );
 	}
 
-	Log_Debug("[InterCore] Received %d bytes.\n", bytesReceived);
+	if( bytesReceived > 0 )	{
+		pIcEventData->MessageHandler(pIcEventData, (const void *)rxBuf, bytesReceived);
+	}
 }
 
-static void registerIntercoreCommsHandler(int epollFd, InterCoreComms_t * pComm)
+/// <summary>
+///     Register event handler for incoming data from real-time capable application in ePoll.
+/// </summary>
+/// <param name="epollFd">epoll file descriptor</param>
+/// <param name="pIcEventData">pointer to InterCoreEventData structure</param>
+/// <returns>0 on success or -1 on error</returns>
+static int InterCore_RegisterHandler(int epollFd, InterCoreEventData * pIcEventData)
 {
+	int fdSocket = -1;
+	pIcEventData->_evt.eventHandler = (EventHandler) &intercoreEventHandler;
+	pIcEventData->State = InterCoreState_Unknown;
+	pIcEventData->EpollFd = epollFd;
+
 	// Open connection to real-time capable application.
-	if ((pComm->SocketFd = Application_Socket(pComm->ComponentId)) == -1) {
-		Log_Debug("ERROR: Unable to create socket: %d (%s)\n", errno, strerror(errno));
+	if ((fdSocket = Application_Socket(pIcEventData->ComponentId)) == -1) {
+		Log_Debug("[InterCore] ERROR: Unable to create socket: %d (%s)\n", errno, strerror(errno));
+		pIcEventData->State = InterCoreState_AppNotInstalled;
 		return -1;
 	}
 
-	// Set timeout, to handle case where real-time capable application does not respond.
-	static const struct timeval recvTimeout = { .tv_sec = 5,.tv_usec = 0 };
-	int result = setsockopt(pComm->SocketFd, SOL_SOCKET, SO_RCVTIMEO, &recvTimeout, sizeof(recvTimeout));
+	int rcvlen;
+	unsigned int m = sizeof(int);
+	getsockopt(fdSocket, SOL_SOCKET, SO_RCVBUF, (void *)&rcvlen, &m);
+	int sndlen;
+	getsockopt(fdSocket, SOL_SOCKET, SO_SNDBUF, (void *)&sndlen, &m);
+	Log_Debug("[InterCore] Length of receive buffer %d, send buffer %d", rcvlen, sndlen);
+
+	int result = setsockopt(fdSocket, SOL_SOCKET, SO_RCVTIMEO, &recvTimeout, sizeof(recvTimeout));
 	if (result == -1) {
-		Log_Debug("ERROR: Unable to set socket timeout: %d (%s)\n", errno, strerror(errno));
+		Log_Debug("[InterCore] ERROR: Unable to set socket timeout: %d (%s)\n", errno, strerror(errno));
 		return -1;
 	}
 
 	// Register handler for incoming messages from real-time capable application.
-	if (RegisterEventHandlerToEpoll(epollFd, pComm->SocketFd, &socketEventData, EPOLLIN) != 0) {
+	if (RegisterEventHandlerToEpoll(epollFd, fdSocket, (EventData *) pIcEventData, EPOLLIN) != 0) {
 		return -1;
 	}
 
+	pIcEventData->State = InterCoreState_Unknown;
+	pIcEventData->_evt.fd = fdSocket;
+	return 0;
 }
 
-static int InterCore_RegisterHandler(int epollFd, IntercoreMessageHandler fnHandler)
+/// <summary>
+/// Unregister InterCore event handler and close socket.
+/// </summary>
+/// <param name="pIcEventData">pointer to InterCoreEventData structure</param>
+static void InterCore_UnregisterHandler(InterCoreEventData * pIcEventData)
 {
-	fnHandleMessage = fnHandler;
-	RegisterEventHandlerToEpoll( epollFd, )
+	UnregisterEventHandlerFromEpoll(pIcEventData->EpollFd, pIcEventData->_evt.fd);
+	close(pIcEventData->_evt.fd);
+	pIcEventData->_evt.fd = -1;
+}
+
+/// <summary>
+/// Prepare InterCoreEventData structure.
+/// </summary>
+/// <param name="pIcEventData">pointer to InterCoreEventData structure</param>
+static void InterCore_Initialize(InterCoreEventData * pIcEventData)
+{
+	pIcEventData->_evt.fd = -1;
+	pIcEventData->_evt.eventHandler = (EventHandler)&intercoreEventHandler;
+	pIcEventData->State = InterCoreState_Unknown;
+	pIcEventData->EpollFd = -1;
 }
