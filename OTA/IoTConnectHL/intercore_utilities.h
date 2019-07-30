@@ -1,8 +1,5 @@
 #pragma once
 
-#ifndef INTERCORE_UTILITIES_H
-#define INTERCORE_UTILITIES_H
-
 #include <sys/epoll.h>
 #include "epoll_timerfd_utilities.h"
 
@@ -53,7 +50,7 @@ typedef struct InterCoreEventData {
 /// <param name="pMessage">pointer to message to transmit via inter-core mailslot</param>
 /// <param name="nSize">number of bytes to send</param>
 /// <returns>number of bytes sent or -1 on error</returns>
-static int InterCore_SendMessage(InterCoreEventData* pIcEventData, const void *pMessage, size_t nSize);
+int InterCore_SendMessage(InterCoreEventData* pIcEventData, const void *pMessage, size_t nSize);
 
 
 /// <summary>
@@ -62,19 +59,17 @@ static int InterCore_SendMessage(InterCoreEventData* pIcEventData, const void *p
 /// <param name="epollFd">epoll file descriptor</param>
 /// <param name="pIcEventData">pointer to InterCoreEventData structure</param>
 /// <returns>0 on success or -1 on error</returns>
-static int InterCore_RegisterHandler(int epollFd, InterCoreEventData * pIcEventData);
+int InterCore_RegisterHandler(int epollFd, InterCoreEventData * pIcEventData);
 
 /// <summary>
 /// Unregister InterCore event handler and close socket.
 /// </summary>
 /// <param name="pIcEventData">pointer to InterCoreEventData structure</param>
-static void InterCore_UnregisterHandler(InterCoreEventData * pIcEventData);
+void InterCore_UnregisterHandler(InterCoreEventData * pIcEventData);
 
 /// <summary>
 /// Prepare InterCoreEventData structure.
 /// </summary>
 /// <param name="pIcEventData">pointer to InterCoreEventData structure</param>
-static void InterCore_Initialize(InterCoreEventData * pIcEventData);
+void InterCore_Initialize(InterCoreEventData * pIcEventData);
 
-
-#endif // INTERCORE_UTILITIES_H

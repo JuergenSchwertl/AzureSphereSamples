@@ -2,6 +2,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <time.h>
+#include <stdlib.h>
 
 #include <applibs/gpio.h>
 #include <applibs/log.h>
@@ -64,24 +65,23 @@
 #define BLUE_SPHERE_COMPONENTID		"07562362-3FEC-46C8-B0AF-DB9507F32748"
 
 // forward decalration of inter-core communications message handler
-void IntercoreMessageHandler(const char* pstrComponentId, const void * pMessage, ssize_t iSize);
+void IntercoreMessageHandler(InterCoreEventData* pIcEventData, const void* pMessage, ssize_t iSize);
 
 
 static InterCoreEventData iccRedSphere = {
 	.ComponentId = RED_SPHERE_COMPONENTID,
-	.MessageHandler = IntercoreMessageHandler };
+	.MessageHandler = &IntercoreMessageHandler };
 
 static InterCoreEventData iccGreenSphere = {
 	.ComponentId = GREEN_SPHERE_COMPONENTID,
-	.MessageHandler = IntercoreMessageHandler };
+	.MessageHandler = &IntercoreMessageHandler };
 
 static InterCoreEventData iccBlueSphere = {
 	.ComponentId = BLUE_SPHERE_COMPONENTID,
-	.MessageHandler = IntercoreMessageHandler };
+	.MessageHandler = &IntercoreMessageHandler };
 
 
-// the application sideload timer handler period
-static const struct timespec tsSideloadTimer = { 5, 0 };
+// realtime application PING message
 static const char strPingMessage[] = "PING";
 
 // Led blink rate and range
@@ -103,7 +103,7 @@ static const int AzureIoTMaxReconnectPeriodSeconds = 10 * 60;
 static int azureIoTPollPeriodSeconds = -1;
 
 // A null period to not start the timer when it is created with CreateTimerFdAndAddToEpoll.
-static const struct timespec nullPeriod = {0, 0};
+//static const struct timespec nullPeriod = {0, 0};
 
 // Connectivity state
 static bool connectedToIoTHub = false;
@@ -121,22 +121,28 @@ static void TerminationHandler(int signalNumber)
 }
 
 
-void IntercoreMessageHandler(const char* pstrComponentId, const void * pMessage, ssize_t iSize)
+void IntercoreMessageHandler(InterCoreEventData * pIcEventData, const void * pMessage, ssize_t iSize)
 {
-	
+	Log_Debug("Message from %s is '%s'", pIcEventData->ComponentId, (const char *) pMessage);
 }
 
+void checkRealtimeApp(InterCoreEventData* pIcEventData)
+{
+	// If App was active before, try pinging the app to update status
+	if (pIcEventData->State == InterCoreState_AppActive) {
+		InterCore_SendMessage(pIcEventData, strPingMessage, sizeof(strPingMessage));
+	}
+	else {
+		// else try registering the app (may fail gracefully)
+		InterCore_RegisterHandler(fdEpoll, pIcEventData);
+	}
+}
 
 void ApplicationCheckTimerHandler(EventData * pEvent)
 {
-	if (iccRedSphere.SocketFd != -1) {
-		if (InterCore_SendMessage(&iccRedSphere, strPingMessage, sizeof(strPingMessage)) == -1) {
-			InterCore_UnregisterHandler();
-		}
-	} else {
-		InterCore_RegisterHandler(fdEpoll, &evdataRedInterCoreEvent, &iccRedSphere);
-	}
-
+	checkRealtimeApp(&iccRedSphere);
+	checkRealtimeApp(&iccGreenSphere);
+	checkRealtimeApp(&iccBlueSphere);
 }
 
 /// <summary>
@@ -180,18 +186,18 @@ static void SetLedRate(unsigned int uNewBlinkRate)
     }
 }
 
-/// <summary>
-///     Sends a message to the IoT Hub.
-/// </summary>
-static void SendMessageToIoTHub(void)
-{
-    if (connectedToIoTHub) {
-        // Send a message
-        AzureIoT_SendMessage("Hello from Azure IoT sample!");
-    } else {
-        Log_Debug("WARNING: Cannot send message: not connected to the IoT Hub.\n");
-    }
-}
+///// <summary>
+/////     Sends a message to the IoT Hub.
+///// </summary>
+//static void SendMessageToIoTHub(void)
+//{
+//    if (connectedToIoTHub) {
+//        // Send a message
+//        AzureIoT_SendMessage("Hello from Azure IoT sample!");
+//    } else {
+//        Log_Debug("WARNING: Cannot send message: not connected to the IoT Hub.\n");
+//    }
+//}
 
 /// <summary>
 ///     MessageReceived callback function, called when a message is received from the Azure IoT Hub.
@@ -375,9 +381,9 @@ static void AzureIoTDoWorkHandler(EventData *eventData)
 }
 
 // event handler data structures. Only the event handler field needs to be populated.
-static EventData buttonPollTimerEventData = {.eventHandler = &ButtonPollTimerHandler };
-static EventData azureIoTEventData = {.eventHandler = &AzureIoTDoWorkHandler };
-static EventData evdataAppCheckTimer = { .eventHandler = &ApplicationCheckTimerHandler };
+static EventData evtdataButtonPollTimer = {.eventHandler = &ButtonPollTimerHandler };
+static EventData evtdataAzureIoTWorkTimer = {.eventHandler = &AzureIoTDoWorkHandler };
+static EventData evtdataAppCheckTimer = { .eventHandler = &ApplicationCheckTimerHandler };
 
 
 /// <summary>
@@ -404,6 +410,9 @@ static int InitPeripheralsAndHandlers(void)
         return -1;
     }
 
+	InterCore_Initialize(&iccRedSphere);
+	InterCore_Initialize(&iccGreenSphere);
+	InterCore_Initialize(&iccBlueSphere);
 	
 
     // Set the Azure IoT hub related callbacks
@@ -413,7 +422,7 @@ static int InitPeripheralsAndHandlers(void)
     AzureIoT_SetConnectionStatusCallback(&IoTHubConnectionStatusChanged);
 
     // Display the currently connected WiFi connection.
-    DebugPrintCurrentlyConnectedWiFiNetwork();
+    //DebugPrintCurrentlyConnectedWiFiNetwork();
 
     fdEpoll = CreateEpollFd();
     if (fdEpoll < 0) {
@@ -422,18 +431,25 @@ static int InitPeripheralsAndHandlers(void)
 
 
     // Set up a timer for buttons status check
-    static struct timespec buttonsPressCheckPeriod = {0, 1000000};
-    fdButtonPollTimer = CreateTimerFdAndAddToEpoll(fdEpoll, &buttonsPressCheckPeriod,
-                                                   &buttonPollTimerEventData, EPOLLIN);
+    static struct timespec tsButtonPressCheckPeriod = {0, 1000000};
+    fdButtonPollTimer = CreateTimerFdAndAddToEpoll(fdEpoll, &tsButtonPressCheckPeriod,
+                                                   &evtdataButtonPollTimer, EPOLLIN);
     if (fdButtonPollTimer < 0) {
         return -1;
     }
 
+	// Set up a timer for real-time app status check
+	static struct timespec tsAppCheckPeriod = { 5, 0};
+	fdConnectionStatus = CreateTimerFdAndAddToEpoll(fdEpoll, &tsAppCheckPeriod,
+		&evtdataAppCheckTimer, EPOLLIN);
+	if (fdConnectionStatus < 0) {
+		return -1;
+	}
+
     // Set up a timer for Azure IoT SDK DoWork execution.
     azureIoTPollPeriodSeconds = AzureIoTDefaultPollPeriodSeconds;
-    struct timespec azureIoTDoWorkPeriod = {azureIoTPollPeriodSeconds, 0};
-    fdAzureIoTDoWorkTimer =
-        CreateTimerFdAndAddToEpoll(fdEpoll, &azureIoTDoWorkPeriod, &azureIoTEventData, EPOLLIN);
+    struct timespec tsAzureIoTDoWorkPeriod = {azureIoTPollPeriodSeconds, 0};
+    fdAzureIoTDoWorkTimer = CreateTimerFdAndAddToEpoll(fdEpoll, &tsAzureIoTDoWorkPeriod, &evtdataAzureIoTWorkTimer, EPOLLIN);
     if (fdAzureIoTDoWorkTimer < 0) {
         return -1;
     }
@@ -448,11 +464,18 @@ static void ClosePeripheralsAndHandlers(void)
 {
     Log_Debug("INFO: Closing GPIOs and Azure IoT client.\n");
 
+
     // Close all file descriptors
     CloseFdAndPrintError(fdBlinkRateButtonGpio, "LedBlinkRateButtonGpio");
     CloseFdAndPrintError(fdButtonPollTimer, "ButtonPollTimer");
-    CloseFdAndPrintError(fdAzureIoTDoWorkTimer, "IoTDoWorkTimer");
-    CloseFdAndPrintError(fdEpoll, "Epoll");
+    CloseFdAndPrintError(fdConnectionStatus, "AppCheckTimer");
+
+	InterCore_UnregisterHandler(&iccRedSphere);
+	InterCore_UnregisterHandler(&iccGreenSphere);
+	InterCore_UnregisterHandler(&iccBlueSphere);
+
+	CloseFdAndPrintError(fdAzureIoTDoWorkTimer, "IoTDoWorkTimer");
+	CloseFdAndPrintError(fdEpoll, "Epoll");
 
     // Destroy the IoT Hub client
     AzureIoT_DestroyClient();

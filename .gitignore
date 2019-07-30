@@ -329,3 +329,4 @@ ASALocalRun/
 # MFractors (Xamarin productivity tool) working folder 
 .mfractor/
 /out/ARM-Debug-2Beta1905
+/MCUtoMT3620toAzure/MCUSerialSketch/.vscode

@@ -245,14 +245,15 @@ static char *getAzureSphereProvisioningResultString(
 /// function has already completed successfully.</remarks>
 bool AzureIoT_SetupClient(void)
 {
-    if (iothubAuthenticated && (iothubClientHandle != NULL))
+    if (iothubAuthenticated && (iothubClientHandle != NULL)) {
         return true;
+	}
 
-    if (iothubClientHandle != NULL)
+    if (iothubClientHandle != NULL) {
         IoTHubDeviceClient_LL_Destroy(iothubClientHandle);
+	}
 
-	if (scopeId[0] == '\0')
-	{
+	if (scopeId[0] == '\0')	{
 		LogMessage("ERROR: DPS Scope ID not set.");
 		return false;
 	}
