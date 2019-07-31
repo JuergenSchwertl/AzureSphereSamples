@@ -64,7 +64,7 @@
 #define GREEN_SPHERE_COMPONENTID	"7E5FAB32-801C-4EDF-A1AA-9263652AA6BD"
 #define BLUE_SPHERE_COMPONENTID		"07562362-3FEC-46C8-B0AF-DB9507F32748"
 
-// forward decalration of inter-core communications message handler
+// forward declaration of inter-core communications message handler
 void IntercoreMessageHandler(InterCoreEventData* pIcEventData, const void* pMessage, ssize_t iSize);
 
 
@@ -138,12 +138,6 @@ void checkRealtimeApp(InterCoreEventData* pIcEventData)
 	}
 }
 
-void ApplicationCheckTimerHandler(EventData * pEvent)
-{
-	checkRealtimeApp(&iccRedSphere);
-	checkRealtimeApp(&iccGreenSphere);
-	checkRealtimeApp(&iccBlueSphere);
-}
 
 /// <summary>
 ///     Helper function to open a file descriptor for the given GPIO as input mode.
@@ -290,7 +284,7 @@ static int DirectMethodCall(const char *methodName, const char *payload, size_t 
 /// <param name="connected">'true' when the connection to the IoT Hub is established.</param>
 static void IoTHubConnectionStatusChanged(bool connected)
 {
-	Log_Debug("[IoTHubConnectionStatusChanged]:%d.\n", (int)connected);
+	Log_Debug("INFO: IoT Hub Connection Status Changed to %d.\n", (int)connected);
 	connectedToIoTHub = connected;
 }
 
@@ -317,12 +311,27 @@ static bool IsButtonPressed(int fd, GPIO_Value_Type *oldState)
     return isButtonPressed;
 }
 
+
+
+void ApplicationCheckTimerHandler(EventData* pEventData)
+{
+	if (ConsumeTimerFdEvent(pEventData->fd) != 0) {
+		terminationRequired = true;
+		return;
+	}
+
+	checkRealtimeApp(&iccRedSphere);
+	checkRealtimeApp(&iccGreenSphere);
+	checkRealtimeApp(&iccBlueSphere);
+}
+
+
 /// <summary>
 ///     Handle button timer event: if the button is pressed, change the LED blink rate.
 /// </summary>
-static void ButtonPollTimerHandler(EventData *eventData)
+static void ButtonPollTimerHandler(EventData *pEventData)
 {
-    if (ConsumeTimerFdEvent(fdButtonPollTimer) != 0) {
+    if (ConsumeTimerFdEvent(pEventData->fd) != 0) {
         terminationRequired = true;
         return;
     }
@@ -338,12 +347,12 @@ static void ButtonPollTimerHandler(EventData *eventData)
 /// <summary>
 ///     Hand over control periodically to the Azure IoT SDK's DoWork.
 /// </summary>
-static void AzureIoTDoWorkHandler(EventData *eventData)
+static void AzureIoTDoWorkHandler(EventData * pEventData)
 {
-    if (ConsumeTimerFdEvent(fdAzureIoTDoWorkTimer) != 0) {
-        terminationRequired = true;
-        return;
-    }
+	if (ConsumeTimerFdEvent(pEventData->fd) != 0) {
+		terminationRequired = true;
+		return;
+	}
 
     // Set up the connection to the IoT Hub client.
     // Notes it is safe to call this function even if the client has already been set up, as in
@@ -439,7 +448,7 @@ static int InitPeripheralsAndHandlers(void)
     }
 
 	// Set up a timer for real-time app status check
-	static struct timespec tsAppCheckPeriod = { 5, 0};
+	static struct timespec tsAppCheckPeriod = { 10, 0};
 	fdConnectionStatus = CreateTimerFdAndAddToEpoll(fdEpoll, &tsAppCheckPeriod,
 		&evtdataAppCheckTimer, EPOLLIN);
 	if (fdConnectionStatus < 0) {

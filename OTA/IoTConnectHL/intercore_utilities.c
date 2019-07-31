@@ -31,12 +31,12 @@ static void handleSocketError(InterCoreEventData * pIcEventData)
 	Log_Debug("[InterCore] ERROR: Unable to send/receive message: %d (%s); closing socket.\n", errno, strerror(errno));
 	InterCore_UnregisterHandler(pIcEventData);
 
-	// permission denied: app has been uninstalled
-	if (errno == 1) {
+	// Error: permission denied (app has been uninstalled)
+	if (errno == EPERM) {
 		pIcEventData->State = InterCoreState_AppNotInstalled;
 	}
-	// app exists but doesn't run (i.e. stopped state)
-	if (errno == 104)
+	// Error: connection reset (app exists but doesn't run; i.e. stopped state)
+	if (errno == ECONNRESET)
 	{
 		pIcEventData->State = InterCoreState_AppUnresponsive;
 	}
@@ -99,8 +99,14 @@ int InterCore_RegisterHandler(int epollFd, InterCoreEventData * pIcEventData)
 
 	// Open connection to real-time capable application.
 	if ((fdSocket = Application_Socket(pIcEventData->ComponentId)) == -1) {
-		Log_Debug("[InterCore] ERROR: Unable to create socket: %d (%s)\n", errno, strerror(errno));
-		pIcEventData->State = InterCoreState_AppNotInstalled;
+		if (errno == EACCES)
+		{
+			Log_Debug("[InterCore] App %s not available.\n", pIcEventData->ComponentId);
+			pIcEventData->State = InterCoreState_AppNotInstalled;
+		}
+		else {
+			Log_Debug("[InterCore] ERROR: Unable to create application socket for %s: %d (%s)\n", pIcEventData->ComponentId, errno, strerror(errno));
+		}
 		return -1;
 	}
 

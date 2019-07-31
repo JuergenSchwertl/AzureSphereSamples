@@ -36,6 +36,9 @@
   <ImportGroup Label="Shared" />
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
+    <TargetHardwareDirectory>./</TargetHardwareDirectory>
+  </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="azure_iot_utilities.c" />
     <ClCompile Include="epoll_timerfd_utilities.c" />
