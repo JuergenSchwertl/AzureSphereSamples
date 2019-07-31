@@ -1,10 +1,11 @@
 {
   "SchemaVersion": 1,
   "Name": "RedSphereRT",
-  "ComponentId": "00000008-d321-4d72-8283-0b7c5b56442b",
+  "ComponentId": "F4E25978-6152-447B-A2A1-64577582F327",
   "EntryPoint": "/bin/app",
-  "CmdArgs": [],
+  "CmdArgs": [ "RedSphere" ],
   "Capabilities": {
+    "AllowedApplicationConnections": [ "33e04e8f-a020-4af8-80d0-8064343e0616" ],
     "Gpio": [ 8 ]
   },
   "ApplicationType": "RealTimeCapable"
