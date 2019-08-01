@@ -111,6 +111,7 @@ static bool connectedToIoTHub = false;
 // Termination state
 static volatile sig_atomic_t terminationRequired = false;
 
+
 /// <summary>
 ///     Signal handler for termination requests. This handler must be async-signal-safe.
 /// </summary>
@@ -123,6 +124,8 @@ static void TerminationHandler(int signalNumber)
 
 void IntercoreMessageHandler(InterCoreEventData * pIcEventData, const void * pMessage, ssize_t iSize)
 {
+	/// REMOVE THIS: JUST FOR DISASSEMBLY CHECK
+	GetComponentIdString(pIcEventData);
 	Log_Debug("Message from %s is '%s'", pIcEventData->ComponentId, (const char *) pMessage);
 }
 

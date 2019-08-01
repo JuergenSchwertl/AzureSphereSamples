@@ -7,34 +7,57 @@
 
 #include "mt3620-baremetal.h"
 #include "mt3620-timer.h"
+#include "mt3620-intercore.h"
 #include "mt3620-gpio.h"
 
 #define MT3620_RDB_LED1_RED		(8)			// GPIO_GROUP_2:GPIO_0 ==> GPIO #8
 #define MT3620_RDB_LED2_GREEN	(16)		// GPIO_GROUP_4:GPIO_0 ==> GPIO #16
 #define MT3620_RDB_LED3_BLUE	(20)		// GPIO_GROUP_5:GPIO_0 ==> GPIO #20
 
+static const char cstrPingResponse[] = "ping";
 
-extern uint32_t StackTop; // &StackTop == end of TCM0
 
-static _Noreturn void DefaultExceptionHandler(void);
-
-static bool ledOn = false;
+static bool bIsLedOn = false;
 static const int ledGpio = MT3620_RDB_LED1_RED;
-static const int blinkIntervalsMs[] = {125, 250, 500};
-static int blinkIntervalIndex = 0;
-static const int numBlinkIntervals = sizeof(blinkIntervalsMs) / sizeof(blinkIntervalsMs[0]);
-static void HandleBlinkTimerIrq(void);
+static const uint32_t auBlinkIntervalsMs[] = {125, 250, 500};
+static size_t nBlinkIntervalIndex = 0;
+static const size_t numBlinkIntervals = sizeof(auBlinkIntervalsMs) / sizeof(auBlinkIntervalsMs[0]);
 
-//static const int buttonAGpio = 12;
-static const int buttonPressCheckPeriodMs = 10;
-//static void HandleButtonTimerIrq(void);
+//static const uint32_t uInterCoreTimerMs = 10;
+//static void HandleInterCoreTimerIrq(void);
 
-static _Noreturn void RTCoreMain(void);
+
+char strComponentId[34];
+
+
+BufferHeader * outbound, * inbound;
+uint32_t sharedBufSize = 0;
+
+typedef struct GUID {
+	uint32_t	a;
+	uint16_t	b;
+	uint16_t	c;
+	uint8_t		d[8];
+};
+
+typedef struct InterCoreMessageLayout
+{
+	uint8_t ComponentId[16];
+	uint32_t Reserved;
+	uint8_t Payload[];
+} InterCoreMessageLayout;
 
 // ARM DDI0403E.d SB1.5.2-3
 // From SB1.5.3, "The Vector table must be naturally aligned to a power of two whose alignment
 // value is greater than or equal to (Number of Exceptions supported x 4), with a minimum alignment
 // of 128 bytes.". The array is aligned in linker.ld, using the dedicated section ".vector_table".
+
+extern uint32_t StackTop; // &StackTop == end of TCM0
+
+static _Noreturn void DefaultExceptionHandler(void);
+static _Noreturn void RTCoreMain(void);
+static void HandleBlinkTimerIrq(void);
+
 
 // The exception vector table contains a stack pointer, 15 exception handlers, and an entry for
 // each interrupt.
@@ -68,30 +91,69 @@ static _Noreturn void DefaultExceptionHandler(void)
 
 static void HandleBlinkTimerIrq(void)
 {
-    ledOn = !ledOn;
-    Mt3620_Gpio_Write(ledGpio, ledOn);
+    bIsLedOn = !bIsLedOn;
+    Mt3620_Gpio_Write(ledGpio, bIsLedOn);
 
-    Gpt_LaunchTimerMs(TimerGpt0, blinkIntervalsMs[blinkIntervalIndex], HandleBlinkTimerIrq);
+    Gpt_LaunchTimerMs(TimerGpt0, auBlinkIntervalsMs[nBlinkIntervalIndex], HandleBlinkTimerIrq);
 }
 
-//static void HandleButtonTimerIrq(void)
+static void GetComponentIdString(uint8_t* pSrc)
+{
+	static const char achHex[] = "0123456789ABCDEF";
+	register size_t i;
+
+	union NibbleByte {
+		uint8_t Byte;
+		struct Nibbles
+		{
+			uint8_t Low : 4;
+			uint8_t High : 4;
+		} Nibble;
+	} nibblebyte;
+	size_t n = 0;
+	register char* pDst = strComponentId;
+
+	for ( i=3; i>=0; i--) // uint32 LITTLE_ENDIAN 4321
+	{
+		nibblebyte.Byte = *(pSrc+i);
+		*pDst++ = achHex[nibblebyte.Nibble.High];
+		*pDst++ = achHex[nibblebyte.Nibble.Low];
+	}
+	*pDst++ = '-';
+	for (i = 5; i >= 4; i--)
+	{
+		nibblebyte.Byte = *(pSrc + i);
+		*pDst++ = achHex[nibblebyte.Nibble.High];
+		*pDst++ = achHex[nibblebyte.Nibble.Low];
+	}
+	strComponentId[n++] = '-';
+	for (i = 7; i >= 6; i--)
+	{
+		nibblebyte.Byte = *(pSrc + i);
+		strComponentId[n++] = achHex[nibblebyte.Nibble.High];
+		strComponentId[n++] = achHex[nibblebyte.Nibble.Low];
+	}
+	strComponentId[n++] = '-';
+	for (i = 8; i <= 9; i++)
+	{
+		nibblebyte.Byte = *(pSrc + i);
+		strComponentId[n++] = achHex[nibblebyte.Nibble.High];
+		strComponentId[n++] = achHex[nibblebyte.Nibble.Low];
+	}
+	strComponentId[n++] = '-';
+	for (i = 10; i <= 16; i++)
+	{
+		nibblebyte.Byte = *(pSrc + i);
+		strComponentId[n++] = achHex[nibblebyte.Nibble.High];
+		strComponentId[n++] = achHex[nibblebyte.Nibble.Low];
+	}
+	strComponentId[n] = '\0';
+
+}
+
+//static void HandleInterCoreTimerIrq(void)
 //{
-//    // Assume initial state is high, i.e. button not pressed.
-//    static bool prevState = true;
-//    bool newState;
-//    Mt3620_Gpio_Read(buttonAGpio, &newState);
-//
-//    if (newState != prevState) {
-//        bool pressed = !newState;
-//        if (pressed) {
-//            blinkIntervalIndex = (blinkIntervalIndex + 1) % numBlinkIntervals;
-//            Gpt_LaunchTimerMs(TimerGpt0, blinkIntervalsMs[blinkIntervalIndex], HandleBlinkTimerIrq);
-//        }
-//
-//        prevState = newState;
-//    }
-//
-//    Gpt_LaunchTimerMs(TimerGpt1, buttonPressCheckPeriodMs, HandleButtonTimerIrq);
+//  Gpt_LaunchTimerMs(TimerGpt1, uInterCoreTimerMs, HandleInterCoreTimerIrq);
 //}
 
 static _Noreturn void RTCoreMain(void)
@@ -130,12 +192,35 @@ static _Noreturn void RTCoreMain(void)
 	Mt3620_Gpio_AddBlock(&grp5);
 
     Mt3620_Gpio_ConfigurePinForOutput(ledGpio);
-    //Mt3620_Gpio_ConfigurePinForInput(buttonAGpio);
 
-    Gpt_LaunchTimerMs(TimerGpt0, blinkIntervalsMs[blinkIntervalIndex], HandleBlinkTimerIrq);
-    //Gpt_LaunchTimerMs(TimerGpt1, buttonPressCheckPeriodMs, HandleButtonTimerIrq);
+	if (GetIntercoreBuffers(&outbound, &inbound, &sharedBufSize) == -1) {
+		for (;;) {
+			// empty.
+		}
+	}
 
-    for (;;) {
-        __asm__("wfi");
+    Gpt_LaunchTimerMs(TimerGpt0, auBlinkIntervalsMs[nBlinkIntervalIndex], HandleBlinkTimerIrq);
+    //Gpt_LaunchTimerMs(TimerGpt1, uInterCoreTimerMs, HandleInterCoreTimerIrq);
+
+	// the main program loop is constantly checking the intercore communication buffer
+	uint8_t buf[128];
+	static const size_t payloadStart = 20;
+
+	for (;;) {
+		uint32_t dataSize = sizeof(buf);
+
+		// On success, dataSize is set to the actual number of bytes which were read.
+		int r = DequeueData(outbound, inbound, sharedBufSize, buf, &dataSize);
+		if (r == -1 || dataSize < payloadStart) {
+			continue;
+		}
+
+		InterCoreMessageLayout* pLayout = (InterCoreMessageLayout*)buf;
+		uint8_t* pMessage = pLayout->Payload;
+		size_t payloadBytes = dataSize - payloadStart;
+		
+		GetComponentIdString(pLayout->ComponentId);
+
+		int s = EnqueueData(inbound, outbound, sharedBufSize, cstrPingResponse, sizeof(cstrPingResponse));
     }
 }

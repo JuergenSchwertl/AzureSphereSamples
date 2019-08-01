@@ -15,17 +15,25 @@ typedef struct {
     /// <para>Enqueue function uses this value to store the last position written to
     /// by the real-time capable application.</para>
     /// <para>Dequeue function uses this value to find the last position written to by
-    /// the high-level application.</summary>
+    /// the high-level application.</para></summary>
     uint32_t writePosition;
     /// <summary>
     /// <para>Enqueue function uses this value to find the last position read from by the
     /// high-level applicaton.</para>
     /// <para>Dequeue function uses this value to store the last position read from by
-    /// the real-time application.</para>
+    /// the real-time application.</para></summary>
     uint32_t readPosition;
     /// <summary>Reserved for alignment.</summary>
     uint32_t reserved[14];
 } BufferHeader;
+
+
+typedef struct InterCoreMessageLayout
+{
+	uint8_t ComponentId[16];
+	uint32_t Reserved;
+	uint8_t Payload[];
+} InterCoreMessageLayout;
 
 /// <summary>Blocks inside the shared buffer have this alignment.</summary>
 #define RINGBUFFER_ALIGNMENT 16

@@ -110,25 +110,27 @@ int InterCore_RegisterHandler(int epollFd, InterCoreEventData * pIcEventData)
 		return -1;
 	}
 
-	int rcvlen;
-	unsigned int m = sizeof(int);
-	getsockopt(fdSocket, SOL_SOCKET, SO_RCVBUF, (void *)&rcvlen, &m);
-	int sndlen;
-	getsockopt(fdSocket, SOL_SOCKET, SO_SNDBUF, (void *)&sndlen, &m);
-	Log_Debug("[InterCore] Length of receive buffer %d, send buffer %d", rcvlen, sndlen);
+	//int rcvlen;
+	//unsigned int m = sizeof(int);
+	//getsockopt(fdSocket, SOL_SOCKET, SO_RCVBUF, (void *)&rcvlen, &m);
+	//int sndlen;
+	//getsockopt(fdSocket, SOL_SOCKET, SO_SNDBUF, (void *)&sndlen, &m);
+	//Log_Debug("[InterCore] Length of receive buffer %d, send buffer %d", rcvlen, sndlen);
 
 	int result = setsockopt(fdSocket, SOL_SOCKET, SO_RCVTIMEO, &recvTimeout, sizeof(recvTimeout));
 	if (result == -1) {
 		Log_Debug("[InterCore] ERROR: Unable to set socket timeout: %d (%s)\n", errno, strerror(errno));
+		close(fdSocket);
 		return -1;
 	}
 
 	// Register handler for incoming messages from real-time capable application.
 	if (RegisterEventHandlerToEpoll(epollFd, fdSocket, (EventData *) pIcEventData, EPOLLIN) != 0) {
+		close(fdSocket);
 		return -1;
 	}
 
-	pIcEventData->State = InterCoreState_Unknown;
+	pIcEventData->State = InterCoreState_AppActive;
 	pIcEventData->_evt.fd = fdSocket;
 	return 0;
 }

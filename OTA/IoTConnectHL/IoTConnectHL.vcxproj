@@ -60,7 +60,7 @@
   <ImportGroup Label="ExtensionTargets" />
   <ItemDefinitionGroup>
     <ClCompile>
-      <AdditionalOptions>-Werror=implicit-function-declaration  -D AZURE_IOT_HUB_CONFIGURED %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>-Werror=implicit-function-declaration  -D AZURE_IOT_HUB_CONFIGURED  -Wa,-adhln="obj\ARM\Debug\%(filename).s" -g -fverbose-asm %(AdditionalOptions)</AdditionalOptions>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'"> $(SysRoot)\usr\include\azureiot;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|ARM'"> $(SysRoot)\usr\include\azureiot;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
