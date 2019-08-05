@@ -3,7 +3,7 @@
 static const char achHex[] = "0123456789ABCDEF";
 
 typedef struct Nibbles { uint8_t Low : 4; uint8_t High : 4; } Nibbles;
-typedef union NibbleByte { uint8_t Byte; Nibbles Nibble } NibbleByte;
+typedef union NibbleByte { uint8_t Byte; Nibbles Nibble; } NibbleByte;
 
 ///<summary>Converts GUID into string</summary>
 ///<param name="pGuid">Pointer to GUID structure</param>
@@ -51,5 +51,5 @@ int Guid_ToString(const GUID *pGuid, char * pStrOut)
 		*pDst++ = achHex[nibblebyte.Nibble.Low];
 	}
 	*pDst = '\0';
-	return pDst-pStrOut;
+	return (int) (pDst-pStrOut);
 }
