@@ -5,6 +5,7 @@
 #define MT3620_INTERCORE_H
 
 #include <stdint.h>
+#include "guid_utilities.h"
 
 /// <summary>
 /// There are two buffers, inbound and outbound, which are used to track
@@ -27,13 +28,23 @@ typedef struct {
     uint32_t reserved[14];
 } BufferHeader;
 
-
+///<summary>Memory layout of intercore message</summary>
 typedef struct InterCoreMessageLayout
 {
-	uint8_t ComponentId[16];
+	///<summary>16 bytes of binary Component ID</summary>
+	GUID ComponentId;
+	///<summary>4 fill bytes</summary>
 	uint32_t Reserved;
+	///<summary>Message_Header payload starts here</summary>
 	uint8_t Payload[];
 } InterCoreMessageLayout;
+
+///<summary>Message header is 4 bytes (i.e. "PING" without terminator)</summary>
+typedef union InterCoreMessageHeader { uint32_t MagicValue;  const char Text[4]; } InterCoreMessageHeader;
+///<summary>Plain message only has header</summary>
+typedef struct InterCoreMessagePlain { InterCoreMessageHeader Header; } InterCoreMessagePlain;
+///<summary>Message has header and uint32 payload</summary>
+typedef struct InterCoreMessageUint32 { InterCoreMessageHeader Header; uint32_t Value; } InterCoreMessageUint32;
 
 /// <summary>Blocks inside the shared buffer have this alignment.</summary>
 #define RINGBUFFER_ALIGNMENT 16

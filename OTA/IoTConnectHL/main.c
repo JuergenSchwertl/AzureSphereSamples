@@ -60,6 +60,125 @@
 (right-click References -> Add Connected Service)."
 #endif
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+typedef struct GUID
+{
+	/// <summary>int32 LITTLE_ENDIAN 78563412</summary>
+	int32_t a;
+	/// <summary>int16 LITTLE_ENDIAN 3412</summary>
+	int16_t b;
+	/// <summary>int32 LITTLE_ENDIAN 3412</summary>
+	int16_t c;
+	/// <summary>remaining 2+6 bytes 1234-123456789ab</summary>
+	uint8_t d[8];
+} GUID;
+
+
+static const char achHex[] = "0123456789ABCDEF";
+
+typedef struct Nibbles { uint8_t Low : 4; uint8_t High : 4; } Nibbles;
+typedef union NibbleByte { uint8_t Byte; Nibbles Nibble } NibbleByte;
+
+
+///<summary>Converts GUID into string</summary>
+///<param name="pGuid">Pointer to GUID structure</param>
+///<param name="pGuid">Pointer to string buffer</param>
+///<returns>Number of characters written (excluding `\0` character)</param>
+int Guid_ToString(const GUID* pGuid, char* pStrOut)
+{
+	register uint8_t* pSrc = (uint8_t*)pGuid;
+	register char* pDst = pStrOut;
+	register int i;
+	register NibbleByte nibblebyte;
+
+	for (i = 3; i >= 0; i--) // int32 LITTLE_ENDIAN 78563412
+	{
+		nibblebyte.Byte = *(pSrc + i);
+		*pDst++ = achHex[nibblebyte.Nibble.High];
+		*pDst++ = achHex[nibblebyte.Nibble.Low];
+	}
+	*pDst++ = '-';
+	for (i = 5; i >= 4; i--) // int16 LITTLE_ENDIAN 3412
+	{
+		nibblebyte.Byte = *(pSrc + i);
+		*pDst++ = achHex[nibblebyte.Nibble.High];
+		*pDst++ = achHex[nibblebyte.Nibble.Low];
+	}
+	*pDst++ = '-';
+	for (i = 7; i >= 6; i--) // int16 LITTLE_ENDIAN 3412
+	{
+		nibblebyte.Byte = *(pSrc + i);
+		*pDst++ = achHex[nibblebyte.Nibble.High];
+		*pDst++ = achHex[nibblebyte.Nibble.Low];
+	}
+	*pDst++ = '-';
+	for (i = 8; i <= 9; i++)
+	{
+		nibblebyte.Byte = *(pSrc + i);
+		*pDst++ = achHex[nibblebyte.Nibble.High];
+		*pDst++ = achHex[nibblebyte.Nibble.Low];
+	}
+	*pDst++ = '-';
+	for (i = 10; i < 16; i++)
+	{
+		nibblebyte.Byte = *(pSrc + i);
+		*pDst++ = achHex[nibblebyte.Nibble.High];
+		*pDst++ = achHex[nibblebyte.Nibble.Low];
+	}
+	*pDst = '\0';
+	return pDst - pStrOut;
+}
+
+typedef struct InterCoreMessageLayout
+{
+	///<summary>16 bytes of binary Component ID</summary>
+	GUID ComponentId;
+	///<summary>4 fill bytes</summary>
+	uint32_t Reserved;
+	///<summary>Message_Header payload starts here</summary>
+	uint8_t Payload[];
+} InterCoreMessageLayout;
+
+void guidtest(void)
+{
+	uint8_t buf[32] = { 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x12, 0x34, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88 };
+	char strBuf[64];
+
+	InterCoreMessageLayout* pMessage = (InterCoreMessageLayout*)buf;
+
+	Guid_ToString(&pMessage->ComponentId, strBuf);
+	Log_Debug(strBuf);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #define RED_SPHERE_COMPONENTID		"F4E25978-6152-447B-A2A1-64577582F327"
 #define GREEN_SPHERE_COMPONENTID	"7E5FAB32-801C-4EDF-A1AA-9263652AA6BD"
 #define BLUE_SPHERE_COMPONENTID		"07562362-3FEC-46C8-B0AF-DB9507F32748"
@@ -80,6 +199,10 @@ static InterCoreEventData iccBlueSphere = {
 	.ComponentId = BLUE_SPHERE_COMPONENTID,
 	.MessageHandler = &IntercoreMessageHandler };
 
+
+static const InterCoreMessageHeader msghPing = { .Text = "PING" };
+static const InterCoreMessageHeader msghPingResponse = { .Text = "ping" };
+static const InterCoreMessageHeader msghBlinkInterval = { .Text = "BLNK" };
 
 // realtime application PING message
 static const char strPingMessage[] = "PING";
@@ -111,7 +234,6 @@ static bool connectedToIoTHub = false;
 // Termination state
 static volatile sig_atomic_t terminationRequired = false;
 
-
 /// <summary>
 ///     Signal handler for termination requests. This handler must be async-signal-safe.
 /// </summary>
@@ -124,9 +246,15 @@ static void TerminationHandler(int signalNumber)
 
 void IntercoreMessageHandler(InterCoreEventData * pIcEventData, const void * pMessage, ssize_t iSize)
 {
-	/// REMOVE THIS: JUST FOR DISASSEMBLY CHECK
-	GetComponentIdString(pIcEventData);
-	Log_Debug("Message from %s is '%s'", pIcEventData->ComponentId, (const char *) pMessage);
+	if (iSize >= sizeof(InterCoreMessageHeader))
+	{
+		char strMessage[5];
+		// copy the message header value 
+		((InterCoreMessageHeader *)strMessage)->MagicValue = ((InterCoreMessageHeader *)pMessage)->MagicValue;
+		strMessage[4] = '\0';
+
+		Log_Debug("[InterCore]: Received '%s' from %s\n", (const char*)strMessage, pIcEventData->ComponentId);
+	}
 }
 
 void checkRealtimeApp(InterCoreEventData* pIcEventData)
@@ -168,12 +296,21 @@ static void SetLedRate(unsigned int uNewBlinkRate)
 	// Clamp blink rate 
 	uLedBlinkRate = uNewBlinkRate % uMaxBlinkRate;
 
-	// send new blink rate to partner real-time app(s)
-	//if (SetTimerFdToPeriod(led1BlinkTimerFd, rate) != 0) {
-    //    Log_Debug("ERROR: could not set the period of the LED.\n");
-    //    terminationRequired = true;
-    //    return;
-    //}
+	// send LedBlinkRate to real-time capable apps where active
+	InterCoreMessageUint32 msgBlinkRate = {
+		.Header.MagicValue = msghBlinkInterval.MagicValue,
+		.Value = uLedBlinkRate };
+
+	if (iccRedSphere.State == InterCoreState_AppActive) {
+		InterCore_SendMessage(&iccRedSphere, &msgBlinkRate, sizeof(msgBlinkRate));
+	}
+	if (iccGreenSphere.State == InterCoreState_AppActive) {
+		InterCore_SendMessage(&iccGreenSphere, &msgBlinkRate, sizeof(msgBlinkRate));
+	}
+	if (iccBlueSphere.State == InterCoreState_AppActive) {
+		InterCore_SendMessage(&iccBlueSphere, &msgBlinkRate, sizeof(msgBlinkRate));
+	}
+
 
     if (connectedToIoTHub) {
         // Report the current state to the Device Twin on the IoT Hub.
@@ -404,6 +541,8 @@ static EventData evtdataAppCheckTimer = { .eventHandler = &ApplicationCheckTimer
 /// <returns>0 on success, or -1 on failure</returns>
 static int InitPeripheralsAndHandlers(void)
 {
+	guidtest();
+
     // Register a SIGTERM handler for termination requests
     struct sigaction action;
     memset(&action, 0, sizeof(struct sigaction));

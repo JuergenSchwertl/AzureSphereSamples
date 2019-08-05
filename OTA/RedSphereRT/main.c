@@ -9,13 +9,17 @@
 #include "mt3620-timer.h"
 #include "mt3620-intercore.h"
 #include "mt3620-gpio.h"
+#include "guid_utilities.h"
 
 #define MT3620_RDB_LED1_RED		(8)			// GPIO_GROUP_2:GPIO_0 ==> GPIO #8
 #define MT3620_RDB_LED2_GREEN	(16)		// GPIO_GROUP_4:GPIO_0 ==> GPIO #16
 #define MT3620_RDB_LED3_BLUE	(20)		// GPIO_GROUP_5:GPIO_0 ==> GPIO #20
 
-static const char cstrPingResponse[] = "ping";
 
+static const InterCoreMessageHeader msgPing = { .Text = "PING" };
+static const InterCoreMessageHeader msgPingResponse = { .Text = "ping" };
+static const InterCoreMessageHeader msgReceivedResponse = { .Text = "recv" };
+static const InterCoreMessageHeader msgBlinkInterval = { .Text = "BLNK" };
 
 static bool bIsLedOn = false;
 static const int ledGpio = MT3620_RDB_LED1_RED;
@@ -27,25 +31,12 @@ static const size_t numBlinkIntervals = sizeof(auBlinkIntervalsMs) / sizeof(auBl
 //static void HandleInterCoreTimerIrq(void);
 
 
-char strComponentId[34];
+char strComponentId[48];
 
 
 BufferHeader * outbound, * inbound;
 uint32_t sharedBufSize = 0;
 
-typedef struct GUID {
-	uint32_t	a;
-	uint16_t	b;
-	uint16_t	c;
-	uint8_t		d[8];
-};
-
-typedef struct InterCoreMessageLayout
-{
-	uint8_t ComponentId[16];
-	uint32_t Reserved;
-	uint8_t Payload[];
-} InterCoreMessageLayout;
 
 // ARM DDI0403E.d SB1.5.2-3
 // From SB1.5.3, "The Vector table must be naturally aligned to a power of two whose alignment
@@ -97,59 +88,7 @@ static void HandleBlinkTimerIrq(void)
     Gpt_LaunchTimerMs(TimerGpt0, auBlinkIntervalsMs[nBlinkIntervalIndex], HandleBlinkTimerIrq);
 }
 
-static void GetComponentIdString(uint8_t* pSrc)
-{
-	static const char achHex[] = "0123456789ABCDEF";
-	register size_t i;
 
-	union NibbleByte {
-		uint8_t Byte;
-		struct Nibbles
-		{
-			uint8_t Low : 4;
-			uint8_t High : 4;
-		} Nibble;
-	} nibblebyte;
-	size_t n = 0;
-	register char* pDst = strComponentId;
-
-	for ( i=3; i>=0; i--) // uint32 LITTLE_ENDIAN 4321
-	{
-		nibblebyte.Byte = *(pSrc+i);
-		*pDst++ = achHex[nibblebyte.Nibble.High];
-		*pDst++ = achHex[nibblebyte.Nibble.Low];
-	}
-	*pDst++ = '-';
-	for (i = 5; i >= 4; i--)
-	{
-		nibblebyte.Byte = *(pSrc + i);
-		*pDst++ = achHex[nibblebyte.Nibble.High];
-		*pDst++ = achHex[nibblebyte.Nibble.Low];
-	}
-	strComponentId[n++] = '-';
-	for (i = 7; i >= 6; i--)
-	{
-		nibblebyte.Byte = *(pSrc + i);
-		strComponentId[n++] = achHex[nibblebyte.Nibble.High];
-		strComponentId[n++] = achHex[nibblebyte.Nibble.Low];
-	}
-	strComponentId[n++] = '-';
-	for (i = 8; i <= 9; i++)
-	{
-		nibblebyte.Byte = *(pSrc + i);
-		strComponentId[n++] = achHex[nibblebyte.Nibble.High];
-		strComponentId[n++] = achHex[nibblebyte.Nibble.Low];
-	}
-	strComponentId[n++] = '-';
-	for (i = 10; i <= 16; i++)
-	{
-		nibblebyte.Byte = *(pSrc + i);
-		strComponentId[n++] = achHex[nibblebyte.Nibble.High];
-		strComponentId[n++] = achHex[nibblebyte.Nibble.Low];
-	}
-	strComponentId[n] = '\0';
-
-}
 
 //static void HandleInterCoreTimerIrq(void)
 //{
@@ -208,6 +147,7 @@ static _Noreturn void RTCoreMain(void)
 
 	for (;;) {
 		uint32_t dataSize = sizeof(buf);
+		int nBytes=0;
 
 		// On success, dataSize is set to the actual number of bytes which were read.
 		int r = DequeueData(outbound, inbound, sharedBufSize, buf, &dataSize);
@@ -215,12 +155,26 @@ static _Noreturn void RTCoreMain(void)
 			continue;
 		}
 
-		InterCoreMessageLayout* pLayout = (InterCoreMessageLayout*)buf;
-		uint8_t* pMessage = pLayout->Payload;
+		InterCoreMessageLayout* pMessage = (InterCoreMessageLayout*)buf;
 		size_t payloadBytes = dataSize - payloadStart;
-		
-		GetComponentIdString(pLayout->ComponentId);
 
-		int s = EnqueueData(inbound, outbound, sharedBufSize, cstrPingResponse, sizeof(cstrPingResponse));
-    }
+		//nBytes = Guid_ToString(&pMessage->ComponentId, strComponentId);
+
+		if (payloadBytes >= sizeof(InterCoreMessageHeader))
+		{
+			// if message is "PING", respond with "ping"
+			if (msgPing.MagicValue == ((InterCoreMessageHeader*)pMessage->Payload)->MagicValue)
+			{
+				__builtin_memcpy(pMessage->Payload, &msgReceivedResponse, sizeof(msgReceivedResponse));
+				nBytes = EnqueueData(inbound, outbound, sharedBufSize, buf, sizeof(InterCoreMessageLayout) + sizeof(msgPingResponse));
+			}
+			// if message is "BLNK", respond with "recv"
+			if (msgBlinkInterval.MagicValue == ((InterCoreMessageHeader*)pMessage->Payload)->MagicValue)
+			{
+				nBlinkIntervalIndex = ((InterCoreMessageUint32 *)pMessage->Payload)->Value % numBlinkIntervals;
+				__builtin_memcpy(pMessage->Payload, &msgReceivedResponse, sizeof(msgReceivedResponse));
+				nBytes = EnqueueData(inbound, outbound, sharedBufSize, buf, sizeof(InterCoreMessageLayout)+sizeof(msgReceivedResponse));
+			}
+		}
+	}
 }

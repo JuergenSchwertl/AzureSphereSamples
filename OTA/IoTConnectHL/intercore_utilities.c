@@ -21,7 +21,6 @@
 #include "intercore_utilities.h"
 #include "epoll_timerfd_utilities.h"
 
-
 	// Set timeout, to handle case where real-time capable application does not respond.
 static const struct timeval recvTimeout = { .tv_sec = 5,.tv_usec = 0 };
 
@@ -73,7 +72,6 @@ static void intercoreEventHandler(InterCoreEventData * pIcEventData)
 	// Read response from real-time capable application.
 	char rxBuf[INTERCORE_RECV_BUFFER_SIZE];
 	ssize_t bytesReceived = recv(pIcEventData->_evt.fd, rxBuf, sizeof(rxBuf), 0);
-	Log_Debug("[InterCore] Received %d bytes.\n", bytesReceived);
 
 	if( bytesReceived < 0 ) {
 		handleSocketError( pIcEventData );
@@ -101,7 +99,8 @@ int InterCore_RegisterHandler(int epollFd, InterCoreEventData * pIcEventData)
 	if ((fdSocket = Application_Socket(pIcEventData->ComponentId)) == -1) {
 		if (errno == EACCES)
 		{
-			Log_Debug("[InterCore] App %s not available.\n", pIcEventData->ComponentId);
+			//supress verbose output if app is not found
+			//Log_Debug("[InterCore] App %s not available.\n", pIcEventData->ComponentId);
 			pIcEventData->State = InterCoreState_AppNotInstalled;
 		}
 		else {
@@ -109,13 +108,6 @@ int InterCore_RegisterHandler(int epollFd, InterCoreEventData * pIcEventData)
 		}
 		return -1;
 	}
-
-	//int rcvlen;
-	//unsigned int m = sizeof(int);
-	//getsockopt(fdSocket, SOL_SOCKET, SO_RCVBUF, (void *)&rcvlen, &m);
-	//int sndlen;
-	//getsockopt(fdSocket, SOL_SOCKET, SO_SNDBUF, (void *)&sndlen, &m);
-	//Log_Debug("[InterCore] Length of receive buffer %d, send buffer %d", rcvlen, sndlen);
 
 	int result = setsockopt(fdSocket, SOL_SOCKET, SO_RCVTIMEO, &recvTimeout, sizeof(recvTimeout));
 	if (result == -1) {
@@ -132,6 +124,7 @@ int InterCore_RegisterHandler(int epollFd, InterCoreEventData * pIcEventData)
 
 	pIcEventData->State = InterCoreState_AppActive;
 	pIcEventData->_evt.fd = fdSocket;
+	Log_Debug("[InterCore] Found %s.\n", pIcEventData->ComponentId);
 	return 0;
 }
 
