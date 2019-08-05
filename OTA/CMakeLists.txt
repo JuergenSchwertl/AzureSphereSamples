@@ -7,5 +7,5 @@ PROJECT(MultiCoreRT C)
 # Create executables
 ADD_SUBDIRECTORY("Shared.RT")
 ADD_SUBDIRECTORY("RedSphereRT")
+ADD_SUBDIRECTORY("GreenSphereRT")
 #ADD_SUBDIRECTORY("BlueSphereRT")
-#ADD_SUBDIRECTORY("GreenSphereRT")
