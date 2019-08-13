@@ -6,7 +6,7 @@
   "CmdArgs": [ "GreenSphere" ],
   "Capabilities": {
     "AllowedApplicationConnections": [ "33e04e8f-a020-4af8-80d0-8064343e0616" ],
-    "Gpio": [ 8 ]
+    "Gpio": [ 16 ]
   },
   "ApplicationType": "RealTimeCapable"
 }

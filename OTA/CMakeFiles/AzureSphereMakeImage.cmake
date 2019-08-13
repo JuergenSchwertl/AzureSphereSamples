@@ -4,9 +4,9 @@ IF(${CMAKE_HOST_WIN32})
     # This is a requirement of Open Folder infrastructure in Visual Studio
     SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "${PROJECT_NAME}.out")
 
-    #STRING(REPLACE "/" "\\" CMAKE_SOURCE_DIR_WIN ${CMAKE_SOURCE_DIR})
-    #STRING(REPLACE "/" "\\" CMAKE_BINARY_DIR_WIN ${CMAKE_BINARY_DIR})
-	#jschwert: replace source/binary dir with current dir
+#JSchwert: replace source/binary directories with current (project) dir
+#	STRING(REPLACE "/" "\\" CMAKE_SOURCE_DIR_WIN ${CMAKE_SOURCE_DIR})
+#	STRING(REPLACE "/" "\\" CMAKE_BINARY_DIR_WIN ${CMAKE_BINARY_DIR})
     STRING(REPLACE "/" "\\" CMAKE_SOURCE_DIR_WIN ${CMAKE_CURRENT_SOURCE_DIR})
     STRING(REPLACE "/" "\\" CMAKE_BINARY_DIR_WIN ${CMAKE_CURRENT_BINARY_DIR})
     SET(AZURE_SPHERE_APPROOT_DIR ${CMAKE_BINARY_DIR_WIN}\\approot${PROJECT_NAME})
@@ -38,7 +38,14 @@ IF(${CMAKE_HOST_WIN32})
             COMMAND "${AZURE_SPHERE_SDK_PATH}/Tools/azsphere.exe" image package-application "${AZURE_SPHERE_PACKAGE_COMMAND_ARG}"
             DEPENDS "${AZURE_SPHERE_APPROOT_DIR}/app_manifest.json" "${AZURE_SPHERE_APPROOT_DIR}/bin/app")
 
-    # Add MakeImage target
+# JSchwert: Adding the PROJECT_NAME to the custom target name makes it unique to avoid CMake duplicate name errors
+# JSchwert: Also added output to refer to the imagepackage location in the updated output directory  
+#    # Add MakeImage target
+#    ADD_CUSTOM_TARGET(MakeImage ALL
+#        DEPENDS "${CMAKE_BINARY_DIR_WIN}/${PROJECT_NAME}.imagepackage")
+#
+#    ADD_DEPENDENCIES(MakeImage ${PROJECT_NAME})
+
     ADD_CUSTOM_TARGET(MakeImage_${PROJECT_NAME} ALL
         DEPENDS "${CMAKE_BINARY_DIR_WIN}/${PROJECT_NAME}.imagepackage")
 

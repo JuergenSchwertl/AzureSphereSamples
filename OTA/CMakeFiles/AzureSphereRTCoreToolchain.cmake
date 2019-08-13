@@ -5,11 +5,13 @@ IF(DEFINED CMAKE_TOOLCHAIN_FILE)
     STRING(REPLACE "\\" "/" CMAKE_TOOLCHAIN_FILE ${CMAKE_TOOLCHAIN_FILE})
     STRING(FIND ${CMAKE_TOOLCHAIN_FILE} "/" AZURE_SPHERE_CMAKE_PATH_END REVERSE)
     STRING(SUBSTRING ${CMAKE_TOOLCHAIN_FILE} 0 ${AZURE_SPHERE_CMAKE_PATH_END} AZURE_SPHERE_CMAKE_PATH)
+# JSchwert: disabling the 2nd directory traversal as an environment variable contains the SDK path
+# JSchwert: this also enables to decouple the toolchain cmakes to adapt them 
 #    STRING(FIND ${AZURE_SPHERE_CMAKE_PATH} "/" AZURE_SPHERE_SDK_PATH_END REVERSE)
 #    STRING(SUBSTRING ${AZURE_SPHERE_CMAKE_PATH} 0 ${AZURE_SPHERE_SDK_PATH_END} AZURE_SPHERE_SDK_PATH)
     SET(ENV{AzureSphereCMakePath} ${AZURE_SPHERE_CMAKE_PATH})
+# jschwert: Use default SDK directory from environment variable
 #    SET(ENV{AzureSphereSDKPath} ${AZURE_SPHERE_SDK_PATH})
-#	jschwert: Use default SDK directory from environment variable
     SET(ENV{AzureSphereSDKPath} $ENV{AzureSphereDefaultSDKDir})
 ENDIF()
 SET(AZURE_SPHERE_CMAKE_PATH $ENV{AzureSphereCMakePath})
@@ -45,8 +47,9 @@ ELSE()
 ENDIF()
 
 SET(CMAKE_C_FLAGS_INIT "-mcpu=cortex-m4")
+
+#JSchwert: removed hardcoded root-directory linker.ld as I'm adding it as per project as TARGET_LINK_OPTIONS() where needed.
 #SET(CMAKE_EXE_LINKER_FLAGS_INIT "-nostartfiles -Wl,--no-undefined -Wl,-n -T \"${CMAKE_SOURCE_DIR}/linker.ld\"")
-#JSchwert: removed linker.ld as it is now added as linker option
 SET(CMAKE_EXE_LINKER_FLAGS_INIT "-nostartfiles -Wl,--no-undefined -Wl,-n")
 
 FILE(GLOB ARM_GNU_INCLUDE_PATH "${ARM_GNU_BASE_PATH}/lib/gcc/arm-none-eabi/*/include")

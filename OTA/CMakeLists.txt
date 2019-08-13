@@ -1,6 +1,6 @@
 #  Copyright (c) Microsoft Corporation. All rights reserved.
 #  Licensed under the MIT License.
-set( CMAKE_VERBOSE_MAKEFILE ON )
+#set( CMAKE_VERBOSE_MAKEFILE ON )
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.11)
 PROJECT(MultiCoreRT C)
