@@ -1,6 +1,7 @@
 ﻿# RedSphereRT sample: MT3620 real-time capability application - Bare Metal GPIO
 
-This sample demonstrates how to use GPIO on an MT3620 real-time core. 
+This directory is part of the Multi-Core OTA sample. On information how build, run and deploy the sample OTA please refer 
+to the documentation in the [master directory](../README.MD).
   
 ## Prerequisites
 
@@ -31,11 +32,3 @@ This sample demonstrates how to use GPIO on an MT3620 real-time core.
 1. From the **CMake** menu (if present), select **Build All**. If the menu is not present, open Solution Explorer, right-click the CMakeLists.txt file, and select **Build**. This step automatically performs the manual packaging steps. The output location of the Azure Sphere application appears in the Output window.
 1. From the **Select Startup Item** menu, on the tool bar, select **GDB Debugger (RTCore)**.
 1. Press F5 to start the application with debugging. LED1 will blink red. Press button A to change the blink rate.
-
-## License
-
-For details on license, see LICENSE.txt in this directory.
-
-## Code of Conduct
-
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
