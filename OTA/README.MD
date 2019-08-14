@@ -19,41 +19,27 @@ for the M4 cores. You can deploy up to two of them at the same time on the MT362
 RedSphere blinks LED #1 in Red, GreenSphere blinks LED #2 in Green and BlueSphere blinks LED #3 in Blue to visually indicate each app running seperately.
 * **[SharedRT](Shared.RT/README.MD)**: This directory contains common source files for the real-time capable apps to initialize the GPIO blocks, timer IRQs and for inter-core communications.
 
-### To build and run the sample
+### To build and run the multi-core sample
 
 **Prep your device**
 1. Ensure that your Azure Sphere device is connected to your PC, and your PC is connected to the internet.
 1. Right-click the Azure Sphere Developer Command Prompt shortcut and select **More&gt;Run as administrator**.
-1. At the command prompt, prepare the connected device for RTCore-Debugging :
+1. At the administrative command prompt, prepare the connected device for RTCore-Debugging :
    ```sh
    azsphere dev prep-debug --EnableRTCoreDebugging
    ```
    This command must be run as administrator when you enable real-time capable core debugging because it installs USB drivers for the debugger.
 1. Close the window after the command completes because administrator privilege is no longer required.  
     **Note:** As a best practice, you should always use the lowest privilege that can accomplish a task.
-1. Open an Azure Sphere Developer Command Prompt change your directory to the OTA-sample directory 
-   and keep the window open (we'll need it for later sideloading). 
-**Tip:** To easily get the path, Right-Click the root in the Solution Explorer window and click "Copy path" and paste it into the 
-Azure Sphere command shell after a CD command.
+1. Open an Azure Sphere Developer Command Prompt
+1. Change your directory to the OTA-sample directory and keep the window open (we'll need it for later sideloading). 
+    **Tip:** To easily get the path, Right-Click the root in the Solution Explorer window and click "Copy path" and paste it into the 
+    Azure Sphere command shell after a CD command.
 
 **Build and deploy the high-level connectivety application (IoTConnectHL)**
-1. In Visual Studio, in the Team Explorer Window open the cloned AzureSphereSamples repository. You should see IoTConnectHL.sln listed under the solutions 
-section. Double-Click to open it and change from the Team Explorer window over to the Solution Explorer view.
-1. To connect your IoT Hub again, Right-Click the Referencec folder and select "Add Connected Service" to run the pre-requisites again. The wizard prepares 
-your app_manifest.json with your IoT Hub settings alike
-```json
-{
-  ...
-  "CmdArgs": [ "**your DPS Scope ID**" ],
-  "Capabilities": {
-    "AllowedConnections": [ "global.azure-devices-provisioning.net", "**your Azure IoT Hub**.azure-devices.net"],
-    "DeviceAuthentication": "**your Azure Sphere Tenant id**"
-  }  
-}
-```
 
-In this sample the main()-function already takes the DPS Scope ID from the *CmdArgs* supplied command line so no other code changes are required.
-1. Press F5 to start the application with debugging.
+Follow the instructions in [IoTConnectHL: High-level connectivety application (POSIX)](IoTConnectHL/README.MD) to build and deploy the first
+application. Keep the Visual Studio instance open running the IoTConnectHL application under the debugger.
 
 **Build and deploy the real-time capable application(s)**
 1. Start a new Visual Studio instance. (The other Visual Studio Window should still run the debugger with the IoTConnectHL app)
@@ -111,7 +97,7 @@ at line #149.  It should immediately hit the breakpoint. Wait for a few seconds,
 Back in the Visual Studio instance running IoTConnectHL you should see the *"PING"* messages stacking up followed by a number of
 *"recv"* messages indicating that RedSphereRT has emptied the mailslots once it was continued in the debugger. 
 
-## Manually deployment using AZSPHERE.EXE
+## Manual deployment using AZSPHERE.EXE
 Let's now take a look at the Azure Sphere Command Window and enter
 ```
 azsphere dev sideload show-status
