@@ -4,15 +4,29 @@
   "configurations": [
     {
       "type": "azurespheredbg",
-      "name": "GDB Debugger (RTCore)",
+      "name": "RedSphereRT (RTCore GDB)",
       "project": "CMakeLists.txt",
       "inheritEnvironments": [
         "AzureSphere"
       ],
       "customLauncher": "AzureSphereLaunchOptions",
-      "workingDirectory": "${workspaceRoot}",
-      "applicationPath": "${debugInfo.target}",
-      "imagePath": "${debugInfo.targetImage}",
+      "workingDirectory": "${workspaceRoot}\\RedSphereRT",
+      "applicationPath": "${cmake.buildRoot}\\RedSphereRT\\RedSphereRT.out",
+      "imagePath": "${cmake.buildRoot}\\RedSphereRT\\RedSphereRT.imagepackage",
+      "targetCore": "RTCore",
+      "partnerComponents": [ "33e04e8f-a020-4af8-80d0-8064343e0616" ]
+    },
+    {
+      "type": "azurespheredbg",
+      "name": "GreenSphereRT (RTCore GDB)",
+      "project": "CMakeLists.txt",
+      "inheritEnvironments": [
+        "AzureSphere"
+      ],
+      "customLauncher": "AzureSphereLaunchOptions",
+      "workingDirectory": "${workspaceRoot}\\GreenSphereRT",
+      "applicationPath": "${cmake.buildRoot}\\GreenSphereRT\\GreenSphereRT.out",
+      "imagePath": "${cmake.buildRoot}\\GreenSphereRT\\GreenSphereRT.imagepackage",
       "targetCore": "RTCore",
       "partnerComponents": [ "33e04e8f-a020-4af8-80d0-8064343e0616" ]
     }

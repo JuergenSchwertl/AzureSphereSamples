@@ -14,7 +14,7 @@ communicates through inter-core communication with any of the real-time capable 
 is based on the [IntercoreComms sample](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/IntercoreComms) it extends the 
 protocol handler so that it automatically adjusts to i.e. manually sideloaded real-time capable apps. Pressing ButtonA increments a blink index value 
 and sends it to active real-time partner applications.
-* **RedSphereRT**,  **GreenSphereRT**, **BlueSphereRT**: These directories contain the projects for three very similar real-time capable applications 
+* **[RedSphereRT](RedSphereRT/README.MD)**,  **GreenSphereRT**, **BlueSphereRT**: These directories contain the projects for three very similar real-time capable applications 
 for the M4 cores. You can deploy up to two of them at the same time on the MT3620. They receive the blink index value from the high level connectivety app.
 RedSphere blinks LED #1 in Red, GreenSphere blinks LED #2 in Green and BlueSphere blinks LED #3 in Blue to visually indicate each app running seperately.
 * **[SharedRT](Shared.RT/README.MD)**: This directory contains common source files for the real-time capable apps to initialize the GPIO blocks, timer IRQs and for inter-core communications.
@@ -27,7 +27,6 @@ RedSphere blinks LED #1 in Red, GreenSphere blinks LED #2 in Green and BlueSpher
    ```sh
    azsphere dev prep-debug --EnableRTCoreDebugging
    ```
-
    This command must be run as administrator when you enable real-time capable core debugging because it installs USB drivers for the debugger.
 1. Close the window after the command completes because administrator privilege is no longer required.  
     **Note:** As a best practice, you should always use the lowest privilege that can accomplish a task.
