@@ -6,6 +6,7 @@
 
 #include <applibs/gpio.h>
 #include <applibs/log.h>
+#include <applibs/application.h>
 
 // This sample C application for a MT3620 Reference Development Board (Azure Sphere) demonstrates how to
 // update Azure Sphere OTA (over-the-air) with image-sets consisting of a combination
@@ -56,8 +57,7 @@
 
 #ifndef AZURE_IOT_HUB_CONFIGURED
 #error \
-    "WARNING: Please add a project reference to the Connected Service first \
-(right-click References -> Add Connected Service)."
+    "WARNING: Please follow the instructions to configure your IoT Hub and DPS server in the README.MD."
 #endif
 
 #define IOTCONNECT_COMPONENTID		"33e04e8f-a020-4af8-80d0-8064343e0616"
