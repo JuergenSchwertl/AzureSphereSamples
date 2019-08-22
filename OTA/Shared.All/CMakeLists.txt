@@ -2,11 +2,10 @@
 #  Licensed under the MIT License.
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.11)
-PROJECT(Shared.RT C)
+PROJECT(Shared.All C)
 message("Shared sources: ${PROJECT_NAME}")
 
 # Create executable
-ADD_LIBRARY(${PROJECT_NAME} OBJECT "mt3620-baremetal.h" "mt3620-timer.c" "mt3620-timer.h" "mt3620-gpio.c" "mt3620-gpio.h" "mt3620-intercore.c" "mt3620-intercore.h"  )
+ADD_LIBRARY(${PROJECT_NAME} OBJECT "guid_utilities.c" "intercore_messages.c")
 
 TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
-TARGET_LINK_LIBRARIES(${PROJECT_NAME} "Shared.All" )

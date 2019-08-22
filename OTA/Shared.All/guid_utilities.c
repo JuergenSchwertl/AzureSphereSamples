@@ -1,5 +1,6 @@
 #include "guid_utilities.h"
-
+#include <stdlib.h>
+#include <stdbool.h>
 static const char achHex[] = "0123456789ABCDEF";
 
 typedef struct Nibbles { uint8_t Low : 4; uint8_t High : 4; } Nibbles;
@@ -52,4 +53,58 @@ int Guid_ToString(const GUID *pGuid, char * pStrOut)
 	}
 	*pDst = '\0';
 	return (int) (pDst-pStrOut);
+}
+
+uint32_t inline chConf(char chHex)
+{
+	return (uint32_t) (((chHex >= '0') && (chHex <= '9')) ? (chHex - '0') :
+						((chHex >= 'A') && (chHex <= 'F')) ? (chHex - 'A') :
+						((chHex >= 'a') && (chHex <= 'f')) ? (chHex - 'a') : 0xFF);
+}
+
+uint32_t htoi(const char* pStr, size_t nLength)
+{
+	uint32_t uiResult = 0;
+	uint32_t nConvResult;
+	while ((nLength-- > 0) && ((nConvResult = chConf(*pStr++)) < 16))
+	{
+		uiResult <<= 8;
+		uiResult += nConvResult;
+	}
+	return uiResult;
+}
+
+bool Guid_Compare(const GUID* pLeft, const GUID* pRight)
+{
+	return (__builtin_memcmp((const void*)pLeft, (const void*)pRight, sizeof(GUID)) == 0);
+}
+
+bool Guid_TryParse(const char* pstrGuid, GUID * pGuid)
+{
+	if (pGuid == NULL)
+	{
+		return false;
+	}
+	if ((pstrGuid[8] != '-') ||
+		(pstrGuid[13] != '-') ||
+		(pstrGuid[18] != '-') ||
+		(pstrGuid[23] != '-'))
+	{
+		return false;
+	}
+
+	
+	pGuid->a = (int32_t)__builtin_bswap32( (unsigned int) htoi( &pstrGuid[0], 8) );
+	pGuid->b = (int16_t) __builtin_bswap16( (unsigned short) htoi( &pstrGuid[9], 4) );
+	pGuid->c = (int16_t) __builtin_bswap16( (unsigned short) htoi( &pstrGuid[14], 4));
+
+	pGuid->d[0] = (uint8_t)htoi( &pstrGuid[19], 2);
+	pGuid->d[1] = (uint8_t)htoi( &pstrGuid[21], 2);
+
+	for( int i = 0; i < 6; i++)
+	{
+		pGuid->d[2+i] = (uint8_t)htoi( &pstrGuid[24+(i<<1)], 2);
+	}
+
+	return true;
 }
