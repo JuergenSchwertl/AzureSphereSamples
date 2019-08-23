@@ -7,7 +7,8 @@ PROJECT(IoTConnectHL C)
 # Create executable
 ADD_EXECUTABLE(${PROJECT_NAME} main.c parson.c epoll_timerfd_utilities.c intercore_utilities.c azure_iot_utilities.c)
 TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PRIVATE AZURE_IOT_HUB_CONFIGURED)
-TARGET_LINK_LIBRARIES(${PROJECT_NAME} applibs azureiot pthread gcc_s c)
+ADD_SUBDIRECTORY("../Shared.ALL" "Shared.All")
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} applibs azureiot pthread gcc_s "Shared.ALL" c)
 
 # Add MakeImage post-build command
 INCLUDE("${AZURE_SPHERE_MAKE_IMAGE_FILE}")
