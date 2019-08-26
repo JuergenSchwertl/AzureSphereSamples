@@ -3,12 +3,14 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.11)
 PROJECT(IoTConnectHL C)
-
+  
+ADD_SUBDIRECTORY("../Shared.ALL" "${CMAKE_CURRENT_BINARY_DIR}/Shared.All")
 # Create executable
-ADD_EXECUTABLE(${PROJECT_NAME} main.c parson.c epoll_timerfd_utilities.c intercore_utilities.c azure_iot_utilities.c)
+INCLUDE_DIRECTORIES("${SharedAll_SOURCE_DIR}")
+ADD_EXECUTABLE(${PROJECT_NAME} main.c parson.c epoll_timerfd_utilities.c intercore_utilities.c azure_iot_utilities.c )
 TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PRIVATE AZURE_IOT_HUB_CONFIGURED)
-ADD_SUBDIRECTORY("../Shared.ALL" "Shared.All")
-TARGET_LINK_LIBRARIES(${PROJECT_NAME} applibs azureiot pthread gcc_s "Shared.ALL" c)
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} applibs azureiot pthread gcc_s SharedAll)
 
 # Add MakeImage post-build command
 INCLUDE("${AZURE_SPHERE_MAKE_IMAGE_FILE}")
+ 

@@ -54,7 +54,6 @@
 #include "intercore_utilities.h"
 #include "azure_iot_utilities.h"
 
-
 #ifndef AZURE_IOT_HUB_CONFIGURED
 #error \
     "WARNING: Please follow the instructions to configure your IoT Hub and DPS server in the README.MD."
@@ -81,13 +80,6 @@ static InterCoreEventData iccBlueSphere = {
 	.ComponentId = BLUE_SPHERE_COMPONENTID,
 	.MessageHandler = &IntercoreMessageHandler };
 
-
-static const InterCoreMessageHeader msghPing = { .Text = "PING" };
-static const InterCoreMessageHeader msghPingResponse = { .Text = "ping" };
-static const InterCoreMessageHeader msghBlinkInterval = { .Text = "BLNK" };
-
-// realtime application PING message
-static const char strPingMessage[] = "PING";
 
 // Led blink rate and range
 static unsigned int uLedBlinkRate = 0;
@@ -141,9 +133,11 @@ void IntercoreMessageHandler(InterCoreEventData * pIcEventData, const void * pMe
 
 void checkRealtimeApp(InterCoreEventData* pIcEventData)
 {
+	InterCoreMessagePlain msgPing = { .Header.MagicValue = InterCoreMessage_Ping.MagicValue };
+
 	// If App was active before, try pinging the app to update status
 	if (pIcEventData->State == InterCoreState_AppActive) {
-		InterCore_SendMessage(pIcEventData, strPingMessage, sizeof(strPingMessage));
+		InterCore_SendMessage(pIcEventData, &msgPing, sizeof(msgPing));
 	}
 	else {
 		// else try registering the app (may fail gracefully)
@@ -180,7 +174,7 @@ static void SetLedRate(unsigned int uNewBlinkRate)
 
 	// send LedBlinkRate to real-time capable apps where active
 	InterCoreMessageUint32 msgBlinkRate = {
-		.Header.MagicValue = msghBlinkInterval.MagicValue,
+		.Header.MagicValue = InterCoreMessage_BlinkInterval.MagicValue,
 		.Value = uLedBlinkRate };
 
 	if (iccRedSphere.State == InterCoreState_AppActive) {

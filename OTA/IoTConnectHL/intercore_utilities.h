@@ -1,19 +1,12 @@
 #pragma once
 
 #include <sys/epoll.h>
+#include <intercore_messages.h>
 #include "epoll_timerfd_utilities.h"
 
 #define INTERCORE_RECV_BUFFER_SIZE	128
 
 typedef struct InterCoreEventData InterCoreEventData;
-
-///<summary>Message header is 4 bytes (i.e. "PING" without terminator)</summary>
-typedef union InterCoreMessageHeader { uint32_t MagicValue;  const char Text[4]; } InterCoreMessageHeader;
-///<summary>Plain message only has header</summary>
-typedef struct InterCoreMessagePlain { InterCoreMessageHeader Header; } InterCoreMessagePlain;
-///<summary>Message has header and uint32 payload</summary>
-typedef struct InterCoreMessageUint32 { InterCoreMessageHeader Header; uint32_t Value; } InterCoreMessageUint32;
-
 
 /// <summary>
 ///     Function signature for data received handlers.

@@ -29,6 +29,20 @@
       "imagePath": "${cmake.buildRoot}\\GreenSphereRT\\GreenSphereRT.imagepackage",
       "targetCore": "RTCore",
       "partnerComponents": [ "33e04e8f-a020-4af8-80d0-8064343e0616" ]
+    },
+    {
+      "type": "azurespheredbg",
+      "name": "BlueSphereRT (RTCore GDB)",
+      "project": "CMakeLists.txt",
+      "inheritEnvironments": [
+        "AzureSphere"
+      ],
+      "customLauncher": "AzureSphereLaunchOptions",
+      "workingDirectory": "${workspaceRoot}\\BlueSphereRT",
+      "applicationPath": "${cmake.buildRoot}\\BlueSphereRT\\BlueSphereRT.out",
+      "imagePath": "${cmake.buildRoot}\\BlueSphereRT\\BlueSphereRT.imagepackage",
+      "targetCore": "RTCore",
+      "partnerComponents": [ "33e04e8f-a020-4af8-80d0-8064343e0616" ]
     }
   ]
 }

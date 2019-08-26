@@ -4,22 +4,17 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include "intercore_messages.h"
 
 #include "mt3620-baremetal.h"
 #include "mt3620-timer.h"
 #include "mt3620-intercore.h"
 #include "mt3620-gpio.h"
-#include "guid_utilities.h"
 
 #define MT3620_RDB_LED1_RED		(8)			// GPIO_GROUP_2:GPIO_0 ==> GPIO #8
 #define MT3620_RDB_LED2_GREEN	(16)		// GPIO_GROUP_4:GPIO_0 ==> GPIO #16
 #define MT3620_RDB_LED3_BLUE	(20)		// GPIO_GROUP_5:GPIO_0 ==> GPIO #20
 
-
-static const InterCoreMessageHeader msgPing = { .Text = "PING" };
-static const InterCoreMessageHeader msgPingResponse = { .Text = "ping" };
-static const InterCoreMessageHeader msgReceivedResponse = { .Text = "recv" };
-static const InterCoreMessageHeader msgBlinkInterval = { .Text = "BLNK" };
 
 static bool bIsLedOn = false;
 static const int ledGpio = MT3620_RDB_LED2_GREEN;
@@ -147,7 +142,7 @@ static _Noreturn void RTCoreMain(void)
 
 	for (;;) {
 		uint32_t dataSize = sizeof(buf);
-		int nBytes=0;
+		int nBytes = 0;
 
 		// On success, dataSize is set to the actual number of bytes which were read.
 		int r = DequeueData(outbound, inbound, sharedBufSize, buf, &dataSize);
@@ -163,17 +158,17 @@ static _Noreturn void RTCoreMain(void)
 		if (payloadBytes >= sizeof(InterCoreMessageHeader))
 		{
 			// if message is "PING", respond with "ping"
-			if (msgPing.MagicValue == ((InterCoreMessageHeader*)pMessage->Payload)->MagicValue)
+			if (InterCoreMessage_Ping.MagicValue == ((InterCoreMessageHeader*)pMessage->Payload)->MagicValue)
 			{
-				__builtin_memcpy(pMessage->Payload, &msgReceivedResponse, sizeof(msgReceivedResponse));
-				nBytes = EnqueueData(inbound, outbound, sharedBufSize, buf, sizeof(InterCoreMessageLayout) + sizeof(msgPingResponse));
+				__builtin_memcpy(pMessage->Payload, &InterCoreMessage_ReceivedResponse, sizeof(InterCoreMessage_ReceivedResponse));
+				nBytes = EnqueueData(inbound, outbound, sharedBufSize, buf, sizeof(InterCoreMessageLayout) + sizeof(InterCoreMessage_PingResponse));
 			}
 			// if message is "BLNK", respond with "recv"
-			if (msgBlinkInterval.MagicValue == ((InterCoreMessageHeader*)pMessage->Payload)->MagicValue)
+			if (InterCoreMessage_BlinkInterval.MagicValue == ((InterCoreMessageHeader*)pMessage->Payload)->MagicValue)
 			{
-				nBlinkIntervalIndex = ((InterCoreMessageUint32 *)pMessage->Payload)->Value % numBlinkIntervals;
-				__builtin_memcpy(pMessage->Payload, &msgReceivedResponse, sizeof(msgReceivedResponse));
-				nBytes = EnqueueData(inbound, outbound, sharedBufSize, buf, sizeof(InterCoreMessageLayout)+sizeof(msgReceivedResponse));
+				nBlinkIntervalIndex = ((InterCoreMessageUint32*)pMessage->Payload)->Value % numBlinkIntervals;
+				__builtin_memcpy(pMessage->Payload, &InterCoreMessage_ReceivedResponse, sizeof(InterCoreMessage_ReceivedResponse));
+				nBytes = EnqueueData(inbound, outbound, sharedBufSize, buf, sizeof(InterCoreMessageLayout) + sizeof(InterCoreMessage_ReceivedResponse));
 			}
 		}
 	}

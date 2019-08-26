@@ -2,10 +2,10 @@
 #  Licensed under the MIT License.
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.11)
-PROJECT(Shared.All C)
+PROJECT(SharedAll C)
 message("Shared sources: ${PROJECT_NAME}")
 
 # Create executable
-ADD_LIBRARY(${PROJECT_NAME} OBJECT "guid_utilities.c" "intercore_messages.c")
+ADD_LIBRARY(${PROJECT_NAME} STATIC guid_utilities.c intercore_messages.c)
 
-TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
+TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
