@@ -128,7 +128,25 @@ function New-AS3ImageSet(
 	}
 }
 
-
+<#
+.SYNOPSIS
+Creates a new Component in Azure Sphere Security Service
+.DESCRIPTION
+Creates a new application component in Azure Sphere Security Service with the given ComponentID
+.PARAMETER ComponentID
+Specifies the component id(s) for the new application component
+.PARAMETER Name
+Specifies the name for the new image-set.
+.INPUTS
+None. You cannot pipe objects to New-AS3Component.
+.OUTPUTS
+[System.Guid] ComponentId for consistency reasons
+.EXAMPLE
+PS> New-AS3Component -ComponentID "f4e25978-6152-447b-a2a1-64577582f327" -Name "Test"
+Guid
+-----------                          
+f4e25978-6152-447b-a2a1-64577582f327
+#>
 function New-AS3Component(
 	[Parameter(Mandatory=$true)] $ComponentID, 
 	[Parameter(Mandatory=$true)][string] $Name
@@ -138,9 +156,52 @@ function New-AS3Component(
     if( ($result -is [System.Array]) -and ($result.Length -gt 1) -and $result[1].Contains("Successfully"))
     {
         Write-Host $result[1]
-		return $ComponentID
+        return $ComponentID
     } else {
-		Write-Error "Cannot create ImageSet '$Name' for ImageId(s) $imgIDs" -ErrorAction Stop
+		Write-Error $result[1] -ErrorAction Stop
+	}
+}
+
+
+<#
+.SYNOPSIS
+Uploads a new ImagePackage file into an Azure Sphere Security Service Image
+.DESCRIPTION
+Uploads a new ImagePackage file into an Azure Sphere Security Service Image
+.PARAMETER FilePath
+Specifies the path to the .imagepackage file
+.INPUTS
+None. You cannot pipe objects to New-AS3ComponentImage.
+.OUTPUTS
+[System.Guid] ImageId of the uploaded .imagepackage-file
+.EXAMPLE
+PS> New-AS3ComponentImage -FilePath ./testfile.imagepackage
+Guid
+-----------                          
+f4e25978-6152-447b-a2a1-64577582f327
+#>
+function Add-AS3ComponentImage(
+	[Parameter(Mandatory=$true)] $FilePath
+)
+{
+	$result = azsphere com img add -f $FilePath --force
+    if( ($result -is [System.Array]) -and ($result.Length -gt 2) -and $result[ $result.Length-2 ].Contains("Successfully"))
+    {
+        [String] $s = $result[ $result.Length-2 ]
+        Write-Host $s
+		return [System.Guid]( $s.Split("'").Item(1) )
+    } else {
+        if($result -is [System.Array])
+        {
+            if($result.Length > 3)
+            {
+        		Write-Error $result[ $result.Length-3 ] -ErrorAction Stop
+            } else {
+                Write-Error $result[0]
+            }
+        } else {
+       		Write-Error "Unspecified Error" -ErrorAction Stop
+        }
 	}
 }
 
