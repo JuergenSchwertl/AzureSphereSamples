@@ -9,15 +9,15 @@ moving a device between SKUs and DeviceGroups affects what Feeds it will receive
 ## Part 1: Multi-Core App Overview
 First we take a look at the source tree and what it contains:
 * **CMakeFiles**: contains a copy of the Azure Sphere CMake toolchain usually part of the SDK but with some amendments to build the rather complex setup.
-* **IoTConnectHL**: This folder contains the solution for the high-level POSIX connectivety application that connects to IoT Hub, 
+* **[IoTConnectHL](./IoTConnectHL/README.MD)**: This folder contains the solution for the high-level POSIX connectivety application that connects to IoT Hub, 
 communicates through inter-core communication with any of the real-time capable partner apps. Although the intercore communication
 is based on the [IntercoreComms sample](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/IntercoreComms) it extends the 
 protocol handler so that it automatically adjusts to i.e. manually sideloaded real-time capable apps. Pressing ButtonA increments a blink index value 
 and sends it to active real-time partner applications.
-* **[RedSphereRT](RedSphereRT/README.MD)**,  **[GreenSphereRT](GreenSphereRT/README.MD)**, **[BlueSphereRT](BlueSphereRT/README.MD)**: These directories contain the projects for three very similar real-time capable applications 
+* **[RedSphereRT](./RedSphereRT/README.MD)**,  **[GreenSphereRT](./GreenSphereRT/README.MD)**, **[BlueSphereRT](BlueSphereRT/README.MD)**: These directories contain the projects for three very similar real-time capable applications 
 for the M4 cores. You can deploy up to two of them at the same time on the MT3620. They receive the blink index value from the high level connectivety app.
 RedSphere blinks LED #1 in Red, GreenSphere blinks LED #2 in Green and BlueSphere blinks LED #3 in Blue to visually indicate each app running seperately.
-* **[SharedRT](Shared.RT/README.MD)**: This directory contains common source files for the real-time capable apps to initialize the GPIO blocks, timer IRQs and for inter-core communications.
+* **[SharedRT](./Shared.RT/README.MD)**: This directory contains common source files for the real-time capable apps to initialize the GPIO blocks, timer IRQs and for inter-core communications.
 
 ### To build and run the multi-core sample
 
