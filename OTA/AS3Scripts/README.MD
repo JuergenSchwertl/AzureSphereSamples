@@ -112,3 +112,7 @@ $RedBlueImageSet = New-AS3ImageSet $IoTConnectHL.ImageID,$RedSphereRT.ImageID,$B
 ```
 
 **Looking at the operations side**
+
+
+---
+[OTA and multi-core sample](../README.MD)

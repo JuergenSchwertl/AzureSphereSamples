@@ -140,6 +140,6 @@ messages to both real-time capable applications:
 ```
  ## Part2: OTA deployment
 
-
+Now it's time to look at how to [deploy the apps over the air (OTA)](./AS3Scripts/README.MD).
 
 
