@@ -1,4 +1,4 @@
-# Lab #2 Auxiliary MCU to Mt3620 to Azure IoT Hub
+# Lab #4 Auxiliary MCU to Mt3620 to Azure IoT Hub
 
 This lab covers the scenario of a serial (UART) connected auxiliary MCU sending telemetry data to Azure Sphere as connectivity module connecting 
 to Azure IoT Hub.
@@ -76,7 +76,7 @@ This picture shows the boards wired up:
 ## Modifying the code
 
 Step 1.	In Visual Studio, open Mt3620DirectDHT\Mt3620DirectDHT.sln
-Step 2.	In the Solution Explorer, under the Mt3620DirectDHT solution, right click on Reference and ìAdd Connected Serviceî as shown below:
+Step 2.	In the Solution Explorer, under the Mt3620DirectDHT solution, right click on Reference and ‚ÄúAdd Connected Service‚Äù as shown below:
 
 ![Add Connected Service](./images/VS_Add_Connected_Service.png)
 
@@ -157,7 +157,7 @@ void AzureIoT_TwinReportStateJson(
 ```
 ![azure_iot_utilities.c](./images/VS_azureiotutil_c.png)
 
-Step 5.	In Visual Studio, click ìRemote GDB Debuggerî to compile, deploy, run and debug the code on the device.
+Step 5.	In Visual Studio, click ‚ÄúRemote GDB Debugger‚Äù to compile, deploy, run and debug the code on the device.
 
 Step 6.	Monitoring the output window in Visual Studio, you should see the device send the temperature every second as shown below.  
 Note how we send telemetry for the Temperature and Humidity while updating the Device Twin when the maximum and minimum temperature changes.
