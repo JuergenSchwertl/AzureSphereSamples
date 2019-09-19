@@ -328,7 +328,8 @@ ASALocalRun/
 
 # MFractors (Xamarin productivity tool) working folder 
 .mfractor/
-/out/ARM-Debug-2Beta1905
+
+#CMake output files
+out/
+
 /MCUtoMT3620toAzure/MCUSerialSketch/.vscode
-/OTA/out/ARM-Debug-2Beta1905
-/OTA/IoTConnectHL/out

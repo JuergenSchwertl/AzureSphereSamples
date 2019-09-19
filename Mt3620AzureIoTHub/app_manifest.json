@@ -1,11 +1,11 @@
 {
   "SchemaVersion": 1,
   "Name": "Mt3620AzureIoTHub",
-  "ComponentId": "b9fc7bea-fd4f-4610-b483-7b47119121d0",
+  "ComponentId": "D7CC01E3-6166-4654-BAB7-12EF26D15311",
   "EntryPoint": "/bin/app",
-  "CmdArgs": [ "0ne0002304B" ],
+  "CmdArgs": [ "**your DPS Scope ID**" ],
   "Capabilities": {
-    "AllowedConnections": [ "global.azure-devices-provisioning.net", "JS-MS-Iot-Hub.azure-devices.net" ],
+    "AllowedConnections": [ "global.azure-devices-provisioning.net", "**your Azure IoT Hub**.azure-devices.net" ],
     "AllowedTcpServerPorts": [],
     "AllowedUdpServerPorts": [],
     "Gpio": [ 8, 9, 10, 15, 16, 17, 18, 19, 20, 12, 13, 48, 14, 11 ],
@@ -15,6 +15,6 @@
     "WifiConfig": true,
     "NetworkConfig": false,
     "SystemTime": false,
-    "DeviceAuthentication": "c0b88764-9273-46ab-bab2-effecf13f91c"
+    "DeviceAuthentication": "**your Azure Sphere Tenant id**"
   }
 }
