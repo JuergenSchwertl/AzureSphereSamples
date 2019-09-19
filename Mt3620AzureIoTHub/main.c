@@ -33,8 +33,8 @@
 // - Pressing button B triggers the sending of a message to the IoT Hub.
 // - LED 2 flashes red when button B is pressed (and a
 //   message is sent) and flashes yellow when a message is received.
-// - LED 3 indicates whether network connection to the Azure IoT Hub has been
-//   established.
+// - NETWORK LED indicates whether network connection to the Azure IoT Hub has been
+//   established (Red:No Network, Green:WiFi, Blue:IoT Hub connected).
 //
 // Direct Method related notes:
 // - Invoking the method named "LedColorControlMethod" with a payload containing '{"color":"red"}'
@@ -64,7 +64,9 @@
 
 // An array defining the RGB GPIOs for each LED on the device
 static const GPIO_Id ledsPins[3][3] = {
-    {MT3620_RDB_LED1_RED, MT3620_RDB_LED1_GREEN, MT3620_RDB_LED1_BLUE}, {MT3620_RDB_LED2_RED, MT3620_RDB_LED2_GREEN, MT3620_RDB_LED2_BLUE}, {MT3620_RDB_LED3_RED, MT3620_RDB_LED3_GREEN, MT3620_RDB_LED3_BLUE}};
+    {MT3620_RDB_LED1_RED, MT3620_RDB_LED1_GREEN, MT3620_RDB_LED1_BLUE}, 
+	{MT3620_RDB_LED2_RED, MT3620_RDB_LED2_GREEN, MT3620_RDB_LED2_BLUE}, 
+	{MT3620_RDB_NETWORKING_LED_RED, MT3620_RDB_NETWORKING_LED_GREEN, MT3620_RDB_NETWORKING_LED_BLUE} };
 
 static size_t blinkIntervalIndex = 0;
 static RgbLedUtility_Colors ledBlinkColor = RgbLedUtility_Colors_Blue;
@@ -91,8 +93,8 @@ static int azureIoTPollPeriodSeconds = -1;
 // LED state
 static RgbLed led1 = RGBLED_INIT_VALUE;
 static RgbLed led2 = RGBLED_INIT_VALUE;
-static RgbLed led3 = RGBLED_INIT_VALUE;
-static RgbLed *rgbLeds[] = {&led1, &led2, &led3};
+static RgbLed ledNetwork = RGBLED_INIT_VALUE;
+static RgbLed *rgbLeds[] = {&led1, &led2, &ledNetwork };
 static const size_t rgbLedsCount = sizeof(rgbLeds) / sizeof(*rgbLeds);
 
 // Default blinking rate of LED1
@@ -126,10 +128,10 @@ static void DebugPrintCurrentlyConnectedWiFiNetwork(void)
     WifiConfig_ConnectedNetwork network;
     int result = WifiConfig_GetCurrentNetwork(&network);
     if (result < 0) {
-        Log_Debug("INFO: Not currently connected to a WiFi network.\n");
+        Log_Debug("[WARNING] Not currently connected to a WiFi network.\n");
     } else {
-        Log_Debug("INFO: Currently connected WiFi network: \n");
-        Log_Debug("INFO: SSID \"%.*s\", BSSID %02x:%02x:%02x:%02x:%02x:%02x, Frequency %dMHz.\n",
+        Log_Debug("[INFO] Currently connected WiFi network: \n");
+        Log_Debug("[INFO] SSID \"%.*s\", BSSID %02x:%02x:%02x:%02x:%02x:%02x, Frequency %dMHz.\n",
                   network.ssidLength, network.ssid, network.bssid[0], network.bssid[1],
                   network.bssid[2], network.bssid[3], network.bssid[4], network.bssid[5],
                   network.frequencyMHz);
@@ -155,7 +157,7 @@ static bool OpenGpioFdAsInput(GPIO_Id gpioId, int *outGpioFd)
 {
     *outGpioFd = GPIO_OpenAsInput(gpioId);
     if (*outGpioFd < 0) {
-        Log_Debug("ERROR: Could not open GPIO '%d': %d (%s).\n", gpioId, errno, strerror(errno));
+        Log_Debug("[ERROR] Could not open GPIO '%d': %d (%s).\n", gpioId, errno, strerror(errno));
         return false;
     }
 
@@ -178,7 +180,7 @@ static void SetLedRate(const struct timespec *rate)
         // Report the current state to the Device Twin on the IoT Hub.
         AzureIoT_TwinReportState("LedBlinkRateProperty", blinkIntervalIndex);
     } else {
-        Log_Debug("WARNING: Cannot send reported property; not connected to the IoT Hub.\n");
+        Log_Debug("[WARNING] Cannot send reported property; not connected to the IoT Hub.\n");
     }
 }
 
@@ -195,7 +197,7 @@ static void SendMessageToIoTHub(void)
         // queued.
         BlinkLed2Once();
     } else {
-        Log_Debug("WARNING: Cannot send message: not connected to the IoT Hub.\n");
+        Log_Debug("[WARNING] Cannot send message: not connected to the IoT Hub.\n");
     }
 }
 
@@ -222,11 +224,11 @@ static void DeviceTwinUpdate(JSON_Object *desiredProperties)
     // If the attribute is missing or its type is not a number.
     if (blinkRateJson == NULL) {
         Log_Debug(
-            "INFO: A device twin update was received that did not contain the property "
+            "[INFO] A device twin update was received that did not contain the property "
             "\"LedBlinkRateProperty\".\n");
     } else if (json_value_get_type(blinkRateJson) != JSONNumber) {
         Log_Debug(
-            "INFO: Device twin desired property \"LedBlinkRateProperty\" was received with "
+            "[INFO] Device twin desired property \"LedBlinkRateProperty\" was received with "
             "incorrect type; it must be an integer.\n");
     } else {
         // Get the value of the LedBlinkRateProperty and print it.
@@ -235,7 +237,7 @@ static void DeviceTwinUpdate(JSON_Object *desiredProperties)
         blinkIntervalIndex =
             desiredBlinkRate % blinkIntervalsCount; // Clamp value to [0..blinkIntervalsCount) .
 
-        Log_Debug("INFO: Received desired value %zu for LedBlinkRateProperty, setting it to %zu.\n",
+        Log_Debug("[INFO] Received desired value %zu for LedBlinkRateProperty, setting it to %zu.\n",
                   desiredBlinkRate, blinkIntervalIndex);
 
         blinkingLedPeriod = blinkIntervals[blinkIntervalIndex];
@@ -287,13 +289,13 @@ static int DirectMethodCall(const char *methodName, const char *payload, size_t 
 
     if (strcmp(methodName, "LedColorControlMethod") != 0) {
         result = 404;
-        Log_Debug("INFO: Method not found called: '%s'.\n", methodName);
+        Log_Debug("[INFO] Method not found called: '%s'.\n", methodName);
 
         static const char noMethodFound[] = "\"method not found '%s'\"";
         size_t responseMaxLength = sizeof(noMethodFound) + strlen(methodName);
         *responsePayload = SetupHeapMessage(noMethodFound, responseMaxLength, methodName);
         if (*responsePayload == NULL) {
-            Log_Debug("ERROR: Could not allocate buffer for direct method response payload.\n");
+            Log_Debug("[ERROR] Could not allocate buffer for direct method response payload.\n");
             abort();
         }
         *responsePayloadSize = strlen(*responsePayload);
@@ -304,7 +306,7 @@ static int DirectMethodCall(const char *methodName, const char *payload, size_t 
     // The payload should contains JSON such as: { "color": "red"}
     char *directMethodCallContent = malloc(payloadSize + 1); // +1 to store null char at the end.
     if (directMethodCallContent == NULL) {
-        Log_Debug("ERROR: Could not allocate buffer for direct method request payload.\n");
+        Log_Debug("[ERROR] Could not allocate buffer for direct method request payload.\n");
         abort();
     }
 
@@ -333,7 +335,7 @@ static int DirectMethodCall(const char *methodName, const char *payload, size_t 
     // Color's name has been identified.
     result = 200;
     const char *colorString = RgbLedUtility_GetStringFromColor(ledColor);
-    Log_Debug("INFO: LED color set to: '%s'.\n", colorString);
+    Log_Debug("[INFO] LED color set to: '%s'.\n", colorString);
     // Set the blinking LED color.
     ledBlinkColor = ledColor;
 
@@ -351,7 +353,7 @@ static int DirectMethodCall(const char *methodName, const char *payload, size_t 
 
 colorNotFound:
     result = 400; // Bad request.
-    Log_Debug("INFO: Unrecognised direct method payload format.\n");
+    Log_Debug("[INFO] Unrecognised direct method payload format.\n");
 
     static const char noColorResponse[] =
         "{ \"success\" : false, \"message\" : \"request does not contain an identifiable "
@@ -359,7 +361,7 @@ colorNotFound:
     responseMaxLength = sizeof(noColorResponse);
     *responsePayload = SetupHeapMessage(noColorResponse, responseMaxLength);
     if (*responsePayload == NULL) {
-        Log_Debug("ERROR: Could not allocate buffer for direct method response payload.\n");
+        Log_Debug("[ERROR] Could not allocate buffer for direct method response payload.\n");
         abort();
     }
     *responsePayloadSize = strlen(*responsePayload);
@@ -367,13 +369,34 @@ colorNotFound:
     return result;
 }
 
+
+/// <summary>
+///     Handle the WiFi LED.
+/// </summary>
+static void WiFiLedHandler(void)
+{
+	// Set network status with WiFiLED color.
+	RgbLedUtility_Colors color = RgbLedUtility_Colors_Red;
+	bool bNetworkReady = false;
+	Networking_IsNetworkingReady(&bNetworkReady);
+	if (bNetworkReady)
+	{
+		color = (connectedToIoTHub ? RgbLedUtility_Colors_Blue : RgbLedUtility_Colors_Green);
+	}
+	RgbLedUtility_SetLed(&ledNetwork, color);
+}
+
+
+
 /// <summary>
 ///     IoT Hub connection status callback function.
 /// </summary>
 /// <param name="connected">'true' when the connection to the IoT Hub is established.</param>
 static void IoTHubConnectionStatusChanged(bool connected)
 {
+	Log_Debug("[INFO] IoTHubConnectionStatusChanged: %s\n", (connected) ? "connected" : "disconnected");
     connectedToIoTHub = connected;
+	WiFiLedHandler();
 }
 
 /// <summary>
@@ -386,14 +409,11 @@ static void Led1UpdateHandler(EventData *eventData)
         return;
     }
 
-    // Set network status with LED3 color.
-    RgbLedUtility_Colors color =
-        (connectedToIoTHub ? RgbLedUtility_Colors_Green : RgbLedUtility_Colors_Off);
-    RgbLedUtility_SetLed(&led3, color);
+	WiFiLedHandler();
 
     // Trigger LED to blink as appropriate.
     blinkingLedState = !blinkingLedState;
-    color = (blinkingLedState ? ledBlinkColor : RgbLedUtility_Colors_Off);
+	RgbLedUtility_Colors color = (blinkingLedState ? ledBlinkColor : RgbLedUtility_Colors_Off);
     RgbLedUtility_SetLed(&led1, color);
 }
 
@@ -423,7 +443,7 @@ static bool IsButtonPressed(int fd, GPIO_Value_Type *oldState)
     GPIO_Value_Type newState;
     int result = GPIO_GetValue(fd, &newState);
     if (result != 0) {
-        Log_Debug("ERROR: Could not read button GPIO: %s (%d).\n", strerror(errno), errno);
+        Log_Debug("[ERROR] Could not read button GPIO: %s (%d).\n", strerror(errno), errno);
         terminationRequired = true;
     } else {
         // Button is pressed if it is low and different than last known state.
@@ -468,6 +488,20 @@ static void AzureIoTDoWorkHandler(EventData *eventData)
         return;
     }
 
+	bool bNetworkReady = false;
+	Networking_IsNetworkingReady(&bNetworkReady);
+	if (!bNetworkReady) // if not connected to network, check again in 5 seconds
+	{
+		connectedToIoTHub = false;
+
+		azureIoTPollPeriodSeconds = AzureIoTDefaultPollPeriodSeconds;
+
+		struct timespec azureTelemetryPeriod = { azureIoTPollPeriodSeconds, 0 };
+		SetTimerFdToPeriod(azureIoTDoWorkTimerFd, &azureTelemetryPeriod);
+
+		return;
+	}
+
     // Set up the connection to the IoT Hub client.
     // Notes it is safe to call this function even if the client has already been set up, as in
     //   this case it would have no effect
@@ -498,7 +532,7 @@ static void AzureIoTDoWorkHandler(EventData *eventData)
         struct timespec azureTelemetryPeriod = {azureIoTPollPeriodSeconds, 0};
         SetTimerFdToPeriod(azureIoTDoWorkTimerFd, &azureTelemetryPeriod);
 
-        Log_Debug("ERROR: Failed to connect to IoT Hub; will retry in %i seconds\n",
+        Log_Debug("[ERROR] Failed to connect to IoT Hub; will retry in %i seconds\n",
                   azureIoTPollPeriodSeconds);
     }
 }
@@ -522,13 +556,13 @@ static int InitPeripheralsAndHandlers(void)
     sigaction(SIGTERM, &action, NULL);
 
     // Open button A
-    Log_Debug("INFO: Opening MT3620_RDB_BUTTON_A.\n");
+    Log_Debug("[INFO] Opening MT3620_RDB_BUTTON_A.\n");
     if (!OpenGpioFdAsInput(MT3620_RDB_BUTTON_A, &ledBlinkRateButtonGpioFd)) {
         return -1;
     }
 
     // Open button B
-    Log_Debug("INFO: Opening MT3620_RDB_BUTTON_B.\n");
+    Log_Debug("[INFO] Opening MT3620_RDB_BUTTON_B.\n");
     if (!OpenGpioFdAsInput(MT3620_RDB_BUTTON_B, &sendMessageButtonGpioFd)) {
         return -1;
     }
@@ -539,7 +573,7 @@ static int InitPeripheralsAndHandlers(void)
 
     // Initialize the Azure IoT SDK
     if (!AzureIoT_Initialize()) {
-        Log_Debug("ERROR: Cannot initialize Azure IoT Hub SDK.\n");
+        Log_Debug("[ERROR] Cannot initialize Azure IoT Hub SDK.\n");
         return -1;
     }
 
@@ -595,7 +629,7 @@ static int InitPeripheralsAndHandlers(void)
 /// </summary>
 static void ClosePeripheralsAndHandlers(void)
 {
-    Log_Debug("INFO: Closing GPIOs and Azure IoT client.\n");
+    Log_Debug("[INFO] Closing GPIOs and Azure IoT client.\n");
 
     // Close all file descriptors
     CloseFdAndPrintError(ledBlinkRateButtonGpioFd, "LedBlinkRateButtonGpio");
@@ -619,7 +653,13 @@ static void ClosePeripheralsAndHandlers(void)
 /// </summary>
 int main(int argc, char *argv[])
 {
-    Log_Debug("INFO: Azure IoT application starting.\n");
+    Log_Debug("[INFO] Azure IoT application starting.\n");
+
+	if (argc > 1)
+	{
+		// 2nd parameter should be DPS Scope ID
+		AzureIoT_SetDPSScopeID(argv[1]);
+	}
 
     int initResult = InitPeripheralsAndHandlers();
     if (initResult != 0) {
@@ -633,6 +673,6 @@ int main(int argc, char *argv[])
     }
 
     ClosePeripheralsAndHandlers();
-    Log_Debug("INFO: Application exiting.\n");
+    Log_Debug("[INFO] Application exiting.\n");
     return 0;
 }

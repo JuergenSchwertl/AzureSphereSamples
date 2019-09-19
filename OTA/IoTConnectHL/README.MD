@@ -10,7 +10,7 @@
 >        For the IoTConnectHL application we need a seperate CMakeSettings.json that refers to the AzureSphereToolchain.cmake script instead.
 1. In Visual Studio, in the Team Explorer Window open the CmakeLists.txt file in the IoTConnectHL directory using **File->Open...->Cmake...**.
 2. To prepares your *app_manifest.json* with your Azure IoT Hub settings, a CMake project does not offer the "Connect to Service..." Wizard.
-We therefore so we need to manually copy the settings from the Azure Portal. 
+We therefore need to manually copy the settings from the Azure Portal. 
 ```json
 {
   ...
@@ -50,7 +50,7 @@ not delete these applications when deploying the high-level app IoT Connect HL.
         "7E5FAB32-801C-4EDF-A1AA-9263652AA6BD", 
         "07562362-3FEC-46C8-B0AF-DB9507F32748" ]
 ```
-7. In the Visual STudio debug toolbar click *"Select Startup Item..."* and select *"GDB Debugger (HLCore)"*. Press F5 to start the application with debugging.
+7. In the Visual Studio debug toolbar click *"Select Startup Item..."* and select *"GDB Debugger (HLCore)"*. Press F5 to start the application with debugging.
 
 [Go back](../README.MD)
 
