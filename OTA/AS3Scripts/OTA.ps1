@@ -162,6 +162,78 @@ function New-AS3Component(
 	}
 }
 
+<#
+.SYNOPSIS
+Creates a new DeviceGroup in Azure Sphere Security Service
+.DESCRIPTION
+Creates a new DeviceGroup in Azure Sphere Security Service with the given Name and returns the Guid of the newly created DeviceGroup
+.PARAMETER Name
+Specifies the name for the new DeviceGroup.
+.INPUTS
+None. You cannot pipe objects to New-AS3DeviceGroup.
+.OUTPUTS
+[System.Guid] DeviceGroupId for consistency reasons
+.EXAMPLE
+PS> New-AS3DeviceGroup -Name "TestDeviceGroup"
+Guid
+-----------                          
+f4e25978-6152-447b-a2a1-64577582f327
+#>
+function New-AS3DeviceGroup(
+	[Parameter(Mandatory=$true)][string] $Name
+)
+{
+	$result = azsphere dg create -n $Name
+    if( ($result -is [System.Array]) -and ($result.Length -gt 1) -and $result[1].Contains("Successfully"))
+    {
+        [String] $s = $result[ 1 ]
+        Write-Host $s
+		return [System.Guid]( $s.Split("'").Item(3) )
+    } else {
+		Write-Error $result[1] -ErrorAction Stop
+	}
+}
+
+<#
+.SYNOPSIS
+Searches for a DeviceGroup in Azure Sphere Security Service by name
+.DESCRIPTION
+Finds a DeviceGroup in Azure Sphere Security Service with the given Name and returns the Guid of the DeviceGroup
+.PARAMETER Name
+Specifies the name for the new DeviceGroup.
+.INPUTS
+None. You cannot pipe objects to Find-AS3DeviceGroup.
+.OUTPUTS
+[System.Guid] DeviceGroupId
+.EXAMPLE
+PS> Find-AS3DeviceGroup -Name "TestDeviceGroup"
+Guid
+-----------                          
+f4e25978-6152-447b-a2a1-64577582f327
+#>
+function Find-AS3DeviceGroup(
+	[Parameter(Mandatory=$true)][string] $Name
+)
+{
+	$result = azsphere dg list
+    if( ($result -is [System.Array]) -and ($result.Length -gt 1) -and $result[0].Contains("Listing"))
+    {
+        foreach($l in $r)
+        {
+            if( ($l.Length -gt 50 ) -and ($l.StartsWith(" --> [ID: ")) -and ($l.Substring(49, $l.Length-50).CompareTo( $Name ) -eq 0 ) )
+            { 
+                Write-Host $l
+                # extract GUID sub string from " --> [ID: cd037ae5-27ca-4a13-9e3b-2a9d87f9d7bd] 'System Software Only'"
+		        return [System.Guid]( $l.Substring(10,36) )
+            }
+        }
+		Write-Warning "DeviceGroup '$Name' not found"
+        return $null
+    } else {
+		Write-Error $result[1] -ErrorAction Stop
+	}
+}
+
 
 <#
 .SYNOPSIS
