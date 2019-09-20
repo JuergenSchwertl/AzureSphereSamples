@@ -4,7 +4,7 @@
 /// included in the Azure IoT Device SDK for C.
 #pragma once
 
-#include <iothubtransportmqtt.h>
+#include <azureiot/iothubtransportmqtt.h>
 #include <applibs/networking.h>
 #include "parson.h"
 
@@ -22,6 +22,12 @@
 /// <remarks>This function is a no-op when the client has already been set up, i.e. this
 /// function has already completed successfully.</remarks>
 bool AzureIoT_SetupClient(void);
+
+/// <summary>
+///     Sets the DPS Scope ID.
+/// </summary>
+/// <param name="cstrID">The Scope ID string (typically from command line)</param>
+void AzureIoT_SetDPSScopeID(const char * cstrID);
 
 /// <summary>
 ///     Destroys the Azure IoT Hub client.

@@ -61,8 +61,8 @@
     }
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
-#undef malloc
-#undef free
+//#undef malloc
+//#undef free
 
 static JSON_Malloc_Function parson_malloc = malloc;
 static JSON_Free_Function parson_free = free;

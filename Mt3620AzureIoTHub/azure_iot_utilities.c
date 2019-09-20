@@ -2,13 +2,13 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <time.h>
-#include <iothub_client_core_common.h>
-#include <iothub_device_client_ll.h>
-#include <iothub_client_options.h>
-#include <iothubtransportmqtt.h>
-#include <iothub.h>
+#include <azureiot/iothub_client_core_common.h>
+#include <azureiot/iothub_device_client_ll.h>
+#include <azureiot/iothub_client_options.h>
+#include <azureiot/iothubtransportmqtt.h>
+#include <azureiot/iothub.h>
+#include <azureiot/azure_sphere_provisioning.h>
 #include <applibs/log.h>
-#include <azure_sphere_provisioning.h>
 #include "azure_iot_utilities.h"
 
 // Refer to https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-device-sdk-c-intro for more
@@ -18,7 +18,7 @@
 // String containing the scope id of the Device Provisioning Service
 // used to provision the app with the IoT hub hostname and the device id.
 //
-static const char scopeId[] = "[enter your DPS Scope ID here]";
+static char scopeId[16] = ""; // Your DPS Scope ID is filled on app start";
 
 /// <summary>
 ///     Function invoked to provide the result of the Device Twin reported properties
@@ -293,6 +293,15 @@ bool AzureIoT_SetupClient(void)
     }
 
     return true;
+}
+
+/// <summary>
+///     Sets the DPS Scope ID.
+/// </summary>
+/// <param name="cstrID">The Scope ID string (typically from command line)</param>
+void AzureIoT_SetDPSScopeID(const char * cstrID)
+{
+	strncpy(scopeId, cstrID, sizeof(scopeId));
 }
 
 /// <summary>
