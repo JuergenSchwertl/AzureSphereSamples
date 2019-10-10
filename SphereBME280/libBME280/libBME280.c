@@ -163,7 +163,7 @@ bool BME280_Init(int i2cInterfaceFd, bool onPrimaryI2CAddress)
 int BME280_GetSensorData(bme280_data_t *pData) {
 	int8_t rslt = BME280_OK;
 	struct bme280_data comp_data;
-	const struct timespec tWait = { 1,0 };
+	//const struct timespec tWait = { 1,0 };
 #ifndef BME280_FLOAT_ENABLE
 	rslt = bme280_get_sensor_data(BME280_ALL, &comp_data, &dev);
 	pData->temperature = ((double)comp_data.temperature) / 100;

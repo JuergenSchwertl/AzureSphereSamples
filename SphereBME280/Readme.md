@@ -8,6 +8,20 @@ Bosch BME280 temperature-, humidity- and pressure-sensor.
 
 This sensor is e.g. available as [Seeed Groove BME280 sensor board](http://wiki.seeedstudio.com/Grove-Barometer_Sensor-BME280/) amongst other suppliers.
 
+### Wiring the BME280 sensor
+
+There are multiple sensor boards for the BME280 available (the Seeed Grove BME280 mentioned above looks slightly different but offers to use a Grove connector cable)
+but essentially they all have the necessary power supply V(in) & GND and the I2C Pins *SDA* for data and *SCL* for clock called out on the printout.
+
+| Purpose  | MT3620           |  BME280  | Pictured wire below |
+|----------|------------------|:--------:|:-------------------:|
+|Ground    | Header 3, pin 2  | Gnd      | green               |
+|3.3 volts | Header 3, pin 3  | Vin/Vcc  | red                 |
+|Data      | Header 4, pin 6  | SDA      | purple              |
+|Clock     | Header 4, pin 12 | SCL      | blue                |
+
+![MT3620 with connected DHT11 sensor](./Images/Lab_BME280.png)
+
 In contrast to Azure IoT Hub (being a *Platform as a Service*/PaaS), Azure IoT Central is a complete
 *Software as a Service*/SaaS solution. However, it is obviously built using existing PaaS 
 services such as Azure IoT Hub, Azure IoT Device Provisioning Service amongst others 
