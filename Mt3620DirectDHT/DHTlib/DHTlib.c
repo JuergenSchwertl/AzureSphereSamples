@@ -1,4 +1,4 @@
-﻿#include "..\DHTlib\Inc\Public\DHTlib.h"
+﻿#include "DHTlib.h"
 
 /*
 *  DHTlib.c:

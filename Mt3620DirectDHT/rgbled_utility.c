@@ -9,7 +9,7 @@
 /// <summary>
 ///     Maximum number of managed LEDs.
 /// </summary>
-#define MAX_LED_COUNT 4
+#define MAX_LED_COUNT 5
 
 static const char *colorNames[] = {"white", "blue",   "cyan",    "green",
                                    "red",   "yellow", "magenta", "off"};
@@ -31,9 +31,9 @@ int RgbLedUtility_OpenLeds(RgbLed **outLeds, size_t ledCount, const int (*ledGpi
     for (size_t i = 0; i < ledCount; i++) {
         Log_Debug("INFO: Open RGB LED %d.\n", i);
         for (int channel = 0; channel < NUM_CHANNELS; channel++) {
-            outLeds[i]->channel[channel] =
+            outLeds[i]->channelGpioFd[channel] =
                 GPIO_OpenAsOutput(ledGpios[i][channel], GPIO_OutputMode_PushPull, GPIO_Value_High);
-            if (outLeds[i]->channel[channel] < 0) {
+            if (outLeds[i]->channelGpioFd[channel] < 0) {
                 Log_Debug("ERROR: Could not open LED.\n");
                 return -1;
             }
@@ -41,7 +41,7 @@ int RgbLedUtility_OpenLeds(RgbLed **outLeds, size_t ledCount, const int (*ledGpi
             // Copy the created handles in the internal rgbLeds struct.
             // They are needed when converting from a raw LED pointer to an index inside
             // the rgbLeds structure.
-            rgbLeds[i].channel[channel] = outLeds[i]->channel[channel];
+            rgbLeds[i].channelGpioFd[channel] = outLeds[i]->channelGpioFd[channel];
         }
     }
 
@@ -56,7 +56,8 @@ int RgbLedUtility_SetLed(const RgbLed *led, RgbLedUtility_Colors colorRequested)
     for (int channel = 0; channel < NUM_CHANNELS; channel++) {
         bool isOn = (int)colorRequested & (0x1 << channel);
 
-        result = GPIO_SetValue(led->channel[channel], isOn ? GPIO_Value_Low : GPIO_Value_High);
+        result =
+            GPIO_SetValue(led->channelGpioFd[channel], isOn ? GPIO_Value_Low : GPIO_Value_High);
         if (result != 0) {
             Log_Debug("ERROR: Cannot change RGB LED 0x%x color.\n", led);
         }
@@ -68,7 +69,7 @@ void RgbLedUtility_CloseLeds(RgbLed **leds, size_t ledCount)
 {
     for (size_t i = 0; i < ledCount; i++) {
         for (int channel = 0; channel < NUM_CHANNELS; channel++) {
-            int ledFd = leds[i]->channel[channel];
+            int ledFd = leds[i]->channelGpioFd[channel];
             if (ledFd >= 0) {
                 GPIO_SetValue(ledFd, GPIO_Value_High); // off
                 close(ledFd);

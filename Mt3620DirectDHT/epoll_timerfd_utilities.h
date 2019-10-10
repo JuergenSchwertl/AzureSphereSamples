@@ -10,7 +10,7 @@ struct event_data;
 ///     Function signature for event handlers.
 /// </summary>
 /// <param name="eventData">The provided event data</param>
-typedef void (*event_handler_t)(struct event_data *eventData);
+typedef void(*event_handler_t)(struct event_data *eventData);
 
 /// <summary>
 /// Data structure for context data for epoll events.
@@ -19,14 +19,14 @@ typedef void (*event_handler_t)(struct event_data *eventData);
 /// In other words, do not use a local function variable for this data structure.
 /// </summary>
 typedef struct event_data {
-    /// <summary>
-    /// The event handler
-    /// </summary>
-    event_handler_t eventHandler;
-    /// <summary>
-    /// The file descriptor that generated the event
-    /// </summary>
-    int fd;
+	/// <summary>
+	/// The event handler
+	/// </summary>
+	event_handler_t eventHandler;
+	/// <summary>
+	/// The file descriptor that generated the event
+	/// </summary>
+	int fd;
 	/// <summary>
 	/// a pointer to additional event context
 	/// </summary>
@@ -94,12 +94,14 @@ int ConsumeTimerFdEvent(int timerFd);
 /// <param name="epollEventMask">Bit mask for the epoll event type</param>
 /// <returns>A valid timerfd file descriptor on success, or -1 on failure</returns>
 int CreateTimerFdAndAddToEpoll(int epollFd, const struct timespec *period,
-                               event_data_t *persistentEventData, const uint32_t epollEventMask);
+	event_data_t *persistentEventData, const uint32_t epollEventMask);
 
 /// <summary>
 ///     Waits for an event on an epoll instance and triggers the handler.
 /// </summary>
-/// <param name="epollFd">Epoll file descriptor</param>
+/// <param name="epollFd">
+///     Epoll file descriptor which was created with <see cref="CreateEpollFd" />.
+/// </param>
 /// <returns>0 on success, or -1 on failure</returns>
 int WaitForEventAndCallHandler(int epollFd);
 

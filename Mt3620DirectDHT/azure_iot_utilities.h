@@ -4,7 +4,7 @@
 /// included in the Azure IoT Device SDK for C.
 #pragma once
 
-#include <iothubtransportmqtt.h>
+#include <azureiot/iothubtransportmqtt.h>
 #include <applibs/networking.h>
 #include "parson.h"
 
@@ -24,6 +24,12 @@
 bool AzureIoT_SetupClient(void);
 
 /// <summary>
+///     Sets the DPS Scope ID.
+/// </summary>
+/// <param name="cstrID">The Scope ID string (typically from command line)</param>
+void AzureIoT_SetDPSScopeID(const char * cstrID);
+
+/// <summary>
 ///     Destroys the Azure IoT Hub client.
 /// </summary>
 void AzureIoT_DestroyClient(void);
@@ -37,6 +43,15 @@ void AzureIoT_DestroyClient(void);
 /// <param name="propertyName">The name of the property to report.</param>
 /// <param name="propertyValue">The value of the property.</param>
 void AzureIoT_TwinReportState(const char *propertyName, size_t propertyValue);
+
+/// <summary>
+///     Creates and enqueues reported properties state using a prepared json string.
+///     The report is not actually sent immediately, but it is sent on the next 
+///     invocation of AzureIoT_DoPeriodicTasks().
+/// </summary>
+void AzureIoT_TwinReportStateJson(
+	char *reportedPropertiesString,
+	size_t reportedPropertiesSize);
 
 /// <summary>
 ///     Creates and enqueues a message to be delivered the IoT Hub. The message is not actually sent

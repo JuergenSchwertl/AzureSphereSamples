@@ -10,20 +10,20 @@
 /// <summary>
 ///     Struct representing an RGB LED
 /// </summary>
-typedef struct RgbLed {
+typedef struct {
     /// <summary>
     ///     File descriptors for GPIOs for the red, green and blue color channels comprising the RGB
     ///     LED
     /// </summary>
-    int channel[NUM_CHANNELS];
+    int channelGpioFd[NUM_CHANNELS];
 } RgbLed;
 
 /// <summary>
 ///     The init value for RgbLed structs.
 /// </summary>
-#define RGBLED_INIT_VALUE         \
-    {                             \
-        .channel = { -1, -1, -1 } \
+#define RGBLED_INIT_VALUE               \
+    {                                   \
+        .channelGpioFd = { -1, -1, -1 } \
     }
 
 /// <summary>
@@ -42,8 +42,8 @@ typedef enum {
 } RgbLedUtility_Colors;
 
 /// <summary>
-///     Opens the first 'n' LEDs as defined in the ledGpios array, where n is ledCount, and returns
-///     their file descriptors via the provided 'leds' array.
+///     Opens the first ledCount LEDs in the ledGpios array, and writes their file
+///     descriptors into the provided 'leds' array.
 /// </summary>
 /// <param name="outLeds">An array which will be populated by opened RgbLeds.</param>
 /// <param name="ledCount">The number of LEDs to open.</param>
@@ -66,14 +66,14 @@ void RgbLedUtility_CloseLeds(RgbLed **leds, size_t ledCount);
 int RgbLedUtility_SetLed(const RgbLed *led, RgbLedUtility_Colors color);
 
 /// <summary>
-///     Searches in the given string the first occurence of one of the color's name
-///     defined in the RgbLedUtility_Colors enum (e.g. "red" for RgbLedUtility_Colors_Red), and
-///     returns the matching enum.
+///     Searches the given string for the first occurence a color's name, for the
+///     colors defined in the RgbLedUtility_Colors enum (e.g. "red" for RgbLedUtility_Colors_Red),
+///     and returns the matching enum value.
 ///     If no matching color is found, <see cref="RgbLedUtility_Colors_Unknown"/> is returned.
 /// </summary>
 /// <param name="string">string searched for a word indicating a color</param>
-/// <param name="string">size of the string</param>
-/// <returns>The relative color's enum. </returns>
+/// <param name="stringSize">size of the string</param>
+/// <returns>The color's enum value. </returns>
 RgbLedUtility_Colors RgbLedUtility_GetColorFromString(const char *string, size_t stringSize);
 
 /// <summary>

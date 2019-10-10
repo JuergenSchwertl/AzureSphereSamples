@@ -27,39 +27,31 @@ For information on the pinout of the board see [GPIO pinout](https://github.com/
 
 ### Modifying the code
 
-Step 1.	In Visual Studio, open Mt3620DirectDHT\Mt3620DirectDHT.sln
-Step 2.	In the Solution Explorer, under the Mt3620DirectDHT solution, right click on Reference and “Add Connected Service” as shown below:
-
-![Add Connected Service](./images/VS_Add_Connected_Service.png)
-
-Select "Device Connectivity with Azure IoT", then your Azure Subscription, Connection Type: "Device Provisioning Service" and your previously created Device provisioning service from the list and press [Add]. 
-Make sure that the output shows updates to both `AllowedConnections` and `DeviceAuthentication` properties in the app_manifest.json file.
+>**Note:** If you had run through this scenario earlier you will notice that this high-level app sample is now using the CMake toolchain.
+Step 1. In Visual Studio, in the Team Explorer Window open the CmakeLists.txt file in the IoTConnectHL directory using **File->Open...->Cmake...**.
+Step 2. To prepares your *app_manifest.json* with your Azure IoT Hub settings, a CMake project does not offer the "Connect to Service..." Wizard.
+We therefore need to manually copy the settings from the Azure Portal. 
+```json
+{
+  ...
+  "CmdArgs": [ "**your DPS Scope ID**" ],
+  "Capabilities": {
+    "AllowedConnections": [ "global.azure-devices-provisioning.net", "**your Azure IoT Hub**.azure-devices.net"],
+    "DeviceAuthentication": "**your Azure Sphere Tenant id**"
+  }  
+}
 ```
-[11.02.2019 18:03:35.153] Adding Device Connectivity with Azure IoT to the project.
-[11.02.2019 18:03:35.329] The following hostnames have been added to the AllowedConnections attribute of app_manifest.json: global.azure-devices-provisioning.net, JS-MS-Iot-Hub.azure-devices.net
-[11.02.2019 18:03:35.341] The Azure Sphere tenant ID 'c0b88764-9273-46ab-bab2-effecf13f91c' has been added to the DeviceAuthentication attribute of app_manifest.json .
-[11.02.2019 18:03:36.441] Azure Sphere Device Provisioning Service scope id:'0ne0002304B'
-[11.02.2019 18:03:36.449] Successfully added Device Connectivity with Azure IoT to the project.
+* Open the <a href="https://portal.azure.com/#blade/HubsExtension/BrowseResourceBlade/resourceType/Microsoft.Devices%2FProvisioningServices" target="_blank">Device Provisioning Services page</a>,
+select your Device Provisioning service and copy the *"ID Scope"** (if you hover over the ID Scope value, it shows a copy-icon next to it to copy the name to the clipboard). 
+Paste the ID Scope value into the "CmdArgs" list as first parameter replacing the *\*\*your DPS Scope ID\*\** content of the string.
+* Go to the <a href="https://portal.azure.com/#blade/HubsExtension/BrowseResourceBlade/resourceType/Microsoft.Devices%2FIotHubs" target="_blank">IoT Hubs page</a>, 
+select your IoT Hub for this lab and copy the *"Hostname"* from the Overview page (if you hover over the IoT Hub Hostname value, it shows a copy-icon next to it to copy the name to the clipboard).
+Paste the IoT Hub Hostname into the *"AllowedConnections"* list replacing the *\*\*your Azure IoT Hub\*\*.azure-devices.net* string content.
+* Open a Azure Sphere Command window and run the following command to show your Azure Sphere Tenant ID:
+```sh
+azsphere tenant show-selected
 ```
-
-
-**Pls. note**
-> In the 19.02 version of the Azure Sphere SDK, the Add Connected Service wizard created the required files *azure_iot_tilities.c/.h* and *parson.c/.h* automatically, 
-> provisioned the DPS Scope ID and setup the *appmanifest.json*.
-> 
-> In the 19.05 version, the wizard only applies the required capability settings to the *appmanifest.json* but does **not** create the source files anymore. For your convenience, I've added these files in the project already,
-> however, you need to manually add the DPS Scope ID to *azure_iot_utilities.c* in line #21 : 
-
-```C
-//
-// String containing the scope id of the Device Provisioning Service
-// used to provision the app with the IoT hub hostname and the device id.
-//
-static const char scopeId[] = "[Enter your DPS scope ID here]";
-```
-
-> You can find the DPS Scope ID in the [DPS settings in the Azure Portal](https://portal.azure.com/#blade/HubsExtension/BrowseResourceBlade/resourceType/Microsoft.Devices%2FProvisioningServices).
-> The Add Connected Service wizard also provides the Scope ID in the *appmanifest.json* as `"CmdArgs"`-property.
+Copy the GUID value and paste it into the *"DeviceAuthentication"* value replacing the *\*\**your Azure Sphere Tenant id\*\** string content.
 
 Step 3. Open *azure_iot_utilities.h* on or about line **#41** and add the following code as shown below 
 (you can copy these lines also from *azure_iot_utilities-snippets.txt* from the Solution Items folder)
@@ -109,7 +101,11 @@ void AzureIoT_TwinReportStateJson(
 ```
 ![azure_iot_utilities.c](./images/VS_azureiotutil_c.png)
 
-Step 5.	In Visual Studio, click “Remote GDB Debugger” to compile, deploy, run and debug the code on the device.
+In the Visual Studio debug toolbar click *"Select Startup Item..."* and select *"GDB Debugger (HLCore)"*. Press F5 to start the application with debugging.
+
+The Debug window should show the application starting, authenticating against Device Provisioning Service and then connecting to Azure IoT Hub.
+
+Check the main.c comments on interactions with Azure IoT Hub Device Twins, telemetry being sent and available Azure IoT Hub Direct Methods.
 
 Step 6.	Monitoring the output window in Visual Studio, you should see the device send the temperature every 15 seconds as shown below:
 ![MT3620DirectDHT output](./images/VS_DHT_output.png)
