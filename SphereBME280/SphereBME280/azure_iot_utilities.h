@@ -83,6 +83,12 @@ void AzureIoT_SetMessageReceivedCallback(MessageReceivedFnType callback);
 typedef void (*TwinUpdateFnType)(JSON_Object *desiredProperties);
 
 /// <summary>
+///     Sets the DPS Scope ID.
+/// </summary>
+/// <param name="cstrID">The Scope ID string (typically from command line)</param>
+void AzureIoT_SetDPSScopeID(const char* cstrID);
+
+/// <summary>
 ///     Sets the function callback invoked whenever a Device Twin update from the IoT Hub is
 ///     received.
 /// </summary>

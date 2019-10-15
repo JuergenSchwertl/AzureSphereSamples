@@ -18,7 +18,7 @@
 // String containing the scope id of the Device Provisioning Service
 // used to provision the app with the IoT hub hostname and the device id.
 //
-static const char scopeId[] = "[Enter your DPS scope ID here]";
+static char scopeId[16] = ""; // Your DPS Scope ID is filled on app start";
 
 /// <summary>
 ///     Function invoked to provide the result of the Device Twin reported properties
@@ -294,6 +294,17 @@ bool AzureIoT_SetupClient(void)
 
     return true;
 }
+
+
+/// <summary>
+///     Sets the DPS Scope ID.
+/// </summary>
+/// <param name="cstrID">The Scope ID string (typically from command line)</param>
+void AzureIoT_SetDPSScopeID(const char* cstrID)
+{
+	strncpy(scopeId, cstrID, sizeof(scopeId));
+}
+
 
 /// <summary>
 ///     Destroys the Azure IoT Hub client.
