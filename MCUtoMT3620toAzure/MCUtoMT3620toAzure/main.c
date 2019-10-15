@@ -44,12 +44,6 @@
 /// - log (messages shown in Visual Studio's Device Output window during debugging)
 /// </summary>
 
-#ifndef AZURE_IOT_HUB_CONFIGURED
-#error \
-    "WARNING: Please add a project reference to the Connected Service first \
-(right-click References -> Add Connected Service)."
-#endif
-
 #include "azure_iot_utilities.h"
 
 // File descriptors - initialized to invalid value
@@ -113,6 +107,31 @@ void updateConnectionStatusLed(void)
 													    : RGB_Color_Green); // only Network connected
 	}
 	setConnectionStatusLed(color);
+}
+
+/// <summary>
+///     IoT Hub connection status callback function.
+/// </summary>
+/// <param name="connected">'true' when the connection to the IoT Hub is established.</param>
+static void SetNetworkStatusLed(void)
+{
+	bool bActiveNetwork = false;
+	RgbLedUtility_Colors colStatus = RgbLedUtility_Colors_Red;
+
+	Networking_IsNetworkingReady(&bActiveNetwork);
+	if (bActiveNetwork)
+	{
+		if (connectedToIoTHub)
+		{
+			colStatus = RgbLedUtility_Colors_Blue;
+		}
+		else
+		{
+			colStatus = RgbLedUtility_Colors_Green;
+		}
+	}
+
+	RgbLedUtility_SetLed(&ledNetworkStatus, colStatus);
 }
 
 void ConnectionToIoTHubChanged(bool bConnected)
@@ -212,6 +231,18 @@ static void ClosePeripheralsAndHandlers(void)
 int main(int argc, char *argv[])
 {
     Log_Debug("MCUtoMt3620toAzure application starting\n");
+
+	if (argc > 1)
+	{
+		// 2nd parameter should be DPS Scope ID
+		AzureIoT_SetDPSScopeID(argv[1]);
+	}
+	else
+	{
+		terminationRequired = true;
+		Log_Debug("[ERROR] Scope Id missing for Azure IoT Hub Device Provisioning Service.\n");
+	}
+
     if (InitPeripheralsAndHandlers() != 0) {
         terminationRequired = true;
     }

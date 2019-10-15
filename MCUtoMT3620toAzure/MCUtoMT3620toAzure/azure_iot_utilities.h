@@ -23,6 +23,14 @@
 /// function has already completed successfully.</remarks>
 bool AzureIoT_SetupClient(void);
 
+
+/// <summary>
+///     Sets the DPS Scope ID.
+/// </summary>
+/// <param name="cstrID">The Scope ID string (typically from command line)</param>
+void AzureIoT_SetDPSScopeID(const char* cstrID);
+
+
 /// <summary>
 ///     Destroys the Azure IoT Hub client.
 /// </summary>
