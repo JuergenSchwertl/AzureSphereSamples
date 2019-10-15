@@ -38,7 +38,7 @@ void loop() {
 The output from the other MCU is as follows:
 ![Arduino UNO Serial Monitor](./images/MCU_SerialMonitor.png)
 
-## Wiring the devices (for NodeMCU) [NodeMCU]
+## Wiring the devices (for NodeMCU)
 This step assumes you are using the smaller NodeMCU, that runs on 3.3V as well.  If using the Arduino UNO, refer to the next section.
 
 With the Sphere and the other MCU unplugged from power, wire the device as follows:
@@ -75,9 +75,9 @@ This picture shows the boards wired up:
 
 ## Modifying the code
 
-Step 1.	In Visual Studio, open Mt3620DirectDHT\Mt3620DirectDHT.sln
+**Step 1.**	In Visual Studio, open Mt3620DirectDHT\Mt3620DirectDHT.sln
 
-Step 2. To prepare your *app_manifest.json* with your Azure IoT Hub settings, depending on your development environment, you may have two options.
+**Step 2.** To prepare your *app_manifest.json* with your Azure IoT Hub settings, depending on your development environment, you may have two options.
 If you run Visual Studio 2017, you can use the "Add Connected Service"-wizard:
 
 **Option #1: "Add Connected Service"-wizard (Visual Studio 2017)**
@@ -132,7 +132,7 @@ azsphere tenant show-selected
 ```
 Copy the GUID value and paste it into the *"DeviceAuthentication"* value replacing the *\*\**your Azure Sphere Tenant id\*\** string content.
 
-Step 3. Open *azure_iot_utilities.h* on or about line **#41** and add the following code as shown below 
+**Step 3.** Open *azure_iot_utilities.h* on or about line **#41** and add the following code as shown below 
 (you can copy these lines also from *azure_iot_utilities-snippets.txt* from the Solution Items folder)
 ```C
 /// <summary>
@@ -146,7 +146,7 @@ void AzureIoT_TwinReportStateJson(
 ```
 ![azure_iot_utilities.h](./images/VS_azureiotutil_h.png)
 
-Step 4.	Open *azure_iot_utilities.c* and at the end of the file, on or about line **#463** add the following code, as shown below:
+**Step 4.**	Open *azure_iot_utilities.c* and at the end of the file, on or about line **#463** add the following code, as shown below:
 ```C
 /// <summary>
 ///     Creates and enqueues reported properties state using a prepared json string.
@@ -180,14 +180,14 @@ void AzureIoT_TwinReportStateJson(
 ```
 ![azure_iot_utilities.c](./images/VS_azureiotutil_c.png)
 
-Step 5.	In Visual Studio, click “Remote GDB Debugger” to compile, deploy, run and debug the code on the device.
+**Step 5.**	In Visual Studio, click “Remote GDB Debugger” to compile, deploy, run and debug the code on the device.
 
-Step 6.	Monitoring the output window in Visual Studio, you should see the device send the temperature every second as shown below.  
+**Step 6.**	Monitoring the output window in Visual Studio, you should see the device send the temperature every second as shown below.  
 Note how we send telemetry for the Temperature and Humidity while updating the Device Twin when the maximum and minimum temperature changes.
 
 ![Azure Sphere log output](./images/MCU_Log_Output.png)
 
-Step 7.	Using Azure Device Explorer, viewing the Device Twin properties you should see the min and max temperature received.
+**Step 7.**	Using Azure Device Explorer, viewing the Device Twin properties you should see the min and max temperature received.
 >You can get Device Explorer from the [Azure IoT Hub C# SDK](https://github.com/Azure/azure-iot-sdk-csharp/tree/master/tools/DeviceExplorer).
 >A pre-built version of the Device Explorer application for Windows can be downloaded from https://aka.ms/aziotdevexp as well as 
 >the [Releases](https://github.com/Azure/azure-iot-sdk-csharp/releases) page. (Scroll down for __SetupDeviceExplorer.msi__). 
@@ -196,13 +196,13 @@ Step 7.	Using Azure Device Explorer, viewing the Device Twin properties you shou
 
 ![Device Explorer-Device Twin](./images/DeviceExplorer_MCU_DeviceTwin.png "Device Explorer-Device Twin")
 
-Step 8.	Using Azure Device Explorer, monitoring the data, you should see both temperature and humidity sent as a JSON message.
+**Step 8.**	Using Azure Device Explorer, monitoring the data, you should see both temperature and humidity sent as a JSON message.
 
 ![Device Explorer-Monitoring Telemetry Messages](./images/DeviceExplorer_MCU_Data.png "Device Explorer-Monitoring Telemetry Messages")
 
-Step 9.	Unique to this lab, we enabled the Uart `ISU0` in the [*app_manifest.json*](./MCUtoMT3620toAzure/app_manifest.json) using the
+**Step 9.**	Unique to this lab, we enabled the Uart `ISU0` in the [*app_manifest.json*](./MCUtoMT3620toAzure/app_manifest.json) using the
 *hardware targeting* feature in the Azure Sphere Toolchain, that allows to use macros for better readability in the app_manifest.json 
-instead of the raw PGIO port numbers and UART strings:
+instead of the raw GPIO port numbers and UART strings:
 
 ```json
     "Gpio": [
@@ -223,7 +223,7 @@ Lines 19 - 20 include UART and MCU utilities that are not part of the Azure Sphe
 
 [`UART_InitializeAndAddToEpoll`](./MCUtoMT3620toAzure/UART_utilities.c#L116) configures the settings for the UART, 
 opens the UART file descriptor and registers the epoll event handler.
->Make sure you have added the "ISU0" capability in the *appmanifest.json*.
+>Make sure you have added the "ISU0" capability (or "$MT3620_ISU0_UART" respectively) in the *appmanifest.json*.
  
 [`handleUartEvent`](./MCUtoMT3620toAzure/UART_utilities.c#L45) reads incoming data from the UART into the ring buffer 
 and then searches the buffer for `LINE_DELIMITER` characters. For each received line it calls another event handler
