@@ -77,7 +77,37 @@ This picture shows the boards wired up:
 
 Step 1.	In Visual Studio, open Mt3620DirectDHT\Mt3620DirectDHT.sln
 
-Step 2. To prepare your *app_manifest.json* with your Azure IoT Hub settings, lets manually copy the settings from the Azure Portal. 
+Step 2. To prepare your *app_manifest.json* with your Azure IoT Hub settings, depending on your development environment, you may have two options.
+If you run Visual Studio 2017, you can use the "Add Connected Service"-wizard:
+
+**Option #1: "Add Connected Service"-wizard (Visual Studio 2017)**
+
+In the Solution Explorer, under the Mt3620AzureIoTHub solution, right click on Reference and "Add Connected Service? as shown below:
+
+![Add Connected Service](./images/VS_Add_Connected_Service.png)
+
+Select "Device Connectivity with Azure IoT", then your Azure Subscription, Connection Type: "Device Provisioning Service" and your previously created Device provisioning service from the list and press [Add]. 
+Make sure that the output shows updates to both `AllowedConnections` and `DeviceAuthentication` properties in the app_manifest.json file.
+```
+[11.02.2019 18:03:35.153] Adding Device Connectivity with Azure IoT to the project.
+[11.02.2019 18:03:35.329] The following hostnames have been added to the AllowedConnections attribute of app_manifest.json: global.azure-devices-provisioning.net, JS-MS-Iot-Hub.azure-devices.net
+[11.02.2019 18:03:35.341] The Azure Sphere tenant ID 'c0b88764-9273-46ab-bab2-effecf13f91c' has been added to the DeviceAuthentication attribute of app_manifest.json .
+[11.02.2019 18:03:36.441] Azure Sphere Device Provisioning Service scope id:'0ne0002304B'
+[11.02.2019 18:03:36.449] Successfully added Device Connectivity with Azure IoT to the project.
+```
+
+
+> *Pls. note*:
+> 
+> In the 19.02 version of the Azure Sphere SDK, the Add Connected Service wizard created the required files *azure_iot_tilities.c/.h* and *parson.c/.h* automatically, 
+> provisioned the DPS Scope ID and setup the *appmanifest.json*.
+> 
+> Since SDK version 19.05, the wizard only applies the required capability settings to the *app_manifest.json* but does **not** create the source files anymore. 
+> For your convenience, I've added these files in the project already.
+
+**Option #2: Manually entering *app_manifest.json* settings**
+
+Lets manually copy the settings from the Azure Portal. Your *appmanifest.json* should look like 
 ```json
 {
   ...
@@ -170,27 +200,18 @@ Step 8.	Using Azure Device Explorer, monitoring the data, you should see both te
 
 ![Device Explorer-Monitoring Telemetry Messages](./images/DeviceExplorer_MCU_Data.png "Device Explorer-Monitoring Telemetry Messages")
 
-Step 9.	Unique to this lab, we enabled the Uart `ISU0` in the [*app_manifest.json*](./MCUtoMT3620toAzure/app_manifest.json) as shown below:
+Step 9.	Unique to this lab, we enabled the Uart `ISU0` in the [*app_manifest.json*](./MCUtoMT3620toAzure/app_manifest.json) using the
+*hardware targeting* feature in the Azure Sphere Toolchain, that allows to use macros for better readability in the app_manifest.json 
+instead of the raw PGIO port numbers and UART strings:
 
 ```json
-{
-  "SchemaVersion": 1,
-  "Name": "MCUtoMT3620toAzure",
-  "ComponentId": "B3A4C1C2-0AA9-41AD-A8A7-4DE822FE84D3",
-  "EntryPoint": "/bin/app",
-  "CmdArgs": [],
-  "TargetApplicationRuntimeVersion": 2,
-  "Capabilities": {
-    "AllowedConnections": [ ],
-    "AllowedTcpServerPorts": [],
-    "AllowedUdpServerPorts": [],
-    "Gpio": [ 48, 14, 11 ],
-    "Uart": [ "ISU0" ],
-    "WifiConfig": false,
-    "NetworkConfig": false,
-    "SystemTime": false
-  }
-}
+    "Gpio": [
+      "$MT3620_RDB_NETWORKING_LED_RED",
+      "$MT3620_RDB_NETWORKING_LED_GREEN",
+      "$MT3620_RDB_NETWORKING_LED_BLUE"
+    ],
+    "Uart": [ "$MT3620_ISU0_UART" ],
+
 ```
 
 ## Reviewing the code (*main.c*)

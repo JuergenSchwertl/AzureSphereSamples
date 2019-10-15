@@ -36,6 +36,8 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
+    <TargetHardwareDirectory>../../Hardware/mt3620_rdb</TargetHardwareDirectory>
+    <TargetHardwareDefinition>mt3620_rdb.json</TargetHardwareDefinition>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
   </PropertyGroup>

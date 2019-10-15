@@ -15,7 +15,7 @@
 #include <applibs/log.h>
 #include <applibs/networking.h>
 
-#include "mt3620_rdb.h"
+#include "hw/mt3620_rdb.h"
 #include "UART_utilities.h"
 #include "MCU_utilities.h"
 
@@ -109,30 +109,6 @@ void updateConnectionStatusLed(void)
 	setConnectionStatusLed(color);
 }
 
-/// <summary>
-///     IoT Hub connection status callback function.
-/// </summary>
-/// <param name="connected">'true' when the connection to the IoT Hub is established.</param>
-static void SetNetworkStatusLed(void)
-{
-	bool bActiveNetwork = false;
-	RgbLedUtility_Colors colStatus = RgbLedUtility_Colors_Red;
-
-	Networking_IsNetworkingReady(&bActiveNetwork);
-	if (bActiveNetwork)
-	{
-		if (connectedToIoTHub)
-		{
-			colStatus = RgbLedUtility_Colors_Blue;
-		}
-		else
-		{
-			colStatus = RgbLedUtility_Colors_Green;
-		}
-	}
-
-	RgbLedUtility_SetLed(&ledNetworkStatus, colStatus);
-}
 
 void ConnectionToIoTHubChanged(bool bConnected)
 {
