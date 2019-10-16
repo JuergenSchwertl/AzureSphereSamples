@@ -1,9 +1,9 @@
 
 # relative paths of imagepackages to the OTA sample (under the proviso being built for Debug)
-$strIoTConnectHLPath = ".\\IoTConnectHL\\out\\ARM-Debug-2Beta1905\\IoTConnectHL.imagepackage"
-$strRedSphereRTPath = ".\\out\\ARM-Debug-2Beta1905\\RedSphereRT\\RedSphereRT.imagepackage"
-$strGreenSphereRTPath = ".\\out\\ARM-Debug-2Beta1905\\GreenSphereRT\\GreenSphereRT.imagepackage"
-$strBlueSphereRTPath = ".\\out\\ARM-Debug-2Beta1905\\BlueSphereRT\\BlueSphereRT.imagepackage"
+$strIoTConnectHLPath = ".\\IoTConnectHL\\out\\ARM-Debug-3+Beta1909\\IoTConnectHL.imagepackage"
+$strRedSphereRTPath = ".\\out\\ARM-Debug-3+Beta1909\\RedSphereRT\\RedSphereRT.imagepackage"
+$strGreenSphereRTPath = ".\\out\\ARM-Debug-3+Beta1909\\GreenSphereRT\\GreenSphereRT.imagepackage"
+$strBlueSphereRTPath = ".\\out\\ARM-Debug-3+Beta1909\\BlueSphereRT\\BlueSphereRT.imagepackage"
 
 # .SYNOPSIS AppInfo structure with Component Name, ComponentID, ImageID and FilePath
 Add-Type @"
@@ -121,7 +121,8 @@ function New-AS3ImageSet(
     {
         Write-Host $result[1]
         $imsID = [System.Guid]( $result[1].Split("'").Item(3) )
-        azsphere ims show -i $imsID
+        $info = azsphere ims show -i $imsID
+        Write-Host ($info -join "`r`n")
         return $imsID
     } else {
 		Write-Error "Cannot create ImageSet '$Name' for ImageId(s) $imgIDs" -ErrorAction Stop
@@ -256,6 +257,8 @@ function Add-AS3ComponentImage(
 	[Parameter(Mandatory=$true)] $FilePath
 )
 {
+    Write-Host "Uploading $FilePath..."
+
 	$result = azsphere com img add -f $FilePath --force
     if( ($result -is [System.Array]) -and ($result.Length -gt 2) -and $result[ $result.Length-2 ].Contains("Successfully"))
     {
@@ -265,9 +268,9 @@ function Add-AS3ComponentImage(
     } else {
         if($result -is [System.Array])
         {
-            if($result.Length > 3)
+            if($result.Length -gt 6)
             {
-        		Write-Error $result[ $result.Length-3 ] -ErrorAction Stop
+        		Write-Error $result[ $result.Length-6 ] -ErrorAction Stop
             } else {
                 Write-Error $result[0]
             }
@@ -323,3 +326,4 @@ function Check-Prerequisites()
 
 
 Check-Prerequisites
+

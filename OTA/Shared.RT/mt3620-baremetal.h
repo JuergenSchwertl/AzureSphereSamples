@@ -14,11 +14,6 @@ static const uintptr_t NVIC_ISER_BASE = 0xE000E100;
 /// <summary>Base address of NVIC Interrupt Priority Registers, ARM DDI 0403E.b S3.4.3.</summary>
 static const uintptr_t NVIC_IPR_BASE = 0xE000E400;
 
-
-/// <summary>Base address of PAD GPIO IRQ Registers. 4 Bits per GPIO</summary>
-// I.e. Button A: GPIO 12 is (0x3001_0024[19:16]) :: *(volatile uint32_t *)(PAD_GPIO_IRQ_BASE + gpio >> 2)
-static const uintptr_t PAD_GPIO_IRQ_BASE = 0x30010020;
-
 /// <summary>The IOM4 cores on the MT3620 use three bits to encode interrupt priorities.</summary>
 #define IRQ_PRIORITY_BITS 3
 

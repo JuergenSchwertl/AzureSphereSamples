@@ -95,10 +95,10 @@ azsphere component image add --filepath $BlueSphereRT.FilePath --force
 ```
 Similar to the above, the *Add-AS3ComponentImage* cmdlet wraps these calls, returning the ImageID for further use and stops script execution on error
 ```powershell
-New-AS3ComponentImage -FilePath $IoTConnectHL.FilePath
-New-AS3ComponentImage -FilePath $RedSphereRT.FilePath
-New-AS3ComponentImage -FilePath $GreenSphereRT.FilePath
-New-AS3ComponentImage -FilePath $BlueSphereRT.FilePath
+Add-AS3ComponentImage -FilePath $IoTConnectHL.FilePath
+Add-AS3ComponentImage -FilePath $RedSphereRT.FilePath
+Add-AS3ComponentImage -FilePath $GreenSphereRT.FilePath
+Add-AS3ComponentImage -FilePath $BlueSphereRT.FilePath
 ```
 3. At last we create the three standard ImageSets with connectivety-app and real-time capable app and two additional "beta"-imagesets.
 *Note:* we preserve the returned ImageSetID of the cmdlet

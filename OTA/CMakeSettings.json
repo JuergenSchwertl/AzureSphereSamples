@@ -11,15 +11,15 @@
       "generator": "Ninja",
       "configurationType": "Release",
       "inheritEnvironments": [ "AzureSphere" ],
-      "buildRoot": "${projectDir}\\out\\${name}-${env.AzureSphereTargetApiSet}",
-      "installRoot": "${projectDir}\\install\\${name}-${env.AzureSphereTargetApiSet}",
+      "buildRoot": "${workspaceRoot}\\out\\${name}-${env.AzureSphereTargetApiSet}",
+      "installRoot": "${workspaceRoot}\\install\\${name}-${env.AzureSphereTargetApiSet}",
       "cmakeCommandArgs": "--no-warn-unused-cli",
       "buildCommandArgs": "-v",
       "ctestCommandArgs": "",
       "variables": [
         {
           "name": "CMAKE_TOOLCHAIN_FILE",
-          "value": "CMakeFiles\\AzureSphereRTCoreToolchain.cmake",
+          "value": "${workspaceRoot}\\CMakeFiles\\AzureSphereRTCoreToolchain.cmake",
           "type": "STRING"
         },
         {
@@ -37,15 +37,15 @@
       "generator": "Ninja",
       "configurationType": "Debug",
       "inheritEnvironments": [ "AzureSphere" ],
-      "buildRoot": "${projectDir}\\out\\${name}-${env.AzureSphereTargetApiSet}",
-      "installRoot": "${projectDir}\\install\\${name}-${env.AzureSphereTargetApiSet}",
+      "buildRoot": "${workspaceRoot}\\out\\${name}-${env.AzureSphereTargetApiSet}",
+      "installRoot": "${workspaceRoot}\\install\\${name}-${env.AzureSphereTargetApiSet}",
       "cmakeCommandArgs": "--no-warn-unused-cli --verbose",
       "buildCommandArgs": "-v",
       "ctestCommandArgs": "",
       "variables": [
         {
           "name": "CMAKE_TOOLCHAIN_FILE",
-          "value": "CMakeFiles\\AzureSphereRTCoreToolchain.cmake",
+          "value": "${workspaceRoot}\\CMakeFiles\\AzureSphereRTCoreToolchain.cmake",
           "type": "STRING"
         },
         {
