@@ -1,6 +1,7 @@
-#include "guid_utilities.h"
 #include <stdlib.h>
-#include <stdbool.h>
+#include "guid_utilities.h"
+
+
 static const char achHex[] = "0123456789ABCDEF";
 
 typedef struct Nibbles { uint8_t Low : 4; uint8_t High : 4; } Nibbles;
@@ -55,14 +56,14 @@ int Guid_ToString(const GUID *pGuid, char * pStrOut)
 	return (int) (pDst-pStrOut);
 }
 
-uint32_t inline chConf(char chHex)
+static inline uint32_t chConf(char chHex)
 {
 	return (uint32_t) (((chHex >= '0') && (chHex <= '9')) ? (chHex - '0') :
 						((chHex >= 'A') && (chHex <= 'F')) ? (chHex - 'A') :
 						((chHex >= 'a') && (chHex <= 'f')) ? (chHex - 'a') : 0xFF);
 }
 
-uint32_t htoi(const char* pStr, size_t nLength)
+static uint32_t htoi(const char* pStr, size_t nLength)
 {
 	uint32_t uiResult = 0;
 	uint32_t nConvResult;
@@ -74,12 +75,21 @@ uint32_t htoi(const char* pStr, size_t nLength)
 	return uiResult;
 }
 
+///<summary>Compares two GUIDs</summary>
+///<param name="pLeft">Pointer to left GUID structure</param>
+///<param name="pRight">Pointer to string buffer</param>
+///<returns>true if left and right GUIDs are identical</returns>
 bool Guid_Compare(const GUID* pLeft, const GUID* pRight)
 {
 	return (__builtin_memcmp((const void*)pLeft, (const void*)pRight, sizeof(GUID)) == 0);
 }
 
-bool Guid_TryParse(const char* pstrGuid, GUID * pGuid)
+
+///<summary>Parses a GUID string to a binary GUID structure</summary>
+///<param name="pstrGuid">Pointer to GUID string</param>
+///<param name="pGuid">Pointer to GUID buffer receiving parsed guid</param>
+///<returns>true if parsed successfully</returns>
+bool Guid_TryParse(const char* pstrGuid, GUID* pGuid)
 {
 	if (pGuid == NULL)
 	{

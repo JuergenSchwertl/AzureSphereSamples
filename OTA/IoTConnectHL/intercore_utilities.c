@@ -54,7 +54,11 @@ int InterCore_SendMessage(InterCoreEventData* pIcEventData, const void *pMessage
 	{
 		return -1; // nothing to send or socket missing/closed
 	}
-	Log_Debug("[InterCore] Sending: %s\n", (const char *)pMessage);
+	char szMsgBuf[5];
+	memcpy(szMsgBuf, &((InterCoreMessageHeader *)pMessage)->Text, sizeof(uint32_t));
+	szMsgBuf[4] = '\0';
+
+	Log_Debug("[InterCore] Sending: '%s'\n", szMsgBuf);
 
 	int bytesSent = send(pIcEventData->_evt.fd, pMessage, nSize, 0);
 	if (bytesSent == -1) {
@@ -124,7 +128,7 @@ int InterCore_RegisterHandler(int epollFd, InterCoreEventData * pIcEventData)
 
 	pIcEventData->State = InterCoreState_AppActive;
 	pIcEventData->_evt.fd = fdSocket;
-	Log_Debug("[InterCore] Found %s.\n", pIcEventData->ComponentId);
+	Log_Debug("[InterCore] Found partner component id %s.\n", pIcEventData->ComponentId);
 	return 0;
 }
 

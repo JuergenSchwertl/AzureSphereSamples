@@ -72,7 +72,7 @@ __attribute__((used)) = {
 static _Noreturn void DefaultExceptionHandler(void)
 {
     for (;;) {
-        // empty.
+        //empty;
     }
 }
 

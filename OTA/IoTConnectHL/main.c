@@ -127,7 +127,7 @@ void IntercoreMessageHandler(InterCoreEventData * pIcEventData, const void * pMe
 		((InterCoreMessageHeader *)strMessage)->MagicValue = ((InterCoreMessageHeader *)pMessage)->MagicValue;
 		strMessage[4] = '\0';
 
-		Log_Debug("[InterCore]: Received '%s' from %s\n", (const char*)strMessage, pIcEventData->ComponentId);
+		Log_Debug("INFO: Received '%s' from %s\n", (const char*)strMessage, pIcEventData->ComponentId);
 	}
 }
 

@@ -1,7 +1,10 @@
-#pragma once
+/* Copyright (c) Microsoft Corporation. All rights reserved.
+   Licensed under the MIT License. */
+
 #ifndef GUID_UTILITIES_H
 #define GUID_UTILITIES_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 /// <summary>Format is 12345678-1234-1234-1234-56789abcdef0 but memory format is little endian
@@ -21,8 +24,20 @@ typedef struct GUID
 
 ///<summary>Converts GUID into string</summary>
 ///<param name="pGuid">Pointer to GUID structure</param>
-///<param name="pGuid">Pointer to string buffer</param>
+///<param name="pStrOut">Pointer to string buffer</param>
 ///<returns>Number of characters written (excluding `\0` character)</returns>
 int Guid_ToString(const GUID* pGuid, char* pStrOut);
+
+///<summary>Compares two GUIDs</summary>
+///<param name="pLeft">Pointer to left GUID structure</param>
+///<param name="pRight">Pointer to string buffer</param>
+///<returns>true if left and right GUIDs are identical</returns>
+bool Guid_Compare(const GUID* pLeft, const GUID* pRight);
+
+///<summary>Parses a GUID string to a binary GUID structure</summary>
+///<param name="pstrGuid">Pointer to GUID string</param>
+///<param name="pGuid">Pointer to GUID buffer receiving parsed guid</param>
+///<returns>true if parsed successfully</returns>
+bool Guid_TryParse(const char* pstrGuid, GUID* pGuid);
 
 #endif // #ifndef GUID_UTILITIES_H
