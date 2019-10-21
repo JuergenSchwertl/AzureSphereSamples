@@ -3,15 +3,19 @@
 This directory is part of the Multi-Core OTA sample. On information how build, run and deploy the sample OTA please refer 
 to the documentation in the [master directory](../README.MD).
 
+Unfortunately we'll likely don't have a dish washer and coffee maker at hand but for the purpose of this lab, 
+let's have a look at our fictuous Contoso Appliance Cooperation:
+
+We're currently selling three different Internet connected appliances that are easily distinguishable by their color,
+called "RedSphere", "GreenSphere" and "BlueSphere". For that we have a master control board developed (the MT3620 RDB)
+that can be fitted into each of the appliances. Our product design team is evaluating to add more color to life
+so in the test-lab we have two new products introducing new color combinations.
+As we want to make sure that all our products are tested on the latest Azure Sphere Operating system 
+
 In this lab we will create different application constellations to be deployed by the Azure Sphere Security Service (AS3). To do that, 
 we'll setup DeviceGroups, SKUs and upload our Components into different ImageSet constellations and finally 
 create the Feeds delivering the software to the device. 
 To see how Feeds, SKUs and Device-Groups interact we'll move our device between different Device-Groups and SKUs.
-
-Let's have a look at our fictuous Contoso Appliance Cooperation. We're currently selling three different Internet connected appliances
-that are easily distinguishable by their color, called RedSphere, GreenSphere and BlueSphere. For that we have a master control board developed
- (the MT3620 RDB) that can be fitted into each of the appliances. Our product design team is evaluating to add more color to life
-so the test-lab runs some new color combinations.
   
 ## Prerequisites
 
@@ -56,7 +60,7 @@ PS C:\Repos\AzureSphereSamples\OTA>
 
 The script checks if the imagepackage files are readily available and sets a few prerequisites. To ease the handling 
 it sets global structures reading the ComponentID and ImageID directly from the .imagepackage files (see the *ExtractFrom-ImagePackage* cmdlet) 
-for each of the applications so you can reference them by name like: *$IoTConnectHL*, *RedSphereRT*, *$BlueSphereRT* and *$GreenSphereRT*. 
+for each of the applications so you can reference them by name like: *$IoTConnectHL*, *$RedSphereRT*, *$BlueSphereRT* and *$GreenSphereRT*. 
 
 Just check one of the variables to see the content
 ```sh
@@ -111,8 +115,37 @@ $RedGreenImageSet = New-AS3ImageSet $IoTConnectHL.ImageID,$RedSphereRT.ImageID,$
 $RedBlueImageSet = New-AS3ImageSet $IoTConnectHL.ImageID,$RedSphereRT.ImageID,$BlueSphereRT.ImageID   -Name "Connected-RedBlueSphere Beta1"
 ```
 
+At this stage, we now have developed and uploaded three Image-Sets with application combinations of the high level
+connectivety app and a single real-time capable app. Addionally ne have two Image-Sets with
+with two real-time capable apps (i.e. one app per M4 core).
+Let's now take a look at the Ops side.
+
 **Looking at the operations side**
 
+Let's revisit our fictuous Contoso Appliance Cooperation: 
+We have three products on the market: the RedSphere-Product, GreenSphere-Product and BlueSphere-Product. 
+In our test-lab we keep appliances of the existing products and have the RedGreen-Beta and the RedBlue-Beta.
+To manage our device fleet, our ops team wants to translate this into the appropriate SKUs and Device Groups and Feeds.
+
+Looking at the definitions 
+* A Feed defines which OS and which Component gets installed for a Product SKU
+* An ImageSet defines which version of the Component gets installed
+* Devices in a Device Group will get software from the subscribed Feed for its SKU
+
+The ops team thus decided to have two Device Groups in Azure Sphere Security Service (AS3): 
+* "Test-Lab" 
+* "In-Market".
+
+Since SKUs directly map to products, we also need our Product SKUs setup:
+* "RedSphere SKU"
+* "GreenSphere SKU"
+* "BlueSphere SKU"
+plus the two new product variations
+* "RedGreen Evaluation"
+* "RedBlue Evaluation"
+
+Addionally, our ops team wants to make sure that all products work on latest Azure Sphere OS and want to run 
+the devices in the "Test-Lab" device group on the "Retail Evaluation Azure Sphere OS".
 
 ---
 [OTA and multi-core sample](../README.MD)
