@@ -18,7 +18,7 @@
 // String containing the scope id of the Device Provisioning Service
 // used to provision the app with the IoT hub hostname and the device id.
 //
-static const char scopeId[] = "[Enter your DPS scope ID here]";
+static char scopeId[16] = ""; // Your DPS Scope ID is filled on app start";
 
 /// <summary>
 ///     Function invoked to provide the result of the Device Twin reported properties
@@ -228,6 +228,16 @@ static char *getAzureSphereProvisioningResultString(
         return "UNKNOWN_RETURN_VALUE";
     }
 }
+
+/// <summary>
+///     Sets the DPS Scope ID.
+/// </summary>
+/// <param name="cstrID">The Scope ID string (typically from command line)</param>
+void AzureIoT_SetDPSScopeID(const char* cstrID)
+{
+	strncpy(scopeId, cstrID, sizeof(scopeId));
+}
+
 
 /// <summary>
 ///     Sets up the client in order to establish the communication channel to Azure IoT Hub.
@@ -460,35 +470,6 @@ cleanup:
     }
 }
 
-/// <summary>
-///     Creates and enqueues reported properties state using a prepared json string.
-///     The report is not actually sent immediately, but it is sent on the next 
-///     invocation of AzureIoT_DoPeriodicTasks().
-/// </summary>
-void AzureIoT_TwinReportStateJson(
-	char* reportedPropertiesString,
-	size_t reportedPropertiesSize)
-{
-	if (iothubClientHandle == NULL) {
-		LogMessage("ERROR: client not initialized\n");
-	}
-	else {
-		if (reportedPropertiesString != NULL) {
-			if (IoTHubDeviceClient_LL_SendReportedState(iothubClientHandle,
-				(unsigned char*)reportedPropertiesString, reportedPropertiesSize,
-				reportStatusCallback, 0) != IOTHUB_CLIENT_OK) {
-				LogMessage("ERROR: failed to set reported state as '%s'.\n",
-					reportedPropertiesString);
-			}
-			else {
-				LogMessage("INFO: Reported state as '%s'.\n", reportedPropertiesString);
-			}
-		}
-		else {
-			LogMessage("ERROR: no JSON string for Device Twin reporting.\n");
-		}
-	}
-}
 
 /// <summary>
 ///     Sets a callback function invoked whenever a message is received from IoT Hub.

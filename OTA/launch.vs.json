@@ -1,0 +1,48 @@
+{
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "azurespheredbg",
+      "name": "RedSphereRT (RTCore GDB)",
+      "project": "CMakeLists.txt",
+      "inheritEnvironments": [
+        "AzureSphere"
+      ],
+      "customLauncher": "AzureSphereLaunchOptions",
+      "workingDirectory": "${workspaceRoot}\\RedSphereRT",
+      "applicationPath": "${cmake.buildRoot}\\RedSphereRT\\RedSphereRT.out",
+      "imagePath": "${cmake.buildRoot}\\RedSphereRT\\RedSphereRT.imagepackage",
+      "targetCore": "RTCore",
+      "partnerComponents": [ "33e04e8f-a020-4af8-80d0-8064343e0616" ]
+    },
+    {
+      "type": "azurespheredbg",
+      "name": "GreenSphereRT (RTCore GDB)",
+      "project": "CMakeLists.txt",
+      "inheritEnvironments": [
+        "AzureSphere"
+      ],
+      "customLauncher": "AzureSphereLaunchOptions",
+      "workingDirectory": "${workspaceRoot}\\GreenSphereRT",
+      "applicationPath": "${cmake.buildRoot}\\GreenSphereRT\\GreenSphereRT.out",
+      "imagePath": "${cmake.buildRoot}\\GreenSphereRT\\GreenSphereRT.imagepackage",
+      "targetCore": "RTCore",
+      "partnerComponents": [ "33e04e8f-a020-4af8-80d0-8064343e0616" ]
+    },
+    {
+      "type": "azurespheredbg",
+      "name": "BlueSphereRT (RTCore GDB)",
+      "project": "CMakeLists.txt",
+      "inheritEnvironments": [
+        "AzureSphere"
+      ],
+      "customLauncher": "AzureSphereLaunchOptions",
+      "workingDirectory": "${workspaceRoot}\\BlueSphereRT",
+      "applicationPath": "${cmake.buildRoot}\\BlueSphereRT\\BlueSphereRT.out",
+      "imagePath": "${cmake.buildRoot}\\BlueSphereRT\\BlueSphereRT.imagepackage",
+      "targetCore": "RTCore",
+      "partnerComponents": [ "33e04e8f-a020-4af8-80d0-8064343e0616" ]
+    }
+  ]
+}

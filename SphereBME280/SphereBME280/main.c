@@ -12,7 +12,7 @@
 #include <applibs/log.h>
 #include <applibs/wificonfig.h>
 
-#include "mt3620_rdb.h"
+#include "hw/mt3620_rdb.h"
 #include "rgbled_utility.h"
 
 #include "libBME280.h"
@@ -670,7 +670,7 @@ static int InitPeripheralsAndHandlers(void)
     }
 
 	Log_Debug("INFO: Opening MT3620_I2C_ISU2.\n");
-	if ((i2cBME280Fd = I2CMaster_Open(MT3620_I2C_ISU2)) < 0)
+	if ((i2cBME280Fd = I2CMaster_Open(MT3620_ISU2_I2C)) < 0)
 	{
 		return -1;
 	}
@@ -716,6 +716,14 @@ static void ClosePeripheralsAndHandlers(void)
 int main(int argc, char *argv[])
 {
     Log_Debug("INFO: Azure IoT application starting.\n");
+
+	if (argc > 1)
+	{
+		// 2nd parameter should be DPS Scope ID
+		AzureIoT_SetDPSScopeID(argv[1]);
+	}
+
+
 
     int initResult = InitPeripheralsAndHandlers();
     if (initResult != 0) {

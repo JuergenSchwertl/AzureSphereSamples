@@ -15,7 +15,7 @@
 #include <applibs/log.h>
 #include <applibs/networking.h>
 
-#include "mt3620_rdb.h"
+#include "hw/mt3620_rdb.h"
 #include "UART_utilities.h"
 #include "MCU_utilities.h"
 
@@ -43,12 +43,6 @@
 /// - GPIO (digital input for button)
 /// - log (messages shown in Visual Studio's Device Output window during debugging)
 /// </summary>
-
-#ifndef AZURE_IOT_HUB_CONFIGURED
-#error \
-    "WARNING: Please add a project reference to the Connected Service first \
-(right-click References -> Add Connected Service)."
-#endif
 
 #include "azure_iot_utilities.h"
 
@@ -114,6 +108,7 @@ void updateConnectionStatusLed(void)
 	}
 	setConnectionStatusLed(color);
 }
+
 
 void ConnectionToIoTHubChanged(bool bConnected)
 {
@@ -212,6 +207,18 @@ static void ClosePeripheralsAndHandlers(void)
 int main(int argc, char *argv[])
 {
     Log_Debug("MCUtoMt3620toAzure application starting\n");
+
+	if (argc > 1)
+	{
+		// 2nd parameter should be DPS Scope ID
+		AzureIoT_SetDPSScopeID(argv[1]);
+	}
+	else
+	{
+		terminationRequired = true;
+		Log_Debug("[ERROR] Scope Id missing for Azure IoT Hub Device Provisioning Service.\n");
+	}
+
     if (InitPeripheralsAndHandlers() != 0) {
         terminationRequired = true;
     }

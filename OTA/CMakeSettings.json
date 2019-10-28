@@ -1,0 +1,62 @@
+﻿{
+  "environments": [
+    {
+      "environment": "AzureSphere",
+      "AzureSphereTargetApiSet": "3+Beta1909"
+    }
+  ],
+  "configurations": [
+    {
+      "name": "ARM-Release",
+      "generator": "Ninja",
+      "configurationType": "Release",
+      "inheritEnvironments": [ "AzureSphere" ],
+      "buildRoot": "${workspaceRoot}\\out\\${name}-${env.AzureSphereTargetApiSet}",
+      "installRoot": "${workspaceRoot}\\install\\${name}-${env.AzureSphereTargetApiSet}",
+      "cmakeCommandArgs": "--no-warn-unused-cli",
+      "buildCommandArgs": "-v",
+      "ctestCommandArgs": "",
+      "variables": [
+        {
+          "name": "CMAKE_TOOLCHAIN_FILE",
+          "value": "${workspaceRoot}\\CMakeFiles\\AzureSphereRTCoreToolchain.cmake",
+          "type": "STRING"
+        },
+        {
+          "name": "AZURE_SPHERE_TARGET_API_SET",
+          "value": "${env.AzureSphereTargetApiSet}"
+        },
+        {
+          "name": "ARM_GNU_PATH",
+          "value": "${env.DefaultArmToolsetPath}"
+        }
+      ]
+    },
+    {
+      "name": "ARM-Debug",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "inheritEnvironments": [ "AzureSphere" ],
+      "buildRoot": "${workspaceRoot}\\out\\${name}-${env.AzureSphereTargetApiSet}",
+      "installRoot": "${workspaceRoot}\\install\\${name}-${env.AzureSphereTargetApiSet}",
+      "cmakeCommandArgs": "--no-warn-unused-cli --verbose",
+      "buildCommandArgs": "-v",
+      "ctestCommandArgs": "",
+      "variables": [
+        {
+          "name": "CMAKE_TOOLCHAIN_FILE",
+          "value": "${workspaceRoot}\\CMakeFiles\\AzureSphereRTCoreToolchain.cmake",
+          "type": "STRING"
+        },
+        {
+          "name": "AZURE_SPHERE_TARGET_API_SET",
+          "value": "${env.AzureSphereTargetApiSet}"
+        },
+        {
+          "name": "ARM_GNU_PATH",
+          "value": "${env.DefaultArmToolsetPath}"
+        }
+      ]
+    }
+  ]
+}

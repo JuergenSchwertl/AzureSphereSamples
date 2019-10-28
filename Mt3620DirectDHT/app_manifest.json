@@ -1,0 +1,20 @@
+{
+  "SchemaVersion": 1,
+  "Name": "Mt3620DirectDHT",
+  "ComponentId": "F7EB4C99-8CBC-4801-BBAA-A7A14C6E8918",
+  "EntryPoint": "/bin/app",
+  "CmdArgs": [ "--- YOUR IOT CENTRAL DPS SCOPE ID ---" ],
+  "Capabilities": {
+    "AllowedConnections": [ "global.azure-devices-provisioning.net", "--- YOUR IOT CENTRAL IOTHUB DNS NAME ---"  ],
+    "AllowedTcpServerPorts": [],
+    "AllowedUdpServerPorts": [],
+    "Gpio": [ 0, 12, 13, 8, 9, 10, 15, 16, 17, 18, 19, 20,21,22,23, 48, 14, 11 ],
+    "Uart": [],
+    "I2cMaster": [],
+    "SpiMaster": [],
+    "WifiConfig": true,
+    "NetworkConfig": false,
+    "SystemTime": false,
+    "DeviceAuthentication": "--- YOUR AZURE SPHERE TENANT ID--- "
+  }
+}

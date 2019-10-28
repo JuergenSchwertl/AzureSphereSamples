@@ -1,0 +1,12 @@
+{
+  "SchemaVersion": 1,
+  "Name": "GreenSphereRT",
+  "ComponentId": "7E5FAB32-801C-4EDF-A1AA-9263652AA6BD",
+  "EntryPoint": "/bin/app",
+  "CmdArgs": [ "GreenSphere" ],
+  "Capabilities": {
+    "AllowedApplicationConnections": [ "33e04e8f-a020-4af8-80d0-8064343e0616" ],
+    "Gpio": [ 16 ]
+  },
+  "ApplicationType": "RealTimeCapable"
+}

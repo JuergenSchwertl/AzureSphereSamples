@@ -39,15 +39,6 @@ void AzureIoT_DestroyClient(void);
 void AzureIoT_TwinReportState(const char *propertyName, size_t propertyValue);
 
 /// <summary>
-///     Creates and enqueues reported properties state using a prepared json string.
-///     The report is not actually sent immediately, but it is sent on the next 
-///     invocation of AzureIoT_DoPeriodicTasks().
-/// </summary>
-void AzureIoT_TwinReportStateJson(
-	char* reportedPropertiesString,
-	size_t reportedPropertiesSize);
-
-/// <summary>
 ///     Creates and enqueues a message to be delivered the IoT Hub. The message is not actually sent
 ///     immediately, but it is sent on the next invocation of AzureIoT_DoPeriodicTasks().
 /// </summary>
@@ -68,6 +59,12 @@ void AzureIoT_DoPeriodicTasks(void);
 ///     Type of the function callback invoked whenever a message is received from IoT Hub.
 /// </summary>
 typedef void (*MessageReceivedFnType)(const char *payload);
+
+/// <summary>
+///     Sets the DPS Scope ID.
+/// </summary>
+/// <param name="cstrID">The Scope ID string (typically from command line)</param>
+void AzureIoT_SetDPSScopeID(const char* cstrID);
 
 /// <summary>
 ///     Sets a callback function invoked whenever a message is received from IoT Hub.
