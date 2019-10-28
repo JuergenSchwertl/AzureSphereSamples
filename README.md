@@ -1,4 +1,4 @@
-# AzureSphereSamples for 19.05 Azure Sphere SDK
+# AzureSphereSamples for 19.09 Azure Sphere SDK
 This repo contains sources and links for Azure Sphere Bootcamp labs, amongst others 
 Azure Sphere Samples for connected MCU and DHT sensor.
 
