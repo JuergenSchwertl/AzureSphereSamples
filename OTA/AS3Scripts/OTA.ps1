@@ -38,6 +38,30 @@ Class SkuEntry
 }
 
 
+$strRedSphereSku = "RedSphere SKU"
+$strGreenSphereSku = "GreenSphere SKU"
+$strBlueSphereSku = "BlueSphere SKU"
+
+$strRedGreenEvaluationSku = "RedGreen Evaluation"
+$strRedBlueEvaluationSku = "RedBlue Evaluation"
+
+[SkuEntry] $SkuRedSphere = $null
+[SkuEntry] $SkuGreenSphere = $null
+[SkuEntry] $SkuBlueSphere = $null
+[SkuEntry] $SkuRedGreenEvaluation = $null
+[SkuEntry] $SkuRedBlueEvaluation = $null
+
+
+Class FeedEntry
+{
+    [Guid] $Id
+    [String] $Name
+}
+
+$strRetailFeedId = ""
+$strEvalFeedId = ""
+
+
 <#
 .SYNOPSIS
 Checks if the supplied command output indicates success (last line starts with "Command completed successfully")
@@ -322,7 +346,7 @@ Id                                   Name               SkuType
 9d606c43-1fad-4990-b207-554a025e0869 MT3620 A0 16MB     Chip
 25827902-db08-466d-a8dd-f30a6cb3428a Private Sphere SKU Product
 #>
-function Get-AS3SKUList()
+function Get-AS3SkuSet()
 {
 
 	$result = azsphere sku list
@@ -349,6 +373,42 @@ function Get-AS3SKUList()
 		Write-Error $result[1] -ErrorAction Stop
 	}
 }
+
+
+<#
+.SYNOPSIS
+Searches for a SKU in Azure Sphere Security Service by name
+.DESCRIPTION
+Finds a SKU in Azure Sphere Security Service with the given Name and returns the Guid of the SKU
+.OUTPUTS
+String (comma-delimited chip skus)
+.EXAMPLE
+PS> Get-AS3ChipSkuLis
+0d24af68-c1e6-4d60-ac82-8ba92e09f7e9,9d606c43-1fad-4990-b207-554a025e0869
+#>
+function Get-AS3ChipSkuSet()
+{
+    $result = Get-AS3SkuSet
+    return $result.Where( { $_.SkuType -eq [SkuEnum]::Chip })
+}
+
+<#
+.SYNOPSIS
+Searches for a SKU in Azure Sphere Security Service by name
+.DESCRIPTION
+Finds a SKU in Azure Sphere Security Service with the given Name and returns the Guid of the SKU
+.OUTPUTS
+String (comma-delimited chip skus)
+.EXAMPLE
+PS> Get-AS3ChipSkuLis
+0d24af68-c1e6-4d60-ac82-8ba92e09f7e9,9d606c43-1fad-4990-b207-554a025e0869
+#>
+function Get-AS3ChipSkuIds()
+{
+    $result = Get-AS3ChipSkuSet
+    return $result.ForEach( {$_.Id.ToString()}) -join ","
+}
+
 
 <#
 .SYNOPSIS
@@ -435,6 +495,34 @@ function Add-AS3ComponentImage(
 	}
 }
 
+
+function Get-AS3FeedList()
+{
+	$result = azsphere Feed list
+    if( Check-AS3Success $result 4 )
+    {
+        [System.Array] $lst = [System.Array]::CreateInstance( [object], $result.Length-3 )
+        [System.Array]::Copy($result,2, $lst, 0, $result.Length-3)
+        [System.Array] $FeedList = [System.Array]::CreateInstance( [FeedEntry], $lst.Length )
+        [int] $i=0
+
+        foreach($l in $lst)
+        {
+            [FeedEntry]$Feed = [FeedEntry]::new()
+            # extract GUID sub string from "90c83845-cce1-4f45-abeb-e50a5aa0a854 GreenSphere SKU    Product "
+            #                               0                               ->36|37        variable|  ->9|
+            $Feed.Id = [System.Guid]($l.Substring(5,36))
+            $Feed.Name = $l.Substring(44,$l.Length-45).Trim()
+            $FeedList[$i] = $Feed
+            $i = $i+1
+        }
+        return $FeedList
+    } else {
+		Write-Error $result[1] -ErrorAction Stop
+	}
+}
+
+
 <#
 .SYNOPSIS
 Checks prerequisites.
@@ -477,6 +565,45 @@ function Check-Prerequisites()
 	} else {
 		$Global:BlueSphereRT = ExtractFrom-ImagePackage -Path $strBlueSphereRTPath -Name "BlueSphere-App (real-time)"
 	}
+
+    write-host "Retrieving Retail and Evaluation OS Feed-ids"
+    $feeds = Get-AS3FeedList 
+    $Global:strRetailFeedId =  $feeds.Where({$_.Name.Contains("Retail Azure Sphere OS")}).Id.ToString()
+    $Global:strEvalFeedId =  $feeds.Where({$_.Name.Contains("Retail Evaluation Azure Sphere OS")}).Id.ToString()
+
+    write-host "Checking for existing SKUs..."
+    $skus = Get-AS3SkuSet
+
+    $found = $skus.Where({$_.Name.Equals( $strRedSphereSku )})
+    if($found.Count -gt 0){
+        write-host "Found '$($found[0].Name)', Id: $($found[0].Id.ToString())" 
+        $SkuRedSphere = $found[0]
+    }
+
+    $found = $skus.Where({$_.Name.Equals( $strGreenSphereSku )})
+    if($found.Count -gt 0){
+        write-host "Found '$($found[0].Name)', Id: $($found[0].Id.ToString())" 
+        $SkuGreenSphere = $found[0]
+    }
+
+    $found = $skus.Where({$_.Name.Equals( $strBlueSphereSku )})
+    if($found.Count -gt 0){
+        write-host "Found '$($found[0].Name)', Id: $($found[0].Id.ToString())" 
+        $SkuBlueSphere = $found[0]
+    }
+
+    $found = $skus.Where({$_.Name.Equals( $strRedGreenEvaluationSku )})
+    if($found.Count -gt 0){
+        write-host "Found '$($found[0].Name)', Id: $($found[0].Id.ToString())" 
+        $SkuRedGreenEvaluation = $found[0]
+    }
+
+    $found = $skus.Where({$_.Name.Equals( $strRedBlueEvaluationSku )})
+    if($found.Count -gt 0){
+        write-host "Found '$($found[0].Name)', Id: $($found[0].Id.ToString())" 
+        $SkuRedBlueEvaluation = $found[0]
+    }
+
 }
 
 
