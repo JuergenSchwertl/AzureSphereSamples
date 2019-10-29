@@ -75,7 +75,7 @@ This picture shows the boards wired up:
 
 ## Modifying the code
 
-**Step 1.**	In Visual Studio, open Mt3620DirectDHT\Mt3620DirectDHT.sln
+**Step 1.**	In Visual Studio, open MCUtoMT3620toAzure\MCUtoMT3620toAzure.sln
 
 **Step 2.** To prepare your *app_manifest.json* with your Azure IoT Hub settings, depending on your development environment, you may have two options.
 If you run Visual Studio 2017, you can use the "Add Connected Service"-wizard:
