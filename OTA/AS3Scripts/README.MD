@@ -147,5 +147,18 @@ plus the two new product variations
 Addionally, our ops team wants to make sure that all products work on latest Azure Sphere OS and want to run 
 the devices in the "Test-Lab" device group on the "Retail Evaluation Azure Sphere OS".
 
+```powershell
+$TestLabDeviceGroup = New-AS3DeviceGroup -Name "Test-Lab"
+$InMarketDeviceGroup = New-AS3DeviceGroup -Name "Test-Lab"
+```
+
+```powershell
+$SkuRedSphere = New-AS3ProductSKU -Name $strRedSphereSku -Description "In-field product"
+$SkuGreenSphere = New-AS3ProductSKU -Name $strGreenSphereSku -Description "In-field product"
+$SkuBlueSphere = New-AS3ProductSKU -Name $strBlueSphereSku -Description "In-field product"
+
+$SkuRedBlueEvaluation = New-AS3ProductSKU -Name $strRedBlueEvaluationSku -Description "Beta software only"
+$SkuRedGreenEvaluation = New-AS3ProductSKU -Name $strRedGreenEvaluationSku -Description "Beta software only"
+```
 ---
 [OTA and multi-core sample](../README.MD)
