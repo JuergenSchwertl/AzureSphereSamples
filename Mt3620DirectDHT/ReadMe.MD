@@ -28,7 +28,9 @@ For information on the pinout of the board see [GPIO pinout](https://github.com/
 ### Modifying the code
 
 >**Note:** If you had run through this scenario earlier you will notice that this high-level app sample is now using the CMake toolchain.
+
 Step 1. In Visual Studio, in the Team Explorer Window open the CmakeLists.txt file in the IoTConnectHL directory using **File->Open...->Cmake...**.
+
 Step 2. To prepares your *app_manifest.json* with your Azure IoT Hub settings, a CMake project does not offer the "Connect to Service..." Wizard.
 We therefore need to manually copy the settings from the Azure Portal. 
 ```json
@@ -118,30 +120,91 @@ Using an inexpensive sensor like the DHT11 has limited accuracy and stability.
 ### Reviewing the code
 #### main.c
 
-Line 20 includes the DHT Library (not part of the Azure Sphere SDK).
-Line 22ff are now commented out as the Add Connected Service wizard added a definition for `AZURE_IOT_HUB_CONFIGURED` to the project settings
- (RightClick Mt3620DirectDHT-Project->Properties and go to Configuration Properties->C/C++->All Options and check "Additional Options" to 
-contain "-D AZURE_IOT_HUB_CONFIGURED".
+Line 20 includes the DHT library header file (not part of the Azure Sphere SDK).
 
-![MT3620DirectDHT-main.c](./images/DHT_Main_Includes.PNG)
+Lines 233ff reads the sensor data from the hard coded GPIO (GPIO0) and converts to json format.
 
-Lines 176ff reads the sensor data from the hard coded GPIO (GPIO0) and converts to json format.
+```C
+/// <summary>
+///     Helper function to read the DHT sensor values and create response json if jsonBuffer and cstrJsonFormat is available.
+/// </summary>
+/// <param name="jsonBuffer">pointer to string buffer for json result.</param>
+/// <param name="jsonBufferSize">length of pre-allocated json string buffer</param>
+/// <returns>True if successful, false if an error occurred.</returns>
+bool GetSensorDataJson(char * jsonBuffer, size_t jsonBufferSize, const char * cstrJsonFormat )
+{
+	if ((jsonBuffer == NULL) || (cstrJsonFormat==NULL))
+	{ 
+		return false;
+	}
 
-![MT3620DirectDHT-main.c](./images/DHT_Main_ReadDHT.PNG)
+	DHT_SensorData * pDHT = DHT_ReadData(MT3620_GPIO0);
+	if (pDHT == NULL)
+	{
+		strncpy(jsonBuffer, cstrJsonErrorNoData, jsonBufferSize);
+		return false;
+	}
 
-Lines 202ff  allocate a jsonBuffer and populate the buffer with the DHT sensor data to send the telemetry to Azure IoT Hub.
+	// prepare json data to be sent 
+	snprintf(jsonBuffer, jsonBufferSize, cstrJsonFormat,
+				pDHT->TemperatureCelsius, pDHT->TemperatureFahrenheit, pDHT->Humidity);
+	return true;
+}
+```
+Lines 283ff  allocate a jsonBuffer and populate the buffer with the DHT sensor data to send the telemetry to Azure IoT Hub (or Azure IoT Central repectively).
 
-![MT3620DirectDHT-main.c](./images/DHT_Main_SendMessage.PNG)
+```C
+/// <summary>
+///     Sends a message to Azure IoT Central / Azure IoT hub
+/// </summary>
+static void SendMessage(void)
+{
+    if (connectedToIoTHub) {
+		char * jsonBuffer = (char *)malloc(JSON_BUFFER_SIZE);
+		if (GetSensorDataJson(jsonBuffer, JSON_BUFFER_SIZE, cstrJsonSuccessAndData)) {
+
+			// Send a message
+			AzureIoT_SendMessage(jsonBuffer);
+			Log_Debug("[SendMessageToIoTHub] %s\n", jsonBuffer);
+			// Set the send/receive LED to blink once immediately to indicate the message has been queued
+			BlinkLedOnce(&ledSendMessage, timerFdSendMessageLed, RgbLedUtility_Colors_Green);
+		}
+		else
+		{
+			// Send/receive LED to blink once red to indicate sensor failure
+			BlinkLedOnce(&ledSendMessage, timerFdSendMessageLed, RgbLedUtility_Colors_Red);
+		}
+		free(jsonBuffer);
+    } else {
+		Log_Debug("[SendMessageToIoTHub] not connected to IoT Central/Hub: no telemetry sent.\n");
+    }
+}
+```
 
 An interesting change you'll find to the `event_data_t` declaration in *epoll_timerfd_utilities.h* at line #30. 
 It has been extended to contain an additional `void * ptr` for additional event context. 
 
 ![MT3620DirectDHT-main.c](./images/DHT_EPOLL_H_EventContext.PNG)
 
-This allows to e.g. use a generic handler for all Led-timers since it now contains the required context information, 
+main.c, line 503ff: This allows to e.g. use a generic handler for all Led-timers since it now contains the required context information, 
 what LED should be affected by the timer. 
 
-![MT3620DirectDHT-main.c](./images/DHT_Main_BlinkHandler.PNG)
+```C
+/// <summary>
+///     Handle the blink once for all LEDs.
+/// </summary>
+static void LedUpdateHandler(event_data_t *eventData)
+{
+	
+	if (ConsumeTimerFdEvent(eventData->fd) != 0) {
+		terminationRequired = true;
+		return;
+	}
+
+	// Clear the LED.
+	RgbLedUtility_SetLed((RgbLed *) eventData->ptr, RgbLedUtility_Colors_Off);
+}
+```
 
 #### DHTlib-project and DHTlib.c
 The DHTlib project implements a static library to read the sensor data from a DHT 11 or DHT 22 sensor. The DHT 11 uses a 
