@@ -50,24 +50,38 @@ Please follow the steps as outlined in [Set up an IoT Hub for Azure Sphere](http
 > application template is no longer available in the 19.05 version of the SDK I've thus included it here as a ready made project.
 > For the next lab you'll therefore need [this repo](https://github.com/JuergenSchwertl/AzureSphereSamples) cloned.
 
-Please follow the steps outlined in [Mt3620AzureIoTHub](./Mt3620AzureIoTHub) to connect Azure Sphere to Azure IoT Hub.
+Please follow the steps outlined in [Mt3620AzureIoTHub](./Mt3620AzureIoTHub/README.MD) to connect Azure Sphere to Azure IoT Hub.
 
 ## Lab #3: Connecting a DHT sensor and send telemetry to Azure IoT Hub
-Please follow the steps as outlined in [Mt3620DirectDHT](./Mt3620DirectDHT)
+Please follow the steps as outlined in [Mt3620DirectDHT](./Mt3620DirectDHT/README.MD)
 to connect the DHT sensor and send telemetry data. It also contains hints to extend the ePoll event_data_t structure to enable event context handling.
 
 ## Lab #4: Connecting another MCU through UART
 In this lab we'll connect a NodeMCU sending telemetry data through UART to Azure Sphere acting as a cloud gateway.
 
-Please follow the steps as outlined in [MCUtoMt3620ToAzure](./MCUtoMT3620toAzure) to run this lab.
+Please follow the steps as outlined in [MCUtoMt3620ToAzure](./MCUtoMT3620toAzure/README.MD) to run this lab.
 
-## Lab #5: Bluetooth provisioning of WiFi Credentials
+## Lab #5: Multi-Core app and OTA deployment lab
+This lab is split into several parts as it covers a variety of topics in an end-to-end scenario.
+
+It starts with the development of multi-core applications with a high-level (POSIX) connectivety app that is acompanied by 
+one or more real-time capable applications that use the mailbox-based inter-core communication mechanism to exchange messages.
+
+We'll also touch on debugging multicore applications and reveal some helpful tips to enable Visual Studio to cope with multiple applications.
+
+In the last part we'll start creating application combinationsand deploy them for over-the-air (OTA). This includes setting up the infrastructue in the 
+Azure Sphere Security Service. To showcase how this can be automated, you'll find examples of PowerShell scripts, that wrap the AzSphere.exe tool
+and allow to build a fully automated CI/CD pipeline.
+
+Please follow the steps as outlined in [OTA](./OTA/README.MD) to run this lab.
+
+## Lab #6: Bluetooth provisioning of WiFi Credentials
 For this lab you'll need the Azure Sphere Teams [Azure Sphere Samples repo](https://github.com/Azure/azure-sphere-samples/) cloned.
 
 Please follow the steps as outlined in [WifiSetupAndDeviceControlViaBle](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/WifiSetupAndDeviceControlViaBle) 
 to connect the [Nordic Semiconductor nRF52 Development Kit](https://www.nordicsemi.com/Software-and-Tools/Development-Kits/nRF52-DK)
 
-## Lab #6: Updating an external MCU Firmware
+## Lab #7: Updating an external MCU Firmware
 For this lab you'll need the Azure Sphere Teams [Azure Sphere Samples repo](https://github.com/Azure/azure-sphere-samples/) cloned.
 
 Please follow the steps as outlined in [External MCU Update](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/ExternalMcuUpdateNrf52) 
@@ -77,14 +91,14 @@ which uses the same [Nordic Semiconductor nRF52 Development Kit](https://www.nor
 In this lab we will connect an I2C based sensor and send telemetry data to **Azure IoT Central**. In this example it is the 
 Bosch BME280 temperature/humidity/pressure sensor.
 
-Please follow the steps as outlined in [SphereBME280](./SphereBME280) to run this lab.
+Please follow the steps as outlined in [SphereBME280](./SphereBME280/README.MD) to run this lab.
 
 ## Lab #8: Using an OLED Display with Azure Sphere {Lab8}
 In this lab we will connect an I2C connected OLED display based on the [Solomon Systech SSD130x](http://www.solomon-systech.com/en/product/...ic/oled-driver-controller/ssd1308/).
 One example is the [Grove - OLED Display 0.96 Inch](http://wiki.seeedstudio.com/Grove-OLED_Display_0.96inch/) 
 available through SeeedStudio.
 
-Please follow the steps as outlined in [SphereOLED](./SphereOLED) to run this lab.
+Please follow the steps as outlined in [SphereOLED](./SphereOLED/README.MD) to run this lab.
 
 
 # Mt3620 Development Board pinouts
