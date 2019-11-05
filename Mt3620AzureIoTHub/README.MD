@@ -84,11 +84,26 @@ the "Return status" and "Return payload" should indicate success.
 Now look at the [description in *main.c*](./Mt3620AzureIoTHub/main.c#L29) to see what function the two buttons provide 
 and start experimenting with break points in Visual Studio and inspecting the variables.
 
+
 ---
-[Back to root](https://github.com/JuergenSchwertl/AzureSphereSamples#lab-3-connecting-a-dht-sensor-and-send-telemetry-to-azure-iot-hub)
+[Go back to root](../#lab-2-azure-iot-hub-connected-azure-sphere-application)
 
+---
 
+### Disclaimer
 
+#### Sample code - No Warranties
+THE SAMPLE CODE SOFTWARE IS PROVIDED "AS IS" AND WITHOUT WARRANTY.TO THE MAXIMUM EXTENT 
+PERMITTED BY LAW, MICROSOFT DISCLAIMS ANY AND ALL OTHER WARRANTIES, WHETHER EXPRESS OR 
+IMPLIED, INCLUDING, BUT NOT LIMITED TO, ANY IMPLIED WARRANTIES OF MERCHANTABILITY, 
+NON - INFRINGEMENT, OR FITNESS FOR A PARTICULAR PURPOSE, WHETHER ARISING BY A COURSE 
+OF DEALING, USAGE OR TRADE PRACTICE OR COURSE OF PERFORMANCE.
+In no event shall Microsoft, its licensors, the authors or copyright holders be liable 
+for any claim, damages or other liability, whether in an action of contract, tort or 
+otherwise, arising from, out of or in connection with the software or the use thereof.
 
-
-
+This code may contain errors and/or may not operate correctly. Microsoft undertakes no 
+duty to correct any errors or update the software. Your use of this code is optional and 
+subject to any license provided therewith or referenced therein, if any. Microsoft does 
+not provide you with any license or other rights to any Microsoft product or service 
+through the code provided to you.

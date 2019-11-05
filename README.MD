@@ -96,7 +96,7 @@ In customer workshops we're typically looking at specific customer scenarios and
 commercial peripherals. Where in the labs I on purpose used a cheap sensor with one-wire protocol to show how to port software from other platforms
 as well as the intricacies of bit-banging in a (non-realtime) POSIX app, here is a selection of examples on how to connect other peripherals:
  
-### Connecting an I2C sensor (Bosch BME280) and send telemetry to Azure IoT Central {Lab7}
+### Connecting an I2C sensor (Bosch BME280) and send telemetry to Azure IoT Central
 In this example we will connect an I2C based sensor and send telemetry data to **Azure IoT Central**. In this example it is the 
 Bosch BME280 temperature/humidity/pressure sensor. For this sensor, Bosch provides a platform independent library on the
 [Bosch Sensortec GitHub](https://github.com/BoschSensortec/BME280_driver) .
@@ -106,7 +106,7 @@ have at hand offer I2C and this has some cost saving advantages over SPI (i.e. l
 Please follow the steps as outlined in [SphereBME280](./SphereBME280/README.MD) to run this example.
 
 
-### Using an OLED Display with Azure Sphere {Lab8}
+### Using an OLED Display with Azure Sphere
 Although a micro-controller is typically a headless device and the MT3620 misses graphics capabilities, in many cases you'd at least want to
 show some kind of textual or numeric information. Typically these are small displays that come with their own driver chip and in this  
 example we will connect an I2C connected OLED display based on the [Solomon Systech SSD130x](http://www.solomon-systech.com/en/product/...ic/oled-driver-controller/ssd1308/).
@@ -144,10 +144,12 @@ MCU such as the Arduino UNO you'll need level shifters, otherwise you'll eventua
 ### SPI pinout
 [![MT3620 SPI-Ports](./Images/MT3620_DVB_SPI_sm.png)](./Images/MT3620_DVB_SPI.png)
 
-# Disclaimer
+---
 
-## Sample code – No Warranties
-THE SAMPLE CODE SOFTWARE IS PROVIDED “AS IS” AND WITHOUT WARRANTY.TO THE MAXIMUM EXTENT 
+### Disclaimer
+
+#### Sample code - No Warranties
+THE SAMPLE CODE SOFTWARE IS PROVIDED "AS IS" AND WITHOUT WARRANTY.TO THE MAXIMUM EXTENT 
 PERMITTED BY LAW, MICROSOFT DISCLAIMS ANY AND ALL OTHER WARRANTIES, WHETHER EXPRESS OR 
 IMPLIED, INCLUDING, BUT NOT LIMITED TO, ANY IMPLIED WARRANTIES OF MERCHANTABILITY, 
 NON - INFRINGEMENT, OR FITNESS FOR A PARTICULAR PURPOSE, WHETHER ARISING BY A COURSE 
@@ -157,7 +159,7 @@ for any claim, damages or other liability, whether in an action of contract, tor
 otherwise, arising from, out of or in connection with the software or the use thereof.
 
 This code may contain errors and/or may not operate correctly. Microsoft undertakes no 
-duty to correct any errors or update the software.Your use of this code is optional and 
-subject to any license provided therewith or referenced therein, if any.Microsoft does 
+duty to correct any errors or update the software. Your use of this code is optional and 
+subject to any license provided therewith or referenced therein, if any. Microsoft does 
 not provide you with any license or other rights to any Microsoft product or service 
 through the code provided to you.
