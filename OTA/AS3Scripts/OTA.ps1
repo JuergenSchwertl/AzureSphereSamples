@@ -35,6 +35,25 @@ Class SkuEntry
     [Guid] $Id
     [String] $Name
     [SkuEnum] $SkuType
+
+    SkuEntry(){} 
+
+    SkuEntry( 
+        [Guid] $Id,
+        [String] $Name,
+        [SkuEnum] $SkuType
+    )
+    {
+        $this.Id = $Id
+        $this.Name = $Name
+        $this.SkuType = $SkuType
+    }
+
+
+    [string] ToString()
+    {
+        return $this.Id.ToString()
+    }
 }
 
 
@@ -56,6 +75,22 @@ Class FeedEntry
 {
     [Guid] $Id
     [String] $Name
+
+    FeedEntry(){} 
+
+    FeedEntry( 
+        [Guid] $Id,
+        [String] $Name
+    )
+    {
+        $this.Id = $Id
+        $this.Name = $Name
+    }
+
+	[string] ToString()
+    {
+        return $this.Id.ToString()
+    }
 }
 
 $strRetailFeedId = ""
@@ -105,8 +140,8 @@ Name ComponentID                          ImageID                              F
 Test f4e25978-6152-447b-a2a1-64577582f327 1b45e9b9-d339-4905-89c1-2a0ecf16f665 .\RedSphereRT.imagepackage
 #>
 function ExtractFrom-ImagePackage( 
-	[Parameter(Mandatory=$true)][string] $Path, 
-	[string] $Name = "" )
+	[Parameter(Mandatory=$true, Position=0)] [Alias("f")]  [string] $Path, 
+	[Parameter(Mandatory=$false, Position=1)] [Alias("n")] [string] $Name = "" )
 {
     if( (Test-Path -Path $path ) -and ([System.IO.Path]::GetExtension($path) -eq ".imagepackage"))
     {
@@ -207,11 +242,11 @@ Guid
 f4e25978-6152-447b-a2a1-64577582f327
 #>
 function New-AS3Component(
-	[Parameter(Mandatory=$true)] $ComponentID, 
-	[Parameter(Mandatory=$true)][string] $Name
+	[Parameter(Mandatory=$true, Position=0)] [Alias("i")] [Guid] $ComponentID, 
+	[Parameter(Mandatory=$true, Position=1)] [Alias("n")] [string] $Name
 )
 {
-	$result = azsphere com create -i $ComponentID  -n $Name
+	$result = azsphere com create -i $ComponentID  -n "$Name"
     if( Check-AS3Success $result )
     {
         Write-Host $result[1]
@@ -242,7 +277,7 @@ function New-AS3DeviceGroup(
 	[Parameter(Mandatory=$true)][string] $Name
 )
 {
-	$result = azsphere dg create -n $Name
+	$result = azsphere dg create -n "$Name"
     if( Check-AS3Success $result )
     {
         [String] $s = $result[ 1 ]
@@ -317,7 +352,7 @@ function New-AS3ProductSKU(
 	[Parameter(Mandatory=$false)] [Alias("d")] [string] $Description=""
 )
 {
-	$result = azsphere sku create -n $Name -d $Description
+	$result = azsphere sku create -n "$Name" -d "$Description"
     if( Check-AS3Success $result )
     {
         [String] $s = $result[ 0 ]
@@ -359,13 +394,13 @@ function Get-AS3SkuSet()
 
         foreach($l in $lst)
         {
-            [SkuEntry]$Sku = [SkuEntry]::new()
             # extract GUID sub string from "90c83845-cce1-4f45-abeb-e50a5aa0a854 GreenSphere SKU    Product "
             #                               0                               ->36|37        variable|  ->9|
-            $Sku.Id = [System.Guid]($l.Substring(0,36))
-            $Sku.Name = $l.Substring(37,$l.Length-45).Trim()
-            $Sku.SkuType = [System.Enum]::Parse([SkuEnum], $l.Substring($l.Length-8,8).Trim() )
-            $SkuList[$i] = $Sku
+            $SkuList[$i] = [SkuEntry]::new(
+                [System.Guid]($l.Substring(0,36)),
+                $l.Substring(37,$l.Length-45).Trim(),
+                [System.Enum]::Parse([SkuEnum], $l.Substring($l.Length-8,8).Trim() )
+            )
             $i = $i+1
         }
         return $SkuList
@@ -420,7 +455,7 @@ Specifies the name for the SKU.
 .PARAMETER SkuList
 (Optional) supply previously retrieved list of Skus.
 .INPUTS
-None. You cannot pipe objects to Find-AS3SKU.
+None. You cannot pipe objects to Find-AS3Sku.
 .OUTPUTS
 [SkuEntry] SKU 
 .EXAMPLE
@@ -429,14 +464,14 @@ Id                                   Name     SkuType
 --                                   ----     -------
 f7c7a7d9-f890-4293-abe6-f15f7436006f Test-SKU Product
 #>
-function Find-AS3SKU(
+function Find-AS3Sku(
 	[Parameter(Mandatory=$true, Position=0)] [Alias("n")] [string] $Name,
 	[Parameter(Mandatory=$false, Position=1)] [Alias("s")] [System.Array] $SkuList=$null
 )
 {
     if( $SkuList -eq $null )
     {
-        $skuList = Get-AS3SKUList
+        $skuList = Get-AS3SkuSet
     }
     foreach($sku in $SkuList)
     {
@@ -469,7 +504,7 @@ Guid
 f4e25978-6152-447b-a2a1-64577582f327
 #>
 function Add-AS3ComponentImage(
-	[Parameter(Mandatory=$true)] $FilePath
+	[Parameter(Mandatory=$true, Position=0)] [Alias("f")] $FilePath
 )
 {
     Write-Host "Uploading $FilePath..."
@@ -496,6 +531,23 @@ function Add-AS3ComponentImage(
 }
 
 
+<#
+.SYNOPSIS
+Lists all Feeds in the Azure Sphere Security Service 
+.DESCRIPTION
+Retrieves all Feeds in the Azure Sphere Security Service and returns a [System.Array] of [FeedEntry] instances
+.INPUTS
+None. You cannot pipe objects to Get-AS3FeedList.
+.OUTPUTS
+returns a [System.Array] of [FeedEntry] instances
+.EXAMPLE
+PS> Get-AS3FeedList
+Id                                   Name                              
+--                                   ----                              
+3369f0e1-dedf-49ec-a602-2aa98669fd61 Retail Azure Sphere OS            
+82bacf85-990d-4023-91c5-c6694a9fa5b4 Retail Evaluation Azure Sphere OS 
+#>
+
 function Get-AS3FeedList()
 {
 	$result = azsphere Feed list
@@ -508,18 +560,36 @@ function Get-AS3FeedList()
 
         foreach($l in $lst)
         {
-            [FeedEntry]$Feed = [FeedEntry]::new()
-            # extract GUID sub string from "90c83845-cce1-4f45-abeb-e50a5aa0a854 GreenSphere SKU    Product "
-            #                               0                               ->36|37        variable|  ->9|
-            $Feed.Id = [System.Guid]($l.Substring(5,36))
-            $Feed.Name = $l.Substring(44,$l.Length-45).Trim()
-            $FeedList[$i] = $Feed
+            # extract GUID sub string from "--> [90c83845-cce1-4f45-abeb-e50a5aa0a854] 'GreenSphere Feed'"
+            #                               0    5                               ->36|  44    ->variable
+            $FeedList[$i] = [FeedEntry]::new(
+				[System.Guid]($l.Substring(5,36)),
+				$l.Substring(44,$l.Length-45).Trim()
+			)
             $i = $i+1
         }
         return $FeedList
     } else {
 		Write-Error $result[1] -ErrorAction Stop
 	}
+}
+
+
+function New-AS3Feed(
+	[Parameter(Mandatory=$true, Position=0)] [Alias("n")] [string] $Name,
+	[Parameter(Mandatory=$true, Position=1)] [Alias("p")] [System.Array] $ProductSkus,
+	[Parameter(Mandatory=$true, Position=2)] [Alias("s")] [System.Array] $ChipSkus,
+	[Parameter(Mandatory=$true, Position=3)] [Alias("c")] [System.Array] $ComponentIds,
+	[Parameter(Mandatory=$true, Position=4)] [Alias("f")] [System.Array] $DependentFeedId
+)
+{
+    if( $ImageID -is [System.Array])
+    { 
+        $imgIDs = [System.String]::Join(",", $ImageID)
+    } else {
+        $imgIDs = $ImageID
+    }
+
 }
 
 
