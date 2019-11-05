@@ -86,7 +86,7 @@ and start experimenting with break points in Visual Studio and inspecting the va
 
 
 ---
-[Go back to root](../#lab-2-azure-iot-hub-connected-azure-sphere-application)
+[Go back to root](../README.MD#lab-2-azure-iot-hub-connected-azure-sphere-application)
 
 ---
 

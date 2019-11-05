@@ -222,7 +222,7 @@ to consume some cycles, the counter loop though may miss one or more state trans
 If you run this sample application for a while, you'll see that every once in a while the sensor reading reports an error reading the data.
 
 ---
-[Go back to root](../#lab-3-connecting-a-dht-sensor-and-send-telemetry-to-azure-iot-hub)
+[Go back to root](../README.MD#lab-3-connecting-a-dht-sensor-and-send-telemetry-to-azure-iot-hub)
 
 ---
 

@@ -141,9 +141,9 @@ Step 5. Run the application and see telemetry visualized in the dashboard.
 > that I wasn't able to solve. If you find what's wrong, feel free to drop me a note or do a pull request with the fix.
 
 ---
+[Back to root](../README.MD#connecting-an-i2c-sensor-bosch-bme280-and-send-telemetry-to-azure-iot-central)
 
-[Back to root](https://github.com/JuergenSchwertl/AzureSphereSamples#Lab7)
-
+---
 
 ### Disclaimer
 
