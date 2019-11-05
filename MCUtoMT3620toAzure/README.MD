@@ -246,7 +246,7 @@ in [`checkAndUpdateDeviceTwin`](./MCUtoMT3620toAzure/MCU_utilities.c#L130).
 You may continue reviewing both *UART_utilities.h/UART_utilities.c* and *MCU_utilities.h/ MCU_utilities.c* as time allows.
 
 ---
-[Go back to root](../#lab-4-connecting-another-mcu-through-uart)
+[Go back to root](../README.MD#lab-4-connecting-another-mcu-through-uart)
 
 ---
 

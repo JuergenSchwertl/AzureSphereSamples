@@ -143,6 +143,9 @@ messages to both real-time capable applications:
 Now it's time to look at how to [deploy the apps over the air (OTA)](./AS3Scripts/README.MD).
 
 ---
+[Back to root](.../README.MD#lab-5-multi-core-app-and-ota-deployment-lab)
+
+---
 
 ### Disclaimer
 
