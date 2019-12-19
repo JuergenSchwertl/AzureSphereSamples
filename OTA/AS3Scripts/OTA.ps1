@@ -23,52 +23,50 @@ Class AppInfo
 <# AppInfo structure for BlueSphereRT real-time application #>
 [AppInfo] $BlueSphereRT  = $null
 
-Enum SkuEnum 
-{
-    Chip
-    Product
-}
-
-
-Class SkuEntry
+Class Product
 {
     [Guid] $Id
     [String] $Name
-    [SkuEnum] $SkuType
+    [String] $Description
 
-    SkuEntry(){} 
+    Product(){} 
 
-    SkuEntry( 
+    Product( 
         [Guid] $Id,
         [String] $Name,
-        [SkuEnum] $SkuType
+        [String] $Description
     )
     {
         $this.Id = $Id
         $this.Name = $Name
-        $this.SkuType = $SkuType
+        $this.Description = $Description
     }
 
 
     [string] ToString()
+    {
+        return $this.Name
+    }
+
+    [string] IdString()
     {
         return $this.Id.ToString()
     }
 }
 
 
-$strRedSphereSku = "RedSphere SKU"
-$strGreenSphereSku = "GreenSphere SKU"
-$strBlueSphereSku = "BlueSphere SKU"
+$strRedSphereProduct = "RedSphere Product"
+$strGreenSphereProduct = "GreenSphere Product"
+$strBlueSphereProduct = "BlueSphere Product"
 
-$strRedGreenEvaluationSku = "RedGreen Evaluation"
-$strRedBlueEvaluationSku = "RedBlue Evaluation"
+$strRedGreenEvaluationProduct = "RedGreen Evaluation"
+$strRedBlueEvaluationProduct = "RedBlue Evaluation"
 
-[SkuEntry] $SkuRedSphere = $null
-[SkuEntry] $SkuGreenSphere = $null
-[SkuEntry] $SkuBlueSphere = $null
-[SkuEntry] $SkuRedGreenEvaluation = $null
-[SkuEntry] $SkuRedBlueEvaluation = $null
+[Product] $ProductRedSphere = $null
+[Product] $ProductGreenSphere = $null
+[Product] $ProductBlueSphere = $null
+[Product] $ProductRedGreenEvaluation = $null
+[Product] $ProductRedBlueEvaluation = $null
 
 
 Class FeedEntry
@@ -97,27 +95,6 @@ $strRetailFeedId = ""
 $strEvalFeedId = ""
 
 
-<#
-.SYNOPSIS
-Checks if the supplied command output indicates success (last line starts with "Command completed successfully")
-.DESCRIPTION
-Checks if the supplied command output indicates success (last line starts with "Command completed successfully")
-and optionally checks if the minimum of lines are available
-.PARAMETER CmdOutput
-[System.Array] of text output of the AzSphere.exe response
-.PARAMETER MinLines
-(Optional) Minimum number of lines in command output.
-.INPUTS
-None. You cannot pipe objects to Check-AS3Success.
-.OUTPUTS
-returns True if AzSphere.exe output indicates success 
-#>
-function Check-AS3Success( 
-	[Parameter(Mandatory=$true, Position=0)]  [object[]]  $CmdOutput, 
-	[Parameter(Mandatory=$false, Position=1)] [int] $MinLines=1 )
-{
-    return (($CmdOutput -is [System.Array]) -and ($CmdOutput.Length -gt $MinLines) -and $CmdOutput[ $CmdOutput.Length-1 ].StartsWith("Command completed successfully"))
-}
 
 <#
 .SYNOPSIS
@@ -149,7 +126,7 @@ function ExtractFrom-ImagePackage(
 	    $app.Name = $Name
 	    $app.FilePath = $Path
 
-        $result = azsphere image show -f $app.FilePath
+        $result = azsphere pkg show -f $app.FilePath
         if( Check-AS3Success $result 9 )
         {
             if( $result[3].Contains("Component ID:") )
@@ -172,6 +149,148 @@ function ExtractFrom-ImagePackage(
         Write-Error "Unable to find imagepackage '$Path'" -ErrorAction Stop
     }
 }
+
+
+<#
+.SYNOPSIS
+Creates a new DeviceGroup in Azure Sphere Security Service
+.DESCRIPTION
+Creates a new ProductSKU in Azure Sphere Security Service with the given Name and returns the Guid of the newly created ProductSKU
+.PARAMETER Name
+Specifies the name for the new ProductSKU.
+.INPUTS
+None. You cannot pipe objects to New-AS3ProductSKU.
+.OUTPUTS
+[System.Guid] ProductSKUId
+.EXAMPLE
+PS> New-AS3ProductSKU -Name "TestProduct" [-Description "What this product is about"]
+Guid
+-----------                          
+f4e25978-6152-447b-a2a1-64577582f327
+#>
+function New-AS3Product(
+	[Parameter(Mandatory=$true)]  [Alias("n")] [string] $Name,
+	[Parameter(Mandatory=$false)] [Alias("d")] [string] $Description=""
+)
+{
+	$result = & azsphere product create -n "$Name" -d "$Description"
+    if( $LASTEXITCODE -eq 0 )
+    {
+        [String] $s = $result[ 0 ]
+        Write-Host $s
+		return [System.Guid]( $s.Split("'").Item(3) )
+    } else {
+		Write-Error $result[0] -ErrorAction Stop
+	}
+}
+
+
+<#
+.SYNOPSIS
+Retrieves the current list of SKUs
+.DESCRIPTION
+Retrieves the current list of SKUs
+.INPUTS
+None. You cannot pipe objects to Find-AS3SKU.
+.OUTPUTS
+[System.Array] of [SkuEntry]
+.EXAMPLE
+PS> Get-AS3SKUList
+Id                                   Name               SkuType
+--                                   ----               -------
+0d24af68-c1e6-4d60-ac82-8ba92e09f7e9 MT3620 A1 16MB     Chip
+9d606c43-1fad-4990-b207-554a025e0869 MT3620 A0 16MB     Chip
+25827902-db08-466d-a8dd-f30a6cb3428a Private Sphere SKU Product
+#>
+function Get-AS3SkuSet()
+{
+
+	$result = azsphere sku list
+    if( Check-AS3Success $result 8 )
+    {
+        [System.Array] $lst = [System.Array]::CreateInstance( [object], $result.Length-7 )
+        [System.Array]::Copy($result,5, $lst, 0, $result.Length-7)
+        [System.Array] $SkuList = [System.Array]::CreateInstance( [SkuEntry], $result.Length-7 )
+        [int] $i=0
+
+        foreach($l in $lst)
+        {
+            # extract GUID sub string from "90c83845-cce1-4f45-abeb-e50a5aa0a854 GreenSphere SKU    Product "
+            #                               0                               ->36|37        variable|  ->9|
+            $SkuList[$i] = [SkuEntry]::new(
+                [System.Guid]($l.Substring(0,36)),
+                $l.Substring(37,$l.Length-45).Trim(),
+                [System.Enum]::Parse([SkuEnum], $l.Substring($l.Length-8,8).Trim() )
+            )
+            $i = $i+1
+        }
+        return $SkuList
+    } else {
+		Write-Error $result[1] -ErrorAction Stop
+	}
+}
+
+
+
+<#
+.SYNOPSIS
+Searches for a SKU in Azure Sphere Security Service by name
+.DESCRIPTION
+Finds a SKU in Azure Sphere Security Service with the given Name and returns the Guid of the SKU
+.PARAMETER Name
+Specifies the name for the SKU.
+.PARAMETER SkuList
+(Optional) supply previously retrieved list of Skus.
+.INPUTS
+None. You cannot pipe objects to Find-AS3Sku.
+.OUTPUTS
+[SkuEntry] SKU 
+.EXAMPLE
+PS> Find-AS3Product -Name "Test-SKU"
+Id                                   Name     SkuType
+--                                   ----     -------
+f7c7a7d9-f890-4293-abe6-f15f7436006f Test-SKU Product
+#>
+function Find-AS3Product(
+	[Parameter(Mandatory=$true, Position=0)] [Alias("n")] [string] $Name,
+	[Parameter(Mandatory=$false, Position=1)] [Alias("s")] [System.Array] $SkuList=$null
+)
+{
+    if( $SkuList -eq $null )
+    {
+        $skuList = Get-AS3SkuSet
+    }
+    foreach($sku in $SkuList)
+    {
+        if( $Name.CompareTo( $sku.Name ) -eq 0)
+        {
+            return $sku
+        }
+    }
+
+	Write-Warning "Product SKU '$Name' not found"
+    return $null
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -329,161 +448,6 @@ function Find-AS3DeviceGroup(
 }
 
 
-
-<#
-.SYNOPSIS
-Creates a new DeviceGroup in Azure Sphere Security Service
-.DESCRIPTION
-Creates a new ProductSKU in Azure Sphere Security Service with the given Name and returns the Guid of the newly created ProductSKU
-.PARAMETER Name
-Specifies the name for the new ProductSKU.
-.INPUTS
-None. You cannot pipe objects to New-AS3ProductSKU.
-.OUTPUTS
-[System.Guid] ProductSKUId
-.EXAMPLE
-PS> New-AS3ProductSKU -Name "TestProduct" [-Description "What this product is about"]
-Guid
------------                          
-f4e25978-6152-447b-a2a1-64577582f327
-#>
-function New-AS3ProductSKU(
-	[Parameter(Mandatory=$true)]  [Alias("n")] [string] $Name,
-	[Parameter(Mandatory=$false)] [Alias("d")] [string] $Description=""
-)
-{
-	$result = azsphere sku create -n "$Name" -d "$Description"
-    if( Check-AS3Success $result )
-    {
-        [String] $s = $result[ 0 ]
-        Write-Host $s
-		return [System.Guid]( $s.Split("'").Item(3) )
-    } else {
-		Write-Error $result[0] -ErrorAction Stop
-	}
-}
-
-
-<#
-.SYNOPSIS
-Retrieves the current list of SKUs
-.DESCRIPTION
-Retrieves the current list of SKUs
-.INPUTS
-None. You cannot pipe objects to Find-AS3SKU.
-.OUTPUTS
-[System.Array] of [SkuEntry]
-.EXAMPLE
-PS> Get-AS3SKUList
-Id                                   Name               SkuType
---                                   ----               -------
-0d24af68-c1e6-4d60-ac82-8ba92e09f7e9 MT3620 A1 16MB     Chip
-9d606c43-1fad-4990-b207-554a025e0869 MT3620 A0 16MB     Chip
-25827902-db08-466d-a8dd-f30a6cb3428a Private Sphere SKU Product
-#>
-function Get-AS3SkuSet()
-{
-
-	$result = azsphere sku list
-    if( Check-AS3Success $result 8 )
-    {
-        [System.Array] $lst = [System.Array]::CreateInstance( [object], $result.Length-7 )
-        [System.Array]::Copy($result,5, $lst, 0, $result.Length-7)
-        [System.Array] $SkuList = [System.Array]::CreateInstance( [SkuEntry], $result.Length-7 )
-        [int] $i=0
-
-        foreach($l in $lst)
-        {
-            # extract GUID sub string from "90c83845-cce1-4f45-abeb-e50a5aa0a854 GreenSphere SKU    Product "
-            #                               0                               ->36|37        variable|  ->9|
-            $SkuList[$i] = [SkuEntry]::new(
-                [System.Guid]($l.Substring(0,36)),
-                $l.Substring(37,$l.Length-45).Trim(),
-                [System.Enum]::Parse([SkuEnum], $l.Substring($l.Length-8,8).Trim() )
-            )
-            $i = $i+1
-        }
-        return $SkuList
-    } else {
-		Write-Error $result[1] -ErrorAction Stop
-	}
-}
-
-
-<#
-.SYNOPSIS
-Searches for a SKU in Azure Sphere Security Service by name
-.DESCRIPTION
-Finds a SKU in Azure Sphere Security Service with the given Name and returns the Guid of the SKU
-.OUTPUTS
-String (comma-delimited chip skus)
-.EXAMPLE
-PS> Get-AS3ChipSkuLis
-0d24af68-c1e6-4d60-ac82-8ba92e09f7e9,9d606c43-1fad-4990-b207-554a025e0869
-#>
-function Get-AS3ChipSkuSet()
-{
-    $result = Get-AS3SkuSet
-    return $result.Where( { $_.SkuType -eq [SkuEnum]::Chip })
-}
-
-<#
-.SYNOPSIS
-Searches for a SKU in Azure Sphere Security Service by name
-.DESCRIPTION
-Finds a SKU in Azure Sphere Security Service with the given Name and returns the Guid of the SKU
-.OUTPUTS
-String (comma-delimited chip skus)
-.EXAMPLE
-PS> Get-AS3ChipSkuLis
-0d24af68-c1e6-4d60-ac82-8ba92e09f7e9,9d606c43-1fad-4990-b207-554a025e0869
-#>
-function Get-AS3ChipSkuIds()
-{
-    $result = Get-AS3ChipSkuSet
-    return $result.ForEach( {$_.Id.ToString()}) -join ","
-}
-
-
-<#
-.SYNOPSIS
-Searches for a SKU in Azure Sphere Security Service by name
-.DESCRIPTION
-Finds a SKU in Azure Sphere Security Service with the given Name and returns the Guid of the SKU
-.PARAMETER Name
-Specifies the name for the SKU.
-.PARAMETER SkuList
-(Optional) supply previously retrieved list of Skus.
-.INPUTS
-None. You cannot pipe objects to Find-AS3Sku.
-.OUTPUTS
-[SkuEntry] SKU 
-.EXAMPLE
-PS> Find-AS3SKU -Name "Test-SKU"
-Id                                   Name     SkuType
---                                   ----     -------
-f7c7a7d9-f890-4293-abe6-f15f7436006f Test-SKU Product
-#>
-function Find-AS3Sku(
-	[Parameter(Mandatory=$true, Position=0)] [Alias("n")] [string] $Name,
-	[Parameter(Mandatory=$false, Position=1)] [Alias("s")] [System.Array] $SkuList=$null
-)
-{
-    if( $SkuList -eq $null )
-    {
-        $skuList = Get-AS3SkuSet
-    }
-    foreach($sku in $SkuList)
-    {
-        if( $Name.CompareTo( $sku.Name ) -eq 0)
-        {
-            return $sku
-        }
-    }
-
-	Write-Warning "Product SKU '$Name' not found"
-    return $null
-}
 
 
 <#
