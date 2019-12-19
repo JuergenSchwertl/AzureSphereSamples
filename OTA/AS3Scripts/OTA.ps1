@@ -23,18 +23,22 @@ Class AppInfo
 <# AppInfo structure for BlueSphereRT real-time application #>
 [AppInfo] $BlueSphereRT  = $null
 
-Enum SkuEnum 
+Enum OsFeedType
 {
-    Chip
-    Product
+    Retail
+    RetailEval
 }
 
+Enum ApplicationUpdateType
+{
+    On
+    Off
+}
 
-Class SkuEntry
+Class ProductEntry
 {
     [Guid] $Id
     [String] $Name
-    [SkuEnum] $SkuType
 }
 
 
@@ -45,14 +49,14 @@ $strBlueSphereSku = "BlueSphere SKU"
 $strRedGreenEvaluationSku = "RedGreen Evaluation"
 $strRedBlueEvaluationSku = "RedBlue Evaluation"
 
-[SkuEntry] $SkuRedSphere = $null
-[SkuEntry] $SkuGreenSphere = $null
-[SkuEntry] $SkuBlueSphere = $null
-[SkuEntry] $SkuRedGreenEvaluation = $null
-[SkuEntry] $SkuRedBlueEvaluation = $null
+[ProductEntry] $SkuRedSphere = $null
+[ProductEntry] $SkuGreenSphere = $null
+[ProductEntry] $SkuBlueSphere = $null
+[ProductEntry] $SkuRedGreenEvaluation = $null
+[ProductEntry] $SkuRedBlueEvaluation = $null
 
 
-Class FeedEntry
+Class DeploymentEntry
 {
     [Guid] $Id
     [String] $Name
@@ -61,28 +65,6 @@ Class FeedEntry
 $strRetailFeedId = ""
 $strEvalFeedId = ""
 
-
-<#
-.SYNOPSIS
-Checks if the supplied command output indicates success (last line starts with "Command completed successfully")
-.DESCRIPTION
-Checks if the supplied command output indicates success (last line starts with "Command completed successfully")
-and optionally checks if the minimum of lines are available
-.PARAMETER CmdOutput
-[System.Array] of text output of the AzSphere.exe response
-.PARAMETER MinLines
-(Optional) Minimum number of lines in command output.
-.INPUTS
-None. You cannot pipe objects to Check-AS3Success.
-.OUTPUTS
-returns True if AzSphere.exe output indicates success 
-#>
-function Check-AS3Success( 
-	[Parameter(Mandatory=$true, Position=0)]  [object[]]  $CmdOutput, 
-	[Parameter(Mandatory=$false, Position=1)] [int] $MinLines=1 )
-{
-    return (($CmdOutput -is [System.Array]) -and ($CmdOutput.Length -gt $MinLines) -and $CmdOutput[ $CmdOutput.Length-1 ].StartsWith("Command completed successfully"))
-}
 
 <#
 .SYNOPSIS
@@ -114,8 +96,8 @@ function ExtractFrom-ImagePackage(
 	    $app.Name = $Name
 	    $app.FilePath = $Path
 
-        $result = azsphere image show -f $app.FilePath
-        if( Check-AS3Success $result 9 )
+        $result = & azsphere pkg show -f "$($app.FilePath)"
+        if( $? -eq $true )
         {
             if( $result[3].Contains("Component ID:") )
             {
@@ -140,94 +122,26 @@ function ExtractFrom-ImagePackage(
 
 
 
-<#
-.SYNOPSIS
-Creates a new ImageSet in Azure Sphere Security Service
-.DESCRIPTION
-Creates a new ImageSet in Azure Sphere Security Service with the given ImageID(s)
-.PARAMETER ImageID
-Specifies the image id(s) for the new image-set
-.PARAMETER Name
-Specifies the name for the new image-set.
-.INPUTS
-None. You cannot pipe objects to New-AS3ImageSet.
-.OUTPUTS
-[System.Guid] ImageSetId 
-.EXAMPLE
-PS> New-AS3ImageSet -ImageID "f4e25978-6152-447b-a2a1-64577582f327", "1b45e9b9-d339-4905-89c1-2a0ecf16f665" -Name "Test"
-Guid
------------                          
-f4e25978-6152-447b-a2a1-64577582f327
-#>
-function New-AS3ImageSet( 
-	[Parameter(Mandatory=$true)] $ImageID, 
-	[Parameter(Mandatory=$true)][string] $Name )
+
+
+function New-AS3DeviceGroup
 {
-    [System.Guid] $imsID = [System.Guid]::Empty
-    [string] $imgIDs = $null
-
-    if( $ImageID -is [System.Array])
-    { 
-        $imgIDs = [System.String]::Join(",", $ImageID)
-    } else {
-        $imgIDs = $ImageID
-    }
-    Write-Host "Creating ImageSet '$Name' for ImageID(s) $imgIDs"
-
-    $result = azsphere ims create -m $imgIDs  -n $Name
-    if( Check-AS3Success $result )
-    {
-        Write-Host $result[1]
-        $imsID = [System.Guid]( $result[1].Split("'").Item(3) )
-        $info = azsphere ims show -i $imsID
-        Write-Host ($info -join "`r`n")
-        return $imsID
-    } else {
-		Write-Error "Cannot create ImageSet '$Name' for ImageId(s) $imgIDs" -ErrorAction Stop
-	}
-}
-
 <#
 .SYNOPSIS
-Creates a new Component in Azure Sphere Security Service
+Creates a new device group in Azure Sphere Security Service
 .DESCRIPTION
-Creates a new application component in Azure Sphere Security Service with the given ComponentID
-.PARAMETER ComponentID
-Specifies the component id(s) for the new application component
-.PARAMETER Name
-Specifies the name for the new image-set.
-.INPUTS
-None. You cannot pipe objects to New-AS3Component.
-.OUTPUTS
-[System.Guid] ComponentId for consistency reasons
-.EXAMPLE
-PS> New-AS3Component -ComponentID "f4e25978-6152-447b-a2a1-64577582f327" -Name "Test"
-Guid
------------                          
-f4e25978-6152-447b-a2a1-64577582f327
-#>
-function New-AS3Component(
-	[Parameter(Mandatory=$true)] $ComponentID, 
-	[Parameter(Mandatory=$true)][string] $Name
-)
-{
-	$result = azsphere com create -i $ComponentID  -n $Name
-    if( Check-AS3Success $result )
-    {
-        Write-Host $result[1]
-        return $ComponentID
-    } else {
-		Write-Error $result[1] -ErrorAction Stop
-	}
-}
-
-<#
-.SYNOPSIS
-Creates a new DeviceGroup in Azure Sphere Security Service
-.DESCRIPTION
-Creates a new DeviceGroup in Azure Sphere Security Service with the given Name and returns the Guid of the newly created DeviceGroup
-.PARAMETER Name
-Specifies the name for the new DeviceGroup.
+Creates a device group with the specified name for the specified product. The device group organizes devices 
+that have the same product and receive the same applications from the cloud.
+.PRAMETER Name
+Specifies an alphanumeric name for the device group. If the name includes embedded spaces, enclose it in quotation marks. The device group name must be unique within the product, and is case insensitive.
+.PRAMETER Description
+Optional text to describe the Device Group. Can be empty.")]
+.PRAMETER ProductName
+The tenant-unique name of the product for which to create a device group. Either -ProductName or -ProductId is required.
+.PRAMETER ApplicationUpdate
+Disables or enables application updates for this device group. This is a binary option: On means that application updates are enabled, Off indicates application updates are disabled. Default is On.
+.PRAMETER OsFeed
+This is an enum value: Retail, RetailEval. Default is Retail.
 .INPUTS
 None. You cannot pipe objects to New-AS3DeviceGroup.
 .OUTPUTS
@@ -238,12 +152,51 @@ Guid
 -----------                          
 f4e25978-6152-447b-a2a1-64577582f327
 #>
-function New-AS3DeviceGroup(
-	[Parameter(Mandatory=$true)][string] $Name
+
+param(
+    [cmdletbinding( DefaultParameterSetName='ByName' )]
+	[Parameter(ParameterSetName='ByName', Mandatory=$true)]
+    [Parameter(ParameterSetName='ByID', Mandatory=$true)]
+	[Parameter(HelpMessage="Specifies an alphanumeric name for the device group. If the name includes embedded spaces, enclose it in quotation marks. The device group name must be unique within the product, and is case insensitive.")]
+    [Alias("n")]
+    [string] $Name,
+
+	[Parameter(ParameterSetName='ByName', Mandatory=$false)]
+    [Parameter(ParameterSetName='ByID', Mandatory=$false)]
+	[Parameter(HelpMessage="Optional text to describe the Device Group. Can be empty.")]
+    [Alias("d")]
+    [string] $Description = "",
+
+	[Parameter(ParameterSetName='ByName', Mandatory=$true)]
+	[Parameter(HelpMessage="Specifies an alphanumeric name for the device group. The device group name must be unique within the product, and is case insensitive.")]
+    [Alias("pn")]
+    [string] $ProductName,
+
+	[Parameter(ParameterSetName='ByID', Mandatory=$true)]
+	[Parameter(HelpMessage="The tenant-unique name of the product for which to create a device group. Either --productname or --productid is required.")]
+    [Alias("pi")]
+    [string] $ProductId,
+
+	[Parameter(ParameterSetName='ByName', Mandatory=$false)]
+    [Parameter(ParameterSetName='ByID', Mandatory=$false)]
+	[Parameter(HelpMessage="Disables or enables application updates for this device group. This is a binary option: On means that application updates are enabled, Off indicates application updates are disabled. Default is On.")]
+    [Alias("a")]
+    [ApplicationUpdateType] $ApplicationUpdate = [ApplicationUpdateType]::On,
+
+	[Parameter(ParameterSetName='ByName', Mandatory=$false)]
+    [Parameter(ParameterSetName='ByID', Mandatory=$false)]
+	[Parameter(HelpMessage="This is an enum value: Retail, RetailEval. Default is Retail.")]
+    [Alias("o")]
+    [OsFeedType] $OsFeed = [OsFeedType]::Retail
 )
-{
-	$result = azsphere dg create -n $Name
-    if( Check-AS3Success $result )
+
+    if( $PSCmdlet.ParameterSetName -eq "ById")
+    {
+	    $result = azsphere dg create -n "$Name" -d "$Description" -pi $ProductId -a $ApplicationUpdate.ToString() -o $OsFeed.ToString()
+    } else {
+	    $result = azsphere dg create -n "$Name" -d "$Description" -pn $ProductName -a $ApplicationUpdate.ToString() -o $OsFeed.ToString()
+    }
+    if( $? -eq $true )
     {
         [String] $s = $result[ 1 ]
         Write-Host $s
