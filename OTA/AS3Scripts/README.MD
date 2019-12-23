@@ -22,7 +22,16 @@ To see how Feeds, SKUs and Device-Groups interact we'll move our device between 
 - Have the [IoTConnectHL application](../IoTConnectHL/README.MD) and the three [Realtime-capable applications](../RedSphereRT/README.MD) imagepackages built and ready to run.
 
 ## Prep your environment 
-First you need to prepare your device for OTA deployment. Open an Azure Sphere Developer Command Prompt Window, change the directory to OTA sample directory and then
+>**Note:** PowerShell by default is configured to only run scripts that are code-signed by a trusted CA. To run the *OTA.ps1* script you 
+>therefore need to change the execution policy.
+>
+>To do this you need to open an administrative command shell and run
+```Powershell
+powershell Set-ExecutionPolicy unrestricted
+```
+Then close the admin command shell again since you should only run on elevated priviledges when absolutely required.
+
+We then need to prepare your device for OTA deployment. Open an Azure Sphere Developer Command Prompt Window, change the directory to OTA sample directory and then
 run the following command to enable your device to receive OTA application updates:
 ```sh
 azsphere dev prep-field
@@ -44,10 +53,10 @@ powershell -NoExit -Command .\AS3Scripts\OTA.ps1
 ```
 
 Alternatively, if you want to peek at the source codes aside, you can start the PowerShell development environment with the script loaded. 
-Press **F5** to populate the cmdlets and run the script:
 ```sh
 powershell_ise .\AS3Scripts\OTA.ps1
 ```
+Press **F5** to populate the cmdlets and run the script:
 
 In both cases you should see output like
 ```
@@ -160,5 +169,26 @@ $SkuBlueSphere = New-AS3ProductSKU -Name $strBlueSphereSku -Description "In-fiel
 $SkuRedBlueEvaluation = New-AS3ProductSKU -Name $strRedBlueEvaluationSku -Description "Beta software only"
 $SkuRedGreenEvaluation = New-AS3ProductSKU -Name $strRedGreenEvaluationSku -Description "Beta software only"
 ```
+
 ---
-[OTA and multi-core sample](../README.MD)
+[Go back to "Multi-Core app and OTA deployment lab"](../README.MD)
+
+---
+
+### Disclaimer
+
+#### Sample code - No Warranties
+THE SAMPLE CODE SOFTWARE IS PROVIDED "AS IS" AND WITHOUT WARRANTY.TO THE MAXIMUM EXTENT 
+PERMITTED BY LAW, MICROSOFT DISCLAIMS ANY AND ALL OTHER WARRANTIES, WHETHER EXPRESS OR 
+IMPLIED, INCLUDING, BUT NOT LIMITED TO, ANY IMPLIED WARRANTIES OF MERCHANTABILITY, 
+NON - INFRINGEMENT, OR FITNESS FOR A PARTICULAR PURPOSE, WHETHER ARISING BY A COURSE 
+OF DEALING, USAGE OR TRADE PRACTICE OR COURSE OF PERFORMANCE.
+In no event shall Microsoft, its licensors, the authors or copyright holders be liable 
+for any claim, damages or other liability, whether in an action of contract, tort or 
+otherwise, arising from, out of or in connection with the software or the use thereof.
+
+This code may contain errors and/or may not operate correctly. Microsoft undertakes no 
+duty to correct any errors or update the software. Your use of this code is optional and 
+subject to any license provided therewith or referenced therein, if any. Microsoft does 
+not provide you with any license or other rights to any Microsoft product or service 
+through the code provided to you.

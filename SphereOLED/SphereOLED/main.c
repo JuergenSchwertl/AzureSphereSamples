@@ -170,7 +170,7 @@ static int InitPeripheralsAndHandlers(void)
     }
 
 
-	i2cFd = I2CMaster_Open(MT3620_I2C_ISU0);
+	i2cFd = I2CMaster_Open(MT3620_ISU0_I2C);
 	if (i2cFd < 0) {
 		return -1;
 	}

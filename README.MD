@@ -23,8 +23,9 @@ To follow the code samples please clone the following GitHub repositories:
 * [This AzureSphereSamples repo](https://github.com/JuergenSchwertl/AzureSphereSamples)
 * [The Azure Sphere Samples Repo](https://github.com/Azure/azure-sphere-samples/)
 
+## Azure Sphere Bootcamp labs
 
-## Lab Getting started
+### Lab Getting started
 Please follow the steps as outlined in [Install Azure Sphere](https://docs.microsoft.com/en-us/azure-sphere/install/overview)
 * [Install the Azure Sphere SDK](https://docs.microsoft.com/en-us/azure-sphere/install/install) and set up your development board
 * [Install the latest Azure Sphere OS release](https://docs.microsoft.com/en-us/azure-sphere/install/install-os)
@@ -41,10 +42,10 @@ Please follow the steps as outlined in [Install Azure Sphere](https://docs.micro
 Please follow the steps outlined in [Quickstart: Build the Blink sample application](https://docs.microsoft.com/en-us/azure-sphere/quickstarts/qs-blink-application) 
 to prepare your Azure Sphere Board for development sideloading and build your first application.
 
-## Lab #1: Setup Azure IoT Hub and Azure IoT Hub Device Provisioning Service
+### Lab #1: Setup Azure IoT Hub and Azure IoT Hub Device Provisioning Service
 Please follow the steps as outlined in [Set up an IoT Hub for Azure Sphere](https://docs.microsoft.com/en-us/azure-sphere/app-development/setup-iot-hub).
 
-## Lab #2: Azure IoT Hub connected Azure Sphere Application
+### Lab #2: Azure IoT Hub connected Azure Sphere Application
 **Pls note**
 > The 19.02 version of the Azure Sphere SDK contained the "Azure IoT Hub Sample for Mt3620 RDB (Azure Sphere)" application template. Since this 
 > application template is no longer available in the 19.05 version of the SDK I've thus included it here as a ready made project.
@@ -52,16 +53,16 @@ Please follow the steps as outlined in [Set up an IoT Hub for Azure Sphere](http
 
 Please follow the steps outlined in [Mt3620AzureIoTHub](./Mt3620AzureIoTHub/README.MD) to connect Azure Sphere to Azure IoT Hub.
 
-## Lab #3: Connecting a DHT sensor and send telemetry to Azure IoT Hub
+### Lab #3: Connecting a DHT sensor and send telemetry to Azure IoT Hub
 Please follow the steps as outlined in [Mt3620DirectDHT](./Mt3620DirectDHT/README.MD)
 to connect the DHT sensor and send telemetry data. It also contains hints to extend the ePoll event_data_t structure to enable event context handling.
 
-## Lab #4: Connecting another MCU through UART
+### Lab #4: Connecting another MCU through UART
 In this lab we'll connect a NodeMCU sending telemetry data through UART to Azure Sphere acting as a cloud gateway.
 
 Please follow the steps as outlined in [MCUtoMt3620ToAzure](./MCUtoMT3620toAzure/README.MD) to run this lab.
 
-## Lab #5: Multi-Core app and OTA deployment lab
+### Lab #5: Multi-Core app and OTA deployment lab
 This lab is split into several parts as it covers a variety of topics in an end-to-end scenario.
 
 It starts with the development of multi-core applications with a high-level (POSIX) connectivety app that is acompanied by 
@@ -75,30 +76,44 @@ and allow to build a fully automated CI/CD pipeline.
 
 Please follow the steps as outlined in [OTA](./OTA/README.MD) to run this lab.
 
-## Lab #6: Bluetooth provisioning of WiFi Credentials
+### Lab #6: Bluetooth provisioning of WiFi Credentials
 For this lab you'll need the Azure Sphere Teams [Azure Sphere Samples repo](https://github.com/Azure/azure-sphere-samples/) cloned.
 
 Please follow the steps as outlined in [WifiSetupAndDeviceControlViaBle](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/WifiSetupAndDeviceControlViaBle) 
 to connect the [Nordic Semiconductor nRF52 Development Kit](https://www.nordicsemi.com/Software-and-Tools/Development-Kits/nRF52-DK)
 
-## Lab #7: Updating an external MCU Firmware
+### Lab #7: Updating an external MCU Firmware
 For this lab you'll need the Azure Sphere Teams [Azure Sphere Samples repo](https://github.com/Azure/azure-sphere-samples/) cloned.
 
 Please follow the steps as outlined in [External MCU Update](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/ExternalMcuUpdateNrf52) 
 which uses the same [Nordic Semiconductor nRF52 Development Kit](https://www.nordicsemi.com/Software-and-Tools/Development-Kits/nRF52-DK).
 
-## Lab #7: Connecting an I2C sensor (Bosch BME280) and send telemetry to Azure IoT Central {Lab7}
-In this lab we will connect an I2C based sensor and send telemetry data to **Azure IoT Central**. In this example it is the 
-Bosch BME280 temperature/humidity/pressure sensor.
 
-Please follow the steps as outlined in [SphereBME280](./SphereBME280/README.MD) to run this lab.
+## Other samples
+This concludes the labs for the Azure Sphere Train-the-Trainer Bootcamp. 
 
-## Lab #8: Using an OLED Display with Azure Sphere {Lab8}
-In this lab we will connect an I2C connected OLED display based on the [Solomon Systech SSD130x](http://www.solomon-systech.com/en/product/...ic/oled-driver-controller/ssd1308/).
+In customer workshops we're typically looking at specific customer scenarios and for commercial applications you'd obviously want to rely on 
+commercial peripherals. Where in the labs I on purpose used a cheap sensor with one-wire protocol to show how to port software from other platforms
+as well as the intricacies of bit-banging in a (non-realtime) POSIX app, here is a selection of examples on how to connect other peripherals:
+ 
+### Connecting an I2C sensor (Bosch BME280) and send telemetry to Azure IoT Central
+In this example we will connect an I2C based sensor and send telemetry data to **Azure IoT Central**. In this example it is the 
+Bosch BME280 temperature/humidity/pressure sensor. For this sensor, Bosch provides a platform independent library on the
+[Bosch Sensortec GitHub](https://github.com/BoschSensortec/BME280_driver) .
+This sensor offer I2C as well as SPI connectivety options and depending on your module it may or may not offer both of them. As all modules I 
+have at hand offer I2C and this has some cost saving advantages over SPI (i.e. less wiring, multiple sensors on I2C bus) this examples is using I2C.
+
+Please follow the steps as outlined in [SphereBME280](./SphereBME280/README.MD) to run this example.
+
+
+### Using an OLED Display with Azure Sphere
+Although a micro-controller is typically a headless device and the MT3620 misses graphics capabilities, in many cases you'd at least want to
+show some kind of textual or numeric information. Typically these are small displays that come with their own driver chip and in this  
+example we will connect an I2C connected OLED display based on the [Solomon Systech SSD130x](http://www.solomon-systech.com/en/product/...ic/oled-driver-controller/ssd1308/).
 One example is the [Grove - OLED Display 0.96 Inch](http://wiki.seeedstudio.com/Grove-OLED_Display_0.96inch/) 
 available through SeeedStudio.
 
-Please follow the steps as outlined in [SphereOLED](./SphereOLED/README.MD) to run this lab.
+Please follow the steps as outlined in [SphereOLED](./SphereOLED/README.MD) to run this example.
 
 
 # Mt3620 Development Board pinouts
@@ -129,10 +144,12 @@ MCU such as the Arduino UNO you'll need level shifters, otherwise you'll eventua
 ### SPI pinout
 [![MT3620 SPI-Ports](./Images/MT3620_DVB_SPI_sm.png)](./Images/MT3620_DVB_SPI.png)
 
-# Disclaimer
+---
 
-## Sample code – No Warranties
-THE SAMPLE CODE SOFTWARE IS PROVIDED “AS IS” AND WITHOUT WARRANTY.TO THE MAXIMUM EXTENT 
+### Disclaimer
+
+#### Sample code - No Warranties
+THE SAMPLE CODE SOFTWARE IS PROVIDED "AS IS" AND WITHOUT WARRANTY.TO THE MAXIMUM EXTENT 
 PERMITTED BY LAW, MICROSOFT DISCLAIMS ANY AND ALL OTHER WARRANTIES, WHETHER EXPRESS OR 
 IMPLIED, INCLUDING, BUT NOT LIMITED TO, ANY IMPLIED WARRANTIES OF MERCHANTABILITY, 
 NON - INFRINGEMENT, OR FITNESS FOR A PARTICULAR PURPOSE, WHETHER ARISING BY A COURSE 
@@ -142,7 +159,7 @@ for any claim, damages or other liability, whether in an action of contract, tor
 otherwise, arising from, out of or in connection with the software or the use thereof.
 
 This code may contain errors and/or may not operate correctly. Microsoft undertakes no 
-duty to correct any errors or update the software.Your use of this code is optional and 
-subject to any license provided therewith or referenced therein, if any.Microsoft does 
+duty to correct any errors or update the software. Your use of this code is optional and 
+subject to any license provided therewith or referenced therein, if any. Microsoft does 
 not provide you with any license or other rights to any Microsoft product or service 
 through the code provided to you.

@@ -1,6 +1,6 @@
-## Lab #7: Connecting an I2C sensor (Bosch BME280) and send telemetry to Azure IoT Central
+## Connecting an I2C sensor (Bosch BME280) and send telemetry to Azure IoT Central
 
-In this lab we will connect an I2C based sensor and send telemetry data to **Azure IoT Central**. In this example it is the 
+In this example we will connect an I2C based sensor and send telemetry data to **Azure IoT Central**. In this example it is the 
 Bosch BME280 temperature/humidity/pressure sensor.
 
 The libBME280 project contains a wrapper library based on the original [Bosch driver](https://github.com/BoschSensortec/BME280_driver) for the 
@@ -141,5 +141,24 @@ Step 5. Run the application and see telemetry visualized in the dashboard.
 > that I wasn't able to solve. If you find what's wrong, feel free to drop me a note or do a pull request with the fix.
 
 ---
+[Back to root](../README.MD#connecting-an-i2c-sensor-bosch-bme280-and-send-telemetry-to-azure-iot-central)
 
-[Back to root](https://github.com/JuergenSchwertl/AzureSphereSamples#Lab7)
+---
+
+### Disclaimer
+
+#### Sample code - No Warranties
+THE SAMPLE CODE SOFTWARE IS PROVIDED "AS IS" AND WITHOUT WARRANTY.TO THE MAXIMUM EXTENT 
+PERMITTED BY LAW, MICROSOFT DISCLAIMS ANY AND ALL OTHER WARRANTIES, WHETHER EXPRESS OR 
+IMPLIED, INCLUDING, BUT NOT LIMITED TO, ANY IMPLIED WARRANTIES OF MERCHANTABILITY, 
+NON - INFRINGEMENT, OR FITNESS FOR A PARTICULAR PURPOSE, WHETHER ARISING BY A COURSE 
+OF DEALING, USAGE OR TRADE PRACTICE OR COURSE OF PERFORMANCE.
+In no event shall Microsoft, its licensors, the authors or copyright holders be liable 
+for any claim, damages or other liability, whether in an action of contract, tort or 
+otherwise, arising from, out of or in connection with the software or the use thereof.
+
+This code may contain errors and/or may not operate correctly. Microsoft undertakes no 
+duty to correct any errors or update the software. Your use of this code is optional and 
+subject to any license provided therewith or referenced therein, if any. Microsoft does 
+not provide you with any license or other rights to any Microsoft product or service 
+through the code provided to you.
