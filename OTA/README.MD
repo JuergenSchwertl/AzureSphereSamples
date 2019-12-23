@@ -100,7 +100,7 @@ Back in the Visual Studio instance running IoTConnectHL you should see the *"PIN
 ## Manual deployment using AZSPHERE.EXE
 Let's now take a look at the Azure Sphere Command Window and enter
 ```
-azsphere dev sideload show-status
+azsphere dev app show-status
 ```
 
 It should show both apps deployed and indicate debugging the high-level app
@@ -114,7 +114,7 @@ It should show both apps deployed and indicate debugging the high-level app
 Now manually deploy another applications to get the second M4 core some work as well. 
 ```
 azsphere dev sideload deploy -p out\ARM-Debug-2Beta1905\GreenSphereRT\GreenSphereRT.imagepackage
-azsphere dev sideload show-status
+azsphere dev app show-status
 ```
 It should show all three applications running side by side and have LED1 blinking red and LED2 blinking green
 ```
