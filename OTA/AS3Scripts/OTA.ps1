@@ -110,7 +110,6 @@ DeviceGroup class with Id, Name, Description, OS Feed Type and UpdatePolicy
     [ApplicationUpdatePolicy] $ApplicationUpdate = [ApplicationUpdatePolicy]::On
     [System.Array] $Deployments
 
-
     # public constructor
     DeviceGroup( 
         [String] $Id,
@@ -178,14 +177,14 @@ Class Deployment
     [DateTime] $DeploymentDateUTC
     [Guid[]] $DeployedImages
 
-    FeedEntry(){} 
+    Deployment(){} 
 
-    FeedEntry( 
-        [Guid] $Id,
+    Deployment( 
+        [String] $IdString,
         [String] $Timestamp
     )
     {
-        $this.Id = $Id
+        $this.Id = [Guid]::new( $IdString )
         $this.DeploymentDateUTC = [DateTime]::Parse($Timestamp)
 
     }
