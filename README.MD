@@ -12,8 +12,7 @@ USB port available.
 Although the SDK package is ~150MB, during the installation it may download up to 1GB of Visual Studio 
 Components, so we strongly recommend to have the SDK preinstalled.
 
-You will also need an active Azure subscription and a user account with subscription admin rights to add 
-Enterprise Application entries to your Azure Active Directory and create Azure Resources such as 
+You will also need an active Azure subscription and a user account with sufficient rights to create Azure Resources such as 
 * Azure Resource Groups 
 * [Azure IoT Hub](https://docs.microsoft.com/en-us/azure/iot-hub/about-iot-hub) 
 * [Azure IoT Hub Device Provisioning Service](https://docs.microsoft.com/en-us/azure/iot-dps/about-iot-dps)
@@ -35,11 +34,11 @@ Please follow the steps as outlined in [Install Azure Sphere](https://docs.micro
 Please follow the steps outlined in [Quickstart: Building your first high-level application](https://docs.microsoft.com/en-us/azure-sphere/install/qs-overview) to prepare your Azure Sphere Board for development sideloading and build your first application.
 
 ### Lab #1: Setup Azure IoT Hub and Azure IoT Hub Device Provisioning Service
-Please follow the steps as outlined in [Set up an IoT Hub for Azure Sphere](https://docs.microsoft.com/en-us/azure-sphere/app-development/setup-iot-hub).
+Please follow the steps as outlined in [Set up an IoT Hub for Azure Sphere](https://docs.microsoft.com/en-us/azure-sphere/app-development/setup-iot-hub) to create and link an Azure IoT Hub and an Azure IoT Hub Device Provisioning Service as well as to configure the Certificate chain with the Certificate Authority (CA) of your Azure Sphere tenant.
 
 ### Lab #2: Azure IoT Hub connected Azure Sphere Application
 **Pls note**
-> The 19.02 version of the Azure Sphere SDK contained the "Azure IoT Hub Sample for Mt3620 RDB (Azure Sphere)" application template. Since this 
+> Previous versions of the Azure Sphere SDK contained the "Azure IoT Hub Sample for Mt3620 RDB (Azure Sphere)" application template. Since this 
 > application template is no longer available in more recent versions of the SDK I've thus included it here as a ready made project.
 > For the next lab you'll therefore need [this repo](https://github.com/JuergenSchwertl/AzureSphereSamples) cloned.
 
