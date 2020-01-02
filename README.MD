@@ -28,19 +28,11 @@ To follow the code samples please clone the following GitHub repositories:
 ### Lab Getting started
 Please follow the steps as outlined in [Install Azure Sphere](https://docs.microsoft.com/en-us/azure-sphere/install/overview)
 * [Install the Azure Sphere SDK](https://docs.microsoft.com/en-us/azure-sphere/install/install) and set up your development board
-* [Install the latest Azure Sphere OS release](https://docs.microsoft.com/en-us/azure-sphere/install/install-os)
-* [Set up an account](https://docs.microsoft.com/en-us/azure-sphere/install/azure-directory-account) to authenticate with Microsoft Azure
+* Make sure your device runs the latest Azure Sphere OS version `` azsphere device show-os-version ``. If your OS version is <19.11 please first "recover" your device with `` azsphere device revover ``  
 * [Claim your device](https://docs.microsoft.com/en-us/azure-sphere/install/claim-device)
-* [Configure Wi-Fi](https://docs.microsoft.com/en-us/azure-sphere/install/configure-wifi)
+* [Configure networking and update the device OS](https://docs.microsoft.com/en-us/azure-sphere/install/configure-wifi)
 
-**Please note**
-> If you setup your account to create an Azure Sphere tenant, you will need to use a user account in your own Azure Active Directory.
-> I.e. if you accidentally choose your Microsoft Account ( myname@outlook.com ) it would try to create a tenant in the Outlook.com directory
-> where you likely won't have sufficient user permissions to add Enterprise Applications!
-> If you choose to use your corporate account, make sure your AAD administrator has setup your account with the appropriate permissions.
-
-Please follow the steps outlined in [Quickstart: Build the Blink sample application](https://docs.microsoft.com/en-us/azure-sphere/quickstarts/qs-blink-application) 
-to prepare your Azure Sphere Board for development sideloading and build your first application.
+Please follow the steps outlined in [Quickstart: Building your first high-level application](https://docs.microsoft.com/en-us/azure-sphere/install/qs-overview) to prepare your Azure Sphere Board for development sideloading and build your first application.
 
 ### Lab #1: Setup Azure IoT Hub and Azure IoT Hub Device Provisioning Service
 Please follow the steps as outlined in [Set up an IoT Hub for Azure Sphere](https://docs.microsoft.com/en-us/azure-sphere/app-development/setup-iot-hub).
@@ -48,7 +40,7 @@ Please follow the steps as outlined in [Set up an IoT Hub for Azure Sphere](http
 ### Lab #2: Azure IoT Hub connected Azure Sphere Application
 **Pls note**
 > The 19.02 version of the Azure Sphere SDK contained the "Azure IoT Hub Sample for Mt3620 RDB (Azure Sphere)" application template. Since this 
-> application template is no longer available in the 19.05 version of the SDK I've thus included it here as a ready made project.
+> application template is no longer available in more recent versions of the SDK I've thus included it here as a ready made project.
 > For the next lab you'll therefore need [this repo](https://github.com/JuergenSchwertl/AzureSphereSamples) cloned.
 
 Please follow the steps outlined in [Mt3620AzureIoTHub](./Mt3620AzureIoTHub/README.MD) to connect Azure Sphere to Azure IoT Hub.
