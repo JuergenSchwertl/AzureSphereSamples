@@ -2,6 +2,9 @@ IF(NOT ${CMAKE_GENERATOR} STREQUAL "Ninja")
     MESSAGE(FATAL_ERROR "Azure Sphere CMake projects must use the Ninja generator")
 ENDIF()
 
+# Force CMake to generate paths with forward slashes to work around response file generation errors
+SET(CMAKE_COMPILER_IS_MINGW 1)
+
 SET(AZURE_SPHERE_MAKE_IMAGE_FILE "${AZURE_SPHERE_CMAKE_PATH}/AzureSphereMakeImage.cmake" CACHE INTERNAL "Path to the MakeImage CMake target")
 
 # Get API set from environment set from input variables
@@ -29,7 +32,8 @@ IF(NOT AZURE_SPHERE_API_SET_VALID)
     # Change error message depending on whether it's set
     IF("${AZURE_SPHERE_TARGET_API_SET}" STREQUAL "")
         MESSAGE(FATAL_ERROR "Variable AZURE_SPHERE_TARGET_API_SET is not set. "
-            "Please set this variable to one of the available API sets: ${AZURE_SPHERE_API_SET_LIST}")
+            "Variable AZURE_SPHERE_TARGET_API_SET is not set correctly. Set this variable to one of the available API sets: ${AZURE_SPHERE_API_SET_LIST}. "
+            "To do this, use CMakeSettings.json (if using Visual Studio), .vscode/settings.json (if using Visual Studio Code), or -DAZURE_SPHERE_TARGET_API_SET=<value> (if using command line build).")
     ELSE()
         MESSAGE(FATAL_ERROR "API set \"${AZURE_SPHERE_TARGET_API_SET}\" is not valid. "
             "Valid API sets are: ${AZURE_SPHERE_API_SET_LIST}")
@@ -42,7 +46,12 @@ SET(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
 
 # Get hardware definition directory
 IF(DEFINED AZURE_SPHERE_TARGET_HARDWARE_DEFINITION_DIRECTORY)
-    SET(ENV{AzureSphereTargetHardwareDefinitionDirectory} ${AZURE_SPHERE_TARGET_HARDWARE_DEFINITION_DIRECTORY})
+    if (IS_ABSOLUTE(${AZURE_SPHERE_TARGET_HARDWARE_DEFINITION_DIRECTORY}))
+        SET(ENV{AzureSphereTargetHardwareDefinitionDirectory} ${AZURE_SPHERE_TARGET_HARDWARE_DEFINITION_DIRECTORY})
+    ELSE()
+        get_filename_component(AZURE_SPHERE_TARGET_HARDWARE_DEFINITION_DIRECTORY_ABS ${AZURE_SPHERE_TARGET_HARDWARE_DEFINITION_DIRECTORY} ABSOLUTE BASE_DIR ${CMAKE_SOURCE_DIR})
+        SET(ENV{AzureSphereTargetHardwareDefinitionDirectory} ${AZURE_SPHERE_TARGET_HARDWARE_DEFINITION_DIRECTORY_ABS})
+    ENDIF()
 ENDIF()
 SET(AZURE_SPHERE_HW_DIRECTORY $ENV{AzureSphereTargetHardwareDefinitionDirectory})
 
@@ -54,10 +63,11 @@ SET(AZURE_SPHERE_HW_DEFINITION $ENV{AzureSphereTargetHardwareDefinition})
 
 # Check if the hardware definition file exists at the specified path
 IF((NOT ("${AZURE_SPHERE_HW_DEFINITION}" STREQUAL "")) AND (NOT ("${AZURE_SPHERE_HW_DIRECTORY}" STREQUAL "")))
+    SET(GENERIC_HW_MESSAGE_ERROR "The target hardware is not valid. To resolve this, you'll need to update the CMake build. The necessary steps vary depending on if you are building in Visual Studio, in Visual Studio Code or via the command line. See https://aka.ms/AzureSphereHardwareDefinitions for more details. ")
     IF(NOT EXISTS "${AZURE_SPHERE_HW_DIRECTORY}/${AZURE_SPHERE_HW_DEFINITION}")
-        MESSAGE(FATAL_ERROR "${AZURE_SPHERE_HW_DIRECTORY}/${AZURE_SPHERE_HW_DEFINITION} does not exist")
+        MESSAGE(FATAL_ERROR "${AZURE_SPHERE_HW_DIRECTORY}/${AZURE_SPHERE_HW_DEFINITION} does not exist. ${GENERIC_HW_MESSAGE_ERROR}")
     ELSEIF(EXISTS "${AZURE_SPHERE_HW_DIRECTORY}/${AZURE_SPHERE_HW_DEFINITION}" AND IS_DIRECTORY "${AZURE_SPHERE_HW_DIRECTORY}/${AZURE_SPHERE_HW_DEFINITION}")
-        MESSAGE(FATAL_ERROR "${AZURE_SPHERE_HW_DIRECTORY}/${AZURE_SPHERE_HW_DEFINITION} is a directory")
+        MESSAGE(FATAL_ERROR "${AZURE_SPHERE_HW_DIRECTORY}/${AZURE_SPHERE_HW_DEFINITION} is a directory, not a .json file.  ${GENERIC_HW_MESSAGE_ERROR}")
     ENDIF()
 ENDIF()
 
@@ -89,4 +99,14 @@ IF(EXISTS "${CMAKE_SOURCE_DIR}/app_manifest.json")
         STRING(REGEX REPLACE "\"ComponentId\": \"[^\"]*\"" "\"ComponentId\": \"${AZURE_SPHERE_GUID}\"" AZURE_SPHERE_APP_MANIFEST_CONTENTS "${AZURE_SPHERE_APP_MANIFEST_CONTENTS}")
         FILE(WRITE "${CMAKE_SOURCE_DIR}/app_manifest.json" ${AZURE_SPHERE_APP_MANIFEST_CONTENTS})
     ENDIF()
+ENDIF()
+
+IF (DEFINED AZURE_SPHERE_LTO)
+    IF(${CMAKE_HOST_WIN32})
+        SET(STATIC_LIBRARY_OPTIONS "--plugin liblto_plugin-0.dll")
+    ELSE()
+        SET(STATIC_LIBRARY_OPTIONS "--plugin liblto_plugin-0")
+    ENDIF()
+    ADD_COMPILE_OPTIONS(-flto)
+    ADD_LINK_OPTIONS(-flto)
 ENDIF()

@@ -4,7 +4,7 @@ running on the A7 core in the POSIX environment accompanied by one or two real-t
 running on the M4 cores ( (Color)SphereRT ); each of them communicating with the highlevel app via inter-core communications.
 
 Then we'll setup the Azure Sphere Security Service to deploy different app combinations over the air and we will see how 
-moving a device between SKUs and DeviceGroups affects what Feeds it will receive.
+moving a device between Products and DeviceGroups affects what Deployments it will receive.
 
 ## Part 1: Multi-Core App Overview
 First we take a look at the source tree and what it contains:
@@ -14,10 +14,12 @@ communicates through inter-core communication with any of the real-time capable 
 is based on the [IntercoreComms sample](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/IntercoreComms) it extends the 
 protocol handler so that it automatically adjusts to i.e. manually sideloaded real-time capable apps. Pressing ButtonA increments a blink index value 
 and sends it to active real-time partner applications.
-* **[RedSphereRT](./RedSphereRT/README.MD)**,  **[GreenSphereRT](./GreenSphereRT/README.MD)**, **[BlueSphereRT](BlueSphereRT/README.MD)**: These directories contain the projects for three very similar real-time capable applications 
-for the M4 cores. You can deploy up to two of them at the same time on the MT3620. They receive the blink index value from the high level connectivety app.
+* **[RedSphereRT](./RedSphereRT/README.MD)**,  **[GreenSphereRT](./GreenSphereRT/README.MD)**, **[BlueSphereRT](BlueSphereRT/README.MD)**: 
+These directories contain the projects for three very similar real-time capable applications for the M4 cores. 
+You can deploy up to two of them at the same time on the MT3620. They receive changes to the blink index value from the high level connectivety app.
 RedSphere blinks LED #1 in Red, GreenSphere blinks LED #2 in Green and BlueSphere blinks LED #3 in Blue to visually indicate each app running seperately.
-* **[SharedRT](./Shared.RT/README.MD)**: This directory contains common source files for the real-time capable apps to initialize the GPIO blocks, timer IRQs and for inter-core communications.
+* **[SharedRT](./Shared.RT/README.MD)**: This directory contains common source files for the real-time capable apps to initialize the 
+GPIO blocks, timer IRQs and for inter-core communications.
 
 ### To build and run the multi-core sample
 
@@ -82,7 +84,7 @@ IoTConnectHL then repeatedly sends a *"PING"* message downstream which is acknow
 If you now press ButtonA, you should see the blink frequency changing and at the same time the output window will
 show 
 ```
-    [InterCore] Sending: BLNK
+    [InterCore] Sending: BLNK.
     [Azure IoT] INFO: Set reported property 'LedBlinkRateProperty' to value 1.
     [InterCore]: Received 'recv' from F4E25978-6152-447B-A2A1-64577582F327
     [Azure IoT] INFO: Device Twin reported properties update result: HTTP status code 204
@@ -111,9 +113,9 @@ It should show both apps deployed and indicate debugging the high-level app
     f4e25978-6152-447b-a2a1-64577582f327: App state: running
     Command completed successfully in 00:00:02.4453023.
 ```
-Now manually deploy another applications to get the second M4 core some work as well. 
+Now manually deploy another application to get the second M4 core some work as well. 
 ```
-azsphere dev sideload deploy -p out\ARM-Debug-2Beta1905\GreenSphereRT\GreenSphereRT.imagepackage
+azsphere dev sideload deploy -p out\ARM-Debug-3Beta1909\GreenSphereRT\GreenSphereRT.imagepackage
 azsphere dev app show-status
 ```
 It should show all three applications running side by side and have LED1 blinking red and LED2 blinking green

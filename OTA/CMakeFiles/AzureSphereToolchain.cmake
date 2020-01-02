@@ -22,17 +22,23 @@ SET(AZURE_SPHERE_SDK_PATH $ENV{AzureSphereSDKPath} CACHE INTERNAL "Path to the A
 INCLUDE("${AZURE_SPHERE_CMAKE_PATH}/AzureSphereToolchainBase.cmake")
 
 SET(AZURE_SPHERE_API_SET_DIR "${AZURE_SPHERE_SDK_PATH}/Sysroots/${AZURE_SPHERE_TARGET_API_SET}" CACHE INTERNAL "Path to the selected API set in the Azure Sphere SDK")
-SET(ENV{PATH} "${AZURE_SPHERE_SDK_PATH}/Tools;${AZURE_SPHERE_API_SET_DIR}/tools/gcc;$ENV{PATH}")
 SET(CMAKE_FIND_ROOT_PATH "${AZURE_SPHERE_API_SET_DIR}")
 
 # Set up compiler and flags
 IF(${CMAKE_HOST_WIN32})
-    SET(CMAKE_C_COMPILER "${AZURE_SPHERE_API_SET_DIR}/tools/gcc/arm-poky-linux-musleabi-gcc.exe" CACHE INTERNAL "Path to the C compiler in the selected API set targeting High-Level core")
+    SET(GCC_ROOT_DIR "${AZURE_SPHERE_API_SET_DIR}/tools/gcc")
+    SET(CMAKE_C_COMPILER "${GCC_ROOT_DIR}/arm-poky-linux-musleabi-gcc.exe" CACHE INTERNAL "Path to the C compiler in the selected API set targeting High-Level core")
+    SET(CMAKE_AR "${GCC_ROOT_DIR}/arm-poky-linux-musleabi-ar.exe" CACHE INTERNAL "Path to the archiver in the selected API set targeting High-Level core")
 ELSE()
-    SET(CMAKE_C_COMPILER "${AZURE_SPHERE_API_SET_DIR}/tools/gcc/arm-poky-linux-musleabi-gcc" CACHE INTERNAL "Path to the C compiler in the selected API set targeting High-Level core")
+    SET(GCC_ROOT_DIR "${AZURE_SPHERE_API_SET_DIR}/tools/sysroots/x86_64-pokysdk-linux/usr/bin/arm-poky-linux-musleabi")
+    SET(CMAKE_C_COMPILER "${GCC_ROOT_DIR}/arm-poky-linux-musleabi-gcc" CACHE INTERNAL "Path to the C compiler in the selected API set targeting High-Level core")
+    SET(CMAKE_AR "${GCC_ROOT_DIR}/arm-poky-linux-musleabi-ar" CACHE INTERNAL "Path to the archiver in the selected API set targeting High-Level core")
+    SET(CMAKE_STRIP "${GCC_ROOT_DIR}/arm-poky-linux-musleabi-strip" CACHE INTERNAL "Path to the strip tool in the selected API set targeting High-Level core")
 ENDIF()
 
-SET(CMAKE_C_FLAGS_INIT "-B \"${AZURE_SPHERE_API_SET_DIR}/tools/gcc\" -march=armv7ve -mthumb -mfpu=neon -mfloat-abi=hard \
+SET(ENV{PATH} "${AZURE_SPHERE_SDK_PATH}/Tools;${GCC_ROOT_DIR};$ENV{PATH}")
+
+SET(CMAKE_C_FLAGS_INIT "-B \"${GCC_ROOT_DIR}\" -march=armv7ve -mthumb -mfpu=neon -mfloat-abi=hard \
 -mcpu=cortex-a7 --sysroot=\"${AZURE_SPHERE_API_SET_DIR}\"")
 SET(CMAKE_EXE_LINKER_FLAGS_INIT "-nodefaultlibs -pie -Wl,--no-undefined -Wl,--gc-sections")
 
