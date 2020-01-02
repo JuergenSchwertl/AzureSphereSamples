@@ -3,8 +3,31 @@
 This directory is part of the Multi-Core OTA sample. On information how build, run and deploy the sample OTA please refer 
 to the documentation in the [master directory](../README.MD).
   
+This directory is part of the Multi-Core OTA sample. On information how build, run and deploy the sample OTA please refer 
+to the documentation in the [master directory](../README.MD).
+  
 For information about how to build the real-time capable application please refer to 
-[RedSphereRT](../RedSphereRT/README.MD).
+[RedSphereRT](../RedSphereRT/README.MD)
+
+**Manually deploy the BlueSphereRT application**
+
+1. Open an Azure Sphere Developer Command Prompt and navigate to the OTA folder. 
+1. Deploy the application using 
+```sh
+ azsphere dev sl deploy -p "out\ARM-Debug-3+Beta1909\BlueSphereRT\BlueSphereRT.imagepackage" 
+```
+You will see that Led3 starts blinking in blue at a fast rate, likely at a different frequency than Led1 in red.
+1. Once you press Button A both will start blinking at the same frequency as both have received the 'BLNK' message 
+1. Stop the application using
+```sh
+ azsphere dev app stop -i 07562362-3FEC-46C8-B0AF-DB9507F32748
+```
+You will see that the high-level application gracefully recovers and starts sending *PING* messages to the remaining RedSphereRT app.
+1. Remove the application manually using
+```sh
+azsphere dev sl delete -i 07562362-3FEC-46C8-B0AF-DB9507F32748
+```
+
 
 **Note:** The *app_manifest.json* differs between the real-time capable applications obviously 
 on the *"Name"*, *"ComponentId"* properties and most notably in the used "Gpio".
@@ -18,7 +41,7 @@ on the *"Name"*, *"ComponentId"* properties and most notably in the used "Gpio".
   "CmdArgs": [ "BlueSphere" ],
   "Capabilities": {
     "AllowedApplicationConnections": [ "33e04e8f-a020-4af8-80d0-8064343e0616" ],
-    "Gpio": [ 8 ]
+    "Gpio": [ 20 ]
   },
   "ApplicationType": "RealTimeCapable"
 }

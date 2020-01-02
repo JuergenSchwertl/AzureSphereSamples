@@ -3,8 +3,27 @@
 This directory is part of the Multi-Core OTA sample. On information how build, run and deploy the sample OTA please refer 
 to the documentation in the [master directory](../README.MD).
   
-For information about hiw to build th real-time capable application please refer to 
+For information about how to build the real-time capable application please refer to 
 [RedSphereRT](../RedSphereRT/README.MD)
+
+**Manually deploy the GreenSphereRT application**
+
+1. Open an Azure Sphere Developer Command Prompt and navigate to the OTA folder. 
+1. Deploy the application using 
+```sh
+ azsphere dev sl deploy -p "out\ARM-Debug-3+Beta1909\GreenSphereRT\GreenSphereRT.imagepackage" 
+```
+You will see that Led2 starts blinking in green at a fast rate, likely at a different frequency than Led1 in red.
+1. Once you press Button A both will start blinking at the same frequency as both have received the 'BLNK' message 
+1. Stop the application using
+```sh
+ azsphere dev app stop -i 7E5FAB32-801C-4EDF-A1AA-9263652AA6BD
+```
+You will see that the high-level application gracefully recovers and starts sending *PING* messages to the remaining RedSphereRT app.
+1. Remove the application manually using
+```sh
+azsphere dev sl delete -i 7E5FAB32-801C-4EDF-A1AA-9263652AA6BD
+```
 
 
 **Note:** The *app_manifest.json* differs between the real-time capable applications obviously 
