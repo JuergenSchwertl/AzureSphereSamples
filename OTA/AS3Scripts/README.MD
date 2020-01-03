@@ -198,20 +198,7 @@ azsphere dg dep create -pn "RedSphere Product" -dgn "Production OS Evaluation" -
 ```
 you will though receive an error message on the 2nd command:
 
-<div style="background:black;color:white">
-Getting device group 'Production OS Evaluation' for product 'RedSphere Product'.<br />
-Getting the details of device group 'Production OS Evaluation' for product 'RedSphere Product'.<br />
-<span style="color:yellow">warn: '.\out\ARM-Debug-3+Beta1909\RedSphereRT\RedSphereRT.imagepackage' targets Beta APIs that may 
-change or be removed in future.</span><br />
-<br />
-Uploading image from file '.\out\ARM-Debug-3+Beta1909\RedSphereRT\RedSphereRT.imagepackage':<br />
---> Image ID:       f1c5d8dd-16e6-499b-9a6d-b7fd828ee48e<br />
---> Component ID:   f4e25978-6152-447b-a2a1-64577582f327<br />
---> Component name: 'RedSphereRT'<br />
-Removing temporary state for uploaded image.<br />
-<span style="color:red">error: An image with the same ID ('f1c5d8dd-16e6-499b-9a6d-b7fd828ee48e') already exists.<br />
-error: Trace ID: 17b860a1-eff4-44df-bbef-57c8e5814839</span>
-</div>
+<img src="PrdDepCreateError.svg" />
 
 
 Trying to 
