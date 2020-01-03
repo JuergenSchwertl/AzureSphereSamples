@@ -1,11 +1,11 @@
-# AzureSphereSamples for 19.09 Azure Sphere SDK
-This repo contains sources and links for Azure Sphere Bootcamp labs, amongst others 
-Azure Sphere Samples for connected MCU and DHT sensor.
+# AzureSphereSamples for 19.09/19.11 Azure Sphere SDK Versions
+This repo contains sources and links for Azure Sphere Bootcamp labs, amongst other Azure Sphere Samples for 
+connected MCUs, sensors and other peripherals.
 
 Prerequisites:
-Please make sure to have a Windows 10 laptop capable of running Visual Studio 2019 or Visual Studio 2017 (at least Visual Studio 
-CS Community Edition v15.9 or newer) with Azure Sphere SDK already installed and a free
-USB port available. 
+Please make sure to have a Windows 10 laptop capable of running Visual Studio 2019 (or Visual Studio Code) with the Azure Sphere SDK 
+already installed and a free USB port available. Although you may be able to follow the labs also using Visual Studio Code running on 
+Windows 10 or Linux, your milage may vary.
 * Visual Studio 2019 Download: https://visualstudio.microsoft.com/vs/
 * Azure Sphere SDK: https://aka.ms/azurespheresdkdownload
 
@@ -20,36 +20,45 @@ amongst others potentially.
 
 To follow the code samples please clone the following GitHub repositories:
 * [This AzureSphereSamples repo](https://github.com/JuergenSchwertl/AzureSphereSamples)
-* [The Azure Sphere Samples Repo](https://github.com/Azure/azure-sphere-samples/)
+* The Azure Product Team [Azure Sphere Samples Repo](https://github.com/Azure/azure-sphere-samples/)
 
 ## Azure Sphere Bootcamp labs
 
 ### Lab Getting started
 Please follow the steps as outlined in [Install Azure Sphere](https://docs.microsoft.com/en-us/azure-sphere/install/overview)
 * [Install the Azure Sphere SDK](https://docs.microsoft.com/en-us/azure-sphere/install/install) and set up your development board
-* Make sure your device runs the latest Azure Sphere OS version `` azsphere device show-os-version ``. If your OS version is <19.11 please first "recover" your device with `` azsphere device revover ``  
+* Make sure your device runs the latest Azure Sphere OS version `` azsphere device show-os-version ``. If your OS version is <19.11 
+please first "recover" your device with `` azsphere device recover ``  
 * [Claim your device](https://docs.microsoft.com/en-us/azure-sphere/install/claim-device)
 * [Configure networking and update the device OS](https://docs.microsoft.com/en-us/azure-sphere/install/configure-wifi)
 
-Please follow the steps outlined in [Quickstart: Building your first high-level application](https://docs.microsoft.com/en-us/azure-sphere/install/qs-overview) to prepare your Azure Sphere Board for development sideloading and build your first application.
+Please follow the steps outlined in [Quickstart: Building your first high-level application](https://docs.microsoft.com/en-us/azure-sphere/install/qs-overview) 
+to prepare your Azure Sphere Board for development sideloading and build your first application.
 
 ### Lab #1: Setup Azure IoT Hub and Azure IoT Hub Device Provisioning Service
-Please follow the steps as outlined in [Set up an IoT Hub for Azure Sphere](https://docs.microsoft.com/en-us/azure-sphere/app-development/setup-iot-hub) to create and link an Azure IoT Hub and an Azure IoT Hub Device Provisioning Service as well as to configure the Certificate chain with the Certificate Authority (CA) of your Azure Sphere tenant.
+Please follow the steps as outlined in [Set up an IoT Hub for Azure Sphere](https://docs.microsoft.com/en-us/azure-sphere/app-development/setup-iot-hub) 
+to create and link an Azure IoT Hub and an Azure IoT Hub Device Provisioning Service as well as to configure the Certificate chain 
+using the Certificate Authority (CA) provided by your Azure Sphere tenant.
 
 ### Lab #2: Azure IoT Hub connected Azure Sphere Application
 **Pls note**
 > Previous versions of the Azure Sphere SDK contained the "Azure IoT Hub Sample for Mt3620 RDB (Azure Sphere)" application template. Since this 
-> application template is no longer available in more recent versions of the SDK I've thus included it here as a ready made project.
-> For the next lab you'll therefore need [this repo](https://github.com/JuergenSchwertl/AzureSphereSamples) cloned.
+> application template is no longer available in more recent versions of the SDK I've thus included it here as a starting point.
+> For this lab you'll therefore need [this repo](https://github.com/JuergenSchwertl/AzureSphereSamples) cloned.
+
+This lab covers typical IoT scenarios from device-to-could messaging, the use of Azure IoT Hub Device Twins to report device properties 
+as well as remotely set desired property states and command & control scenarios using Azure IoT Hub Direct Methods.
 
 Please follow the steps outlined in [Mt3620AzureIoTHub](./Mt3620AzureIoTHub/README.MD) to connect Azure Sphere to Azure IoT Hub.
 
 ### Lab #3: Connecting a DHT sensor and send telemetry to Azure IoT Hub
 Please follow the steps as outlined in [Mt3620DirectDHT](./Mt3620DirectDHT/README.MD)
-to connect the DHT sensor and send telemetry data. It also contains hints to extend the ePoll event_data_t structure to enable event context handling.
+to connect the DHT sensor and send telemetry data. It also contains hints to extend the ePoll event_data_t structure to enable event 
+context handling and shows some of the intricacies of running time-sensitive bit-banging protocols in a high-level (POSIX) app.
 
 ### Lab #4: Connecting another MCU through UART
-In this lab we'll connect a NodeMCU sending telemetry data through UART to Azure Sphere acting as a cloud gateway.
+In this lab we'll connect a NodeMCU sending telemetry data through UART to Azure Sphere acting as a secure cloud connectivety option,
+often also referred to as Guardian Module scenario.
 
 Please follow the steps as outlined in [MCUtoMt3620ToAzure](./MCUtoMT3620toAzure/README.MD) to run this lab.
 
@@ -61,23 +70,32 @@ one or more real-time capable applications that use the mailbox-based inter-core
 
 We'll also touch on debugging multicore applications and reveal some helpful tips to enable Visual Studio to cope with multiple applications.
 
-In the last part we'll start creating application combinationsand deploy them for over-the-air (OTA). This includes setting up the infrastructue in the 
+In the last part we'll start creating application combinations and deploy them for over-the-air (OTA). This includes setting up the infrastructue in the 
 Azure Sphere Security Service. To showcase how this can be automated, you'll find examples of PowerShell scripts, that wrap the AzSphere.exe tool
 and allow to build a fully automated CI/CD pipeline.
 
 Please follow the steps as outlined in [OTA](./OTA/README.MD) to run this lab.
 
 ### Lab #6: Bluetooth provisioning of WiFi Credentials
-For this lab you'll need the Azure Sphere Teams [Azure Sphere Samples repo](https://github.com/Azure/azure-sphere-samples/) cloned.
+This lab covers WiFi provisioning as well as a command & control scenario via Bluetooth, in this example using 
+the [Nordic Semiconductor nRF52 Series](https://www.nordicsemi.com/-/media/Software-and-other-downloads/Product-Briefs/nRF52-Series-SoC-product-brief.pdf?la=en&hash=03B936AFAD39A624150FC9C5C17C6A3823DFE3F8) Bluetooth SoC.
+Together with a Windows or Smart Phone App it allows to provision the WiFi settings for Azure Sphere as well as showcases 
+how to control actions on Azure Sphere via Bluetooth. 
+
+To run this lab you'll need the [Nordic Semiconductor nRF52 DK Development Kit](https://www.nordicsemi.com/Software-and-tools/Development-Kits/nRF52-DK) 
+available and the  Azure Sphere Product Team [Azure Sphere Samples repo](https://github.com/Azure/azure-sphere-samples/) cloned.
 
 Please follow the steps as outlined in [WifiSetupAndDeviceControlViaBle](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/WifiSetupAndDeviceControlViaBle) 
 to connect the [Nordic Semiconductor nRF52 Development Kit](https://www.nordicsemi.com/Software-and-Tools/Development-Kits/nRF52-DK)
 
 ### Lab #7: Updating an external MCU Firmware
-For this lab you'll need the Azure Sphere Teams [Azure Sphere Samples repo](https://github.com/Azure/azure-sphere-samples/) cloned.
+As Lab #6 already involves the Nordic Semiconductor nRF 52 Development Kit, this lab re-uses it to showcase how to update the firmware of another Micro Controller.
+This covers scenarios, where Azure Sphere is retro-fit as a Guardian Module to an existing MCU-based controller board.
+ 
+For this lab you'll need the Azure Sphere Product Team [Azure Sphere Samples repo](https://github.com/Azure/azure-sphere-samples/) cloned
+and the [Nordic Semiconductor nRF52 DK Development Kit](https://www.nordicsemi.com/Software-and-tools/Development-Kits/nRF52-DK) available .
 
-Please follow the steps as outlined in [External MCU Update](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/ExternalMcuUpdateNrf52) 
-which uses the same [Nordic Semiconductor nRF52 Development Kit](https://www.nordicsemi.com/Software-and-Tools/Development-Kits/nRF52-DK).
+Please follow the steps as outlined in [External MCU Update](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/ExternalMcuUpdateNrf52).
 
 
 ## Other samples
