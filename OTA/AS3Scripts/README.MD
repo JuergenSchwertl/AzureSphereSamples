@@ -191,14 +191,26 @@ applications.
 Devices in the "Field Test" and "Field Test OS Evaluation" device-groups should run both the "IoT Connect" high-level application 
 together with one of the real-time capable applications.
 
-If you were to upload the same image to both deployments using 
+If you would attempt to create the deployments e.g. using 
 ```sh
 azsphere dg dep create -pn "RedSphere Product" -dgn "Production" -p ".\out\ARM-Debug-3+Beta1909\RedSphereRT\RedSphereRT.imagepackage" -f
 azsphere dg dep create -pn "RedSphere Product" -dgn "Production OS Evaluation" -p ".\out\ARM-Debug-3+Beta1909\RedSphereRT\RedSphereRT.imagepackage" -f
 ```
-you will though receive an error message on the 2nd command:
+you will though receive an error message on the 2nd command, complaining that "*An image with the same ID ('f1c5d8dd-16e6-499b-9a6d-b7fd828ee48e') already exists.*"
+since the 1st command implicitly already uploaded the application image-package. 
+Since running the same application (or application combinations) in deployments on different device groups is 
+a rather common scenario, we need to take a slightly different route and first upload the current application image-packages and 
+then create the deployments referencing the uploaded image packages by their ImageId.
 
-<img src="PrdDepCreateError.svg" />
+```sh
+azsphere img add -f ".\out\ARM-Debug-3+Beta1909\GreenSphereRT\RedSphereRT.imagepackage" --force
+azsphere img add -f ".\out\ARM-Debug-3+Beta1909\GreenSphereRT\GreenSphereRT.imagepackage" --force
+azsphere img add -f ".\out\ARM-Debug-3+Beta1909\GreenSphereRT\BlueSphereRT.imagepackage" --force
+azsphere img add -f ".\IoTConnectHL\out\ARM-Debug-3+Beta1909\IoTConnectHL.imagepackage" --force
+```
+
+Please note the ImageID 
+
 
 
 Trying to 

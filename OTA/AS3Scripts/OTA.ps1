@@ -247,7 +247,7 @@ function ExtractFrom-ImagePackage(
 	    $app.FilePath = $Path
 
         $result = & azsphere pkg show -f "$($app.FilePath)"
-        if( $? -eq $true )
+        if( $LASTEXITCODE -eq 0 )
         {
             if( $result[3].Contains("Component ID:") )
             {
@@ -468,7 +468,9 @@ Guid
 f4e25978-6152-447b-a2a1-64577582f327
 #>
 
-param(
+function New-AS3DeviceGroup()
+{
+    param(
     [cmdletbinding( DefaultParameterSetName='ByName' )]
 	[Parameter(ParameterSetName='ByName', Mandatory=$true)]
     [Parameter(ParameterSetName='ByID', Mandatory=$true)]
@@ -503,7 +505,7 @@ param(
 	[Parameter(HelpMessage="This is an enum value: Retail, RetailEval. Default is Retail.")]
     [Alias("o")]
     [OsFeedType] $OsFeed = [OsFeedType]::Retail
-)
+    )
 
     if( $PSCmdlet.ParameterSetName -eq "ById")
     {
