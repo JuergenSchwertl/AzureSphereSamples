@@ -5,23 +5,36 @@ $strRedSphereRTPath = ".\\out\\ARM-Debug-3+Beta1909\\RedSphereRT\\RedSphereRT.im
 $strGreenSphereRTPath = ".\\out\\ARM-Debug-3+Beta1909\\GreenSphereRT\\GreenSphereRT.imagepackage"
 $strBlueSphereRTPath = ".\\out\\ARM-Debug-3+Beta1909\\BlueSphereRT\\BlueSphereRT.imagepackage"
 
-# .SYNOPSIS AppInfo structure with Component Name, ComponentID, ImageID and FilePath
-Class AppInfo
+$strRedSphereProduct = "RedSphere Product"
+$strGreenSphereProduct = "GreenSphere Product"
+$strBlueSphereProduct = "BlueSphere Product"
+
+
+
+# .SYNOPSIS ImagePackage structure with Component Name, ComponentID, ImageID and FilePath
+Class ImagePackage
 {
     [String] $Name
     [Guid] $ComponentID
     [Guid] $ImageID
     [String] $FilePath
+
+    #public constructor with file path to ImagePackage
+    ImagePackage([String] $FilePath)
+    {
+        $this.FilePath = $FilePath
+    }
+
 }
 
-<# AppInfo structure for IoTConnectHL POSIX application #>
-[AppInfo] $IoTConnectHL  = $null
-<# AppInfo structure for RedSphereRT real-time application #>
-[AppInfo] $RedSphereRT   = $null
-<# AppInfo structure for GreenSphereRT real-time application #>
-[AppInfo] $GreenSphereRT = $null
-<# AppInfo structure for BlueSphereRT real-time application #>
-[AppInfo] $BlueSphereRT  = $null
+<# ImagePackage structure for IoTConnectHL POSIX application #>
+[ImagePackage] $IoTConnectHL  = $null
+<# ImagePackage structure for RedSphereRT real-time application #>
+[ImagePackage] $RedSphereRT   = $null
+<# ImagePackage structure for GreenSphereRT real-time application #>
+[ImagePackage] $GreenSphereRT = $null
+<# ImagePackage structure for BlueSphereRT real-time application #>
+[ImagePackage] $BlueSphereRT  = $null
 
 
 
@@ -108,13 +121,13 @@ DeviceGroup class with Id, Name, Description, OS Feed Type and UpdatePolicy
     # public properties
     [OsFeedType] $OsFeed = [OsFeedType]::RetailEval
     [ApplicationUpdatePolicy] $ApplicationUpdate = [ApplicationUpdatePolicy]::On
-    [System.Array] $Deployments
+    [System.Array] $Deployments = $null
 
     # public constructor
     DeviceGroup( 
-        [String] $Id,
+        [String] $IdString,
         [String] $Name
-    ) : base($Id, $Name){ }
+    ) : base($IdString, $Name){ }
 
     # public constructor
     DeviceGroup( 
@@ -128,7 +141,7 @@ DeviceGroup class with Id, Name, Description, OS Feed Type and UpdatePolicy
 
 
 
-Class Product
+Class Product  : AS3EntityBase
 {
 <#
 .SYNOPSIS 
@@ -136,37 +149,19 @@ Product class with Id, Name, Description properties; public constructors and ToS
 #>
 
     # public properties
-    [Guid] $Id
-    [String] $Name
-    [String] $Description
-    [System.Array] $DeviceGroups
+    [HashTable] $DeviceGroupList = $null
+	[DeviceGroup] $Development = $null
 
     # public empty constructor
-    Product(){} 
+    Product() : base(){} 
 
     # public full constructor
     Product( 
-        [Guid] $Id,
+        [String] $IdString,
         [String] $Name,
         [String] $Description
-    )
-    {
-        $this.Id = $Id
-        $this.Name = $Name
-        $this.Description = $Description
-    }
+    ) : base($IdString, $Name, $Description ){ }
 
-    # public override for ToString method
-    [string] ToString()
-    {
-        return $this.Name
-    }
-
-    # public IdString method
-    [string] IdString()
-    {
-        return $this.Id.ToString()
-    }
 }
 
 
@@ -196,55 +191,36 @@ Class Deployment
 }
 
 
-$strRedSphereProduct = "RedSphere Product"
-$strGreenSphereProduct = "GreenSphere Product"
-$strBlueSphereProduct = "BlueSphere Product"
 
-$strRedGreenEvaluationProduct = "RedGreen Evaluation"
-$strRedBlueEvaluationProduct = "RedBlue Evaluation"
-
-[Product] $ProductRedSphere = $null
-[Product] $ProductGreenSphere = $null
-[Product] $ProductBlueSphere = $null
-[Product] $ProductRedGreenEvaluation = $null
-[Product] $ProductRedBlueEvaluation = $null
-
-
-
-$strRetailFeedId = ""
-$strEvalFeedId = ""
-
+[Product] $RedSphereProduct = $null
+[Product] $GreenSphereProduct = $null
+[Product] $BlueSphereProduct = $null
 
 
 <#
 .SYNOPSIS
 Extracts ComponentID, ImageID from given imagepackage file.
 .DESCRIPTION
-Creates CustomPSObject of type AppInfo with Name, ComponentID, ImageID & FilePath properties from 
+Creates CustomPSObject of type ImagePackage with Name, ComponentID, ImageID & FilePath properties from 
 given imagepackage file.
 .PARAMETER Path
 Specifies the path to the .imagepackage file
-.PARAMETER Name
-(Optional) Specifies an alternative component name.
 .INPUTS
 None. You cannot pipe objects to ExtractFrom-Image.
 .OUTPUTS
-AppInfo structure containing Name, ComponentID, ImageID, FilePath 
+ImagePackage structure containing Name, ComponentID, ImageID, FilePath 
 .EXAMPLE
-PS> ExtractFrom-ImagePackage -path "./RedSphereRT.imagepackage" -name "Test"
+PS> ExtractFrom-ImagePackage -path "./RedSphereRT.imagepackage"
 Name ComponentID                          ImageID                              FilePath                  
 ---- -----------                          -------                              --------                  
 Test f4e25978-6152-447b-a2a1-64577582f327 1b45e9b9-d339-4905-89c1-2a0ecf16f665 .\RedSphereRT.imagepackage
 #>
 function ExtractFrom-ImagePackage( 
-	[Parameter(Mandatory=$true, Position=0)] [Alias("f")]  [string] $Path, 
-	[Parameter(Mandatory=$false, Position=1)] [Alias("n")] [string] $Name = "" )
+	[Parameter(Mandatory=$true, Position=0)] [Alias("f")]  [string] $Path)
 {
     if( (Test-Path -Path $path ) -and ([System.IO.Path]::GetExtension($path) -eq ".imagepackage"))
     {
-        $app = New-Object AppInfo
-	    $app.Name = $Name
-	    $app.FilePath = $Path
+        $app = [ImagePackage]::new( $Path )
 
         $result = & azsphere pkg show -f "$($app.FilePath)"
         if( $LASTEXITCODE -eq 0 )
@@ -263,7 +239,7 @@ function ExtractFrom-ImagePackage(
                 $app.Name = $result[9].Split(":").Item(1).Trim()
             }
         }
-        Write-Host "ImagePackage $Path has ComponentID $($app.ComponentID) and ImageID $($app.ImageID)."
+        Write-Host "Found '$($app.Name)' with ImageId $($app.ImageID.ToString())"
         return $app
     } else {
         Write-Error "Unable to find imagepackage '$Path'" -ErrorAction Stop
@@ -279,14 +255,13 @@ Retrieves the current list of Products
 .INPUTS
 None. You cannot pipe objects to Get-AS3Products.
 .OUTPUTS
-[System.Array] of [Product]
+[Hashtable] of Key:ProductName, Value:Guid
 .EXAMPLE
 PS> Get-AS3Products
-Id                                   Name               Description
---                                   ----               -------
-0d24af68-c1e6-4d60-ac82-8ba92e09f7e9 RedSphere Product
-9d606c43-1fad-4990-b207-554a025e0869 GreenSphere Product
-25827902-db08-466d-a8dd-f30a6cb3428a BlueSphere Product
+Name                           Value
+----                           -----
+CM300                          1124894e-79c2-4278-b3f2-c11563c14b2b
+RedSphere Product              48bc4d96-a2e9-4a3d-8ce7-db06996666f2
 #>
 function Get-AS3Products()
 {
@@ -297,19 +272,57 @@ function Get-AS3Products()
         [System.Array] $lst = [System.Array]::CreateInstance( [object], $result.Length-4 )
         [System.Array]::Copy($result,3, $lst, 0, $result.Length-4)
 
-        [System.Array] $products = [System.Array]::ConvertAll($lst,  
-            [converter[String,Object]]{
-                param($l) 
-                return [Product]::new( [System.Guid]($l.Substring(0,36)),
-                    $l.Substring(37,$l.Length-37).Trim(),
-                    "")
-            })
-        return $products
+        [HashTable] $tblProducts = [HashTable]::new( $lst.Length ) #@{}
+        $lst.ForEach( { 
+                $tblProducts.Add( $_.Substring(37,$_.Length-37).Trim(), # Extract name from line
+                                  [Guid]::new( $_.Substring(0,36) ) ) # extract Guid string from line and convert to [GUID]
+        } )
+
+        return $tblProducts
     } else {
 		Write-Error $result[0] -ErrorAction Stop
 	}
 }
 
+<#
+.SYNOPSIS
+Retrieves the current list of DeviceGroups for a product
+.DESCRIPTION
+Retrieves the current list of DeviceGroups for a product
+.INPUTS
+None. You cannot pipe objects to Get-AS3Products.
+.OUTPUTS
+[Hashtable] of Key:DeviceGroupName, Value:Guid
+.EXAMPLE
+PS> Get-AS3ProductDeviceGroups
+Name                           Value
+----                           -----
+CM300                          1124894e-79c2-4278-b3f2-c11563c14b2b
+RedSphere Product              48bc4d96-a2e9-4a3d-8ce7-db06996666f2
+#>
+function Get-AS3ProductDeviceGroups(
+    [Parameter(Mandatory=$true, Position=0, HelpMessage="Retrieve DeviceGroups for given product.")]
+	[Alias("i")] [Guid] $ProductId
+)
+{
+
+	$result = & azsphere prd dg list -i $ProductId.ToString()
+    if( $LASTEXITCODE -eq 0 )
+    {
+        [System.Array] $lst = [System.Array]::CreateInstance( [object], $result.Length-5 )
+        [System.Array]::Copy($result,4, $lst, 0, $result.Length-5)
+
+        [HashTable] $tblDGs = [HashTable]::new( $lst.Length ) #@{}
+        $lst.ForEach( { 
+                $tblDGs.Add( $_.Substring(37,$_.Length-37).Trim(), # Extract name from line
+                                  [Guid]::new( $_.Substring(0,36) ) ) # extract Guid string from line and convert to [GUID]
+        } )
+
+        return $tblDGs
+    } else {
+		Write-Error $result[0] -ErrorAction Stop
+	}
+}
 
 
 <#
@@ -323,8 +336,6 @@ Specifies the name for the SKU.
 [String] Name of product to find
 .PARAMETER ProductId
 [Guid] Id of product to retrieve
-.PARAMETER Products
-(Optional) supply previously retrieved list of products.
 .INPUTS
 None. You cannot pipe objects to Get-AS3Product.
 .OUTPUTS
@@ -345,53 +356,31 @@ function Get-AS3Product(
 	[Parameter(ParameterSetName='ByName', Mandatory=$true, Position=0)]
     [Parameter(ParameterSetName='ByID', Mandatory=$false)]
     [Parameter(HelpMessage="Search for product by product name.")]
-	[Alias("n")] [string] $ProductName,
-
-	[Parameter(ParameterSetName='ByName', Mandatory=$false, Position=1)]
-    [Parameter(ParameterSetName='ByID', Mandatory=$false, Position=1)]
-    [Parameter(HelpMessage="(Optional) supply list of previously retrieved products")]
-	[Alias("s")] [System.Array] $Products=$null
+	[Alias("n")] [string] $ProductName
 )
 {
 
     [Product] $product = $null
 
-    if( $Products -ne $null )
+
+    if( $PSCmdlet.ParameterSetName -eq "ByName")
     {
-        Write-Verbose "Searching in supplied list of $($Products.Length) products."
-        if( $PSCmdlet.ParameterSetName -eq "ByName")
-        {
-            Write-Verbose "Searching in list for product name '$ProductName'."
-            $pcol = $Products.Where( { $_.Name -eq $ProductName},"First")
-        } else 
-        {
-            Write-Verbose "Searching in list for product id '$ProductId'."
-            $pcol = $Products.Where( { $_.Id -eq $ProductId},"First")
-        }
-        if( ($pcol -ne $null) -and ($pcol.Count -gt 0))
-        {
-            $product = $pcol.Item(0)
-        }
-    } else {
-        if( $PSCmdlet.ParameterSetName -eq "ByName")
-        {
-            Write-Verbose "Searching online for product name '$ProductName'."
-            $result = & azsphere.exe product show -n $ProductName
-        } else 
-        {
-            Write-Verbose "Searching online for product id '$ProductId'."
-            $result = & azsphere.exe product show -i $ProductId
-        }
-        if( $LASTEXITCODE -eq 0 )
-        {
-            $product = [Product]::new(
-                [Guid]::new($result[2].Substring(16,$result[2].Length-16)),
-                $result[3].Substring(17,$result[3].Length-18),
-                $result[4].Substring(17,$result[4].Length-18)
-            )
-        }
-        
+        Write-Verbose "Searching online for product name '$ProductName'."
+        $result = & azsphere.exe product show -n $ProductName
+    } else 
+    {
+        Write-Verbose "Searching online for product id '$ProductId'."
+        $result = & azsphere.exe product show -i $ProductId
     }
+    if( $LASTEXITCODE -eq 0 )
+    {
+        $product = [Product]::new(
+            [Guid]::new($result[2].Substring(16,$result[2].Length-16)),
+            $result[3].Substring(17,$result[3].Length-18),
+            $result[4].Substring(17,$result[4].Length-18)
+        )
+    }
+        
     if( $product -eq $null )
     {
         if( $PSCmdlet.ParameterSetName -eq "ByName")
@@ -441,6 +430,8 @@ function New-AS3Product(
 
 
 
+
+
 <#
 .SYNOPSIS
 Creates a new DeviceGroup in Azure Sphere Security Service
@@ -451,6 +442,8 @@ that have the same product and receive the same applications from the cloud.
 Specifies an alphanumeric name for the device group. If the name includes embedded spaces, enclose it in quotation marks. The device group name must be unique within the product, and is case insensitive.
 .PRAMETER Description
 Optional text to describe the Device Group. Can be empty.")]
+.PRAMETER ProductId
+The tenant-unique name of the product for which to create a device group. Either -ProductName or -ProductId is required.
 .PRAMETER ProductName
 The tenant-unique name of the product for which to create a device group. Either -ProductName or -ProductId is required.
 .PRAMETER ApplicationUpdate
@@ -523,78 +516,78 @@ function New-AS3DeviceGroup()
 	}
 }
 
-<#
-.SYNOPSIS
-Searches for a DeviceGroup in Azure Sphere Security Service by name
-.DESCRIPTION
-Finds a DeviceGroup in Azure Sphere Security Service with the given Name and returns the Guid of the DeviceGroup
-.PARAMETER Name
-Specifies the name for the new DeviceGroup.
-.INPUTS
-None. You cannot pipe objects to Find-AS3DeviceGroup.
-.OUTPUTS
-[System.Guid] DeviceGroupId
-.EXAMPLE
-PS> Find-AS3DeviceGroup -Name "TestDeviceGroup"
-Guid
------------                          
-f4e25978-6152-447b-a2a1-64577582f327
-#>
-function Find-AS3DeviceGroup(
-	[Parameter(Mandatory=$true)][string] $Name
-)
-{
-	$result = azsphere dg list
-    if( Check-AS3Success $result )
-    {
-        foreach($l in $result)
-        {
-            if( ($l.Length -gt 50 ) -and ($l.StartsWith(" --> [ID: ")) -and ($l.Substring(49, $l.Length-50).CompareTo( $Name ) -eq 0 ) )
-            { 
-                Write-Host $l
-                # extract GUID sub string from " --> [ID: cd037ae5-27ca-4a13-9e3b-2a9d87f9d7bd] 'System Software Only'"
-		        return [System.Guid]( $l.Substring(10,36) )
-            }
-        }
-		Write-Warning "DeviceGroup '$Name' not found"
-        return $null
-    } else {
-		Write-Error $result[1] -ErrorAction Stop
-	}
-}
+#<#
+#.SYNOPSIS
+#Searches for a DeviceGroup in Azure Sphere Security Service by name
+#.DESCRIPTION
+#Finds a DeviceGroup in Azure Sphere Security Service with the given Name and returns the Guid of the DeviceGroup
+#.PARAMETER Name
+#Specifies the name for the new DeviceGroup.
+#.INPUTS
+#None. You cannot pipe objects to Find-AS3DeviceGroup.
+#.OUTPUTS
+#[System.Guid] DeviceGroupId
+#.EXAMPLE
+#PS> Find-AS3DeviceGroup -Name "TestDeviceGroup"
+#Guid
+#-----------                          
+#f4e25978-6152-447b-a2a1-64577582f327
+##>
+#function Find-AS3DeviceGroup(
+#	[Parameter(Mandatory=$true)][string] $Name
+#)
+#{
+#	$result = azsphere dg list
+#    if( Check-AS3Success $result )
+#    {
+#        foreach($l in $result)
+#        {
+#            if( ($l.Length -gt 50 ) -and ($l.StartsWith(" --> [ID: ")) -and ($l.Substring(49, $l.Length-50).CompareTo( $Name ) -eq 0 ) )
+#            { 
+#                Write-Host $l
+#                # extract GUID sub string from " --> [ID: cd037ae5-27ca-4a13-9e3b-2a9d87f9d7bd] 'System Software Only'"
+#		        return [System.Guid]( $l.Substring(10,36) )
+#            }
+#        }
+#		Write-Warning "DeviceGroup '$Name' not found"
+#        return $null
+#    } else {
+#		Write-Error $result[1] -ErrorAction Stop
+#	}
+#}
 
 
 
 
 <#
 .SYNOPSIS
-Uploads a new ImagePackage file into an Azure Sphere Security Service Image
+Uploads a new ImagePackage file into an Azure Sphere Security Service
 .DESCRIPTION
-Uploads a new ImagePackage file into an Azure Sphere Security Service Image
+Uploads a new ImagePackage file into an Azure Sphere Security Service
 .PARAMETER FilePath
 Specifies the path to the .imagepackage file
 .INPUTS
-None. You cannot pipe objects to New-AS3ComponentImage.
+None. You cannot pipe objects to Add-AS3Image.
 .OUTPUTS
 [System.Guid] ImageId of the uploaded .imagepackage-file
 .EXAMPLE
-PS> New-AS3ComponentImage -FilePath ./testfile.imagepackage
+PS> Add-AS3Image -FilePath ./testfile.imagepackage
 Guid
 -----------                          
 f4e25978-6152-447b-a2a1-64577582f327
 #>
-function Add-AS3ComponentImage(
+function Add-AS3Image(
 	[Parameter(Mandatory=$true, Position=0)] [Alias("f")] $FilePath
 )
 {
     Write-Host "Uploading $FilePath..."
 
-	$result = azsphere com img add -f $FilePath --force
+	$result = azsphere img add -f $FilePath --force
     if( Check-AS3Success $result 2 )
     {
         [String] $s = $result[ $result.Length-2 ]
         Write-Host $s
-		return [System.Guid]( $s.Split("'").Item(1) )
+		return [System.Guid]::new( $s.Split("'").Item(1) )
     } else {
         if($result -is [System.Array])
         {
@@ -609,80 +602,80 @@ function Add-AS3ComponentImage(
         }
 	}
 }
-
-
-<#
-.SYNOPSIS
-Lists all Feeds in the Azure Sphere Security Service 
-.DESCRIPTION
-Retrieves all Feeds in the Azure Sphere Security Service and returns a [System.Array] of [FeedEntry] instances
-.INPUTS
-None. You cannot pipe objects to Get-AS3FeedList.
-.OUTPUTS
-returns a [System.Array] of [FeedEntry] instances
-.EXAMPLE
-PS> Get-AS3FeedList
-Id                                   Name                              
---                                   ----                              
-3369f0e1-dedf-49ec-a602-2aa98669fd61 Retail Azure Sphere OS            
-82bacf85-990d-4023-91c5-c6694a9fa5b4 Retail Evaluation Azure Sphere OS 
-#>
-
-function Get-AS3FeedList()
-{
-	$result = azsphere Feed list
-    if( Check-AS3Success $result 4 )
-    {
-        [System.Array] $lst = [System.Array]::CreateInstance( [object], $result.Length-3 )
-        [System.Array]::Copy($result,2, $lst, 0, $result.Length-3)
-        [System.Array] $FeedList = [System.Array]::CreateInstance( [FeedEntry], $lst.Length )
-        [int] $i=0
-
-        foreach($l in $lst)
-        {
-            # extract GUID sub string from "--> [90c83845-cce1-4f45-abeb-e50a5aa0a854] 'GreenSphere Feed'"
-            #                               0    5                               ->36|  44    ->variable
-            $FeedList[$i] = [FeedEntry]::new(
-				[System.Guid]($l.Substring(5,36)),
-				$l.Substring(44,$l.Length-45).Trim()
-			)
-            $i = $i+1
-        }
-        return $FeedList
-    } else {
-		Write-Error $result[1] -ErrorAction Stop
-	}
-}
-
-
-function New-AS3Feed(
-	[Parameter(Mandatory=$true, Position=0)] [Alias("n")] [string] $Name,
-	[Parameter(Mandatory=$true, Position=1)] [Alias("p")] [System.Array] $ProductSkus,
-	[Parameter(Mandatory=$true, Position=2)] [Alias("s")] [System.Array] $ChipSkus,
-	[Parameter(Mandatory=$true, Position=3)] [Alias("c")] [System.Array] $ComponentIds,
-	[Parameter(Mandatory=$true, Position=4)] [Alias("f")] [System.Array] $DependentFeedId
-)
-{
-    if( $ImageID -is [System.Array])
-    { 
-        $imgIDs = [System.String]::Join(",", $ImageID)
-    } else {
-        $imgIDs = $ImageID
-    }
-
-}
+#
+#
+#<#
+#.SYNOPSIS
+#Lists all Feeds in the Azure Sphere Security Service 
+#.DESCRIPTION
+#Retrieves all Feeds in the Azure Sphere Security Service and returns a [System.Array] of [FeedEntry] instances
+#.INPUTS
+#None. You cannot pipe objects to Get-AS3FeedList.
+#.OUTPUTS
+#returns a [System.Array] of [FeedEntry] instances
+#.EXAMPLE
+#PS> Get-AS3FeedList
+#Id                                   Name                              
+#--                                   ----                              
+#3369f0e1-dedf-49ec-a602-2aa98669fd61 Retail Azure Sphere OS            
+#82bacf85-990d-4023-91c5-c6694a9fa5b4 Retail Evaluation Azure Sphere OS 
+##>
+#
+#function Get-AS3FeedList()
+#{
+#	$result = azsphere Feed list
+#    if( Check-AS3Success $result 4 )
+#    {
+#        [System.Array] $lst = [System.Array]::CreateInstance( [object], $result.Length-3 )
+#        [System.Array]::Copy($result,2, $lst, 0, $result.Length-3)
+#        [System.Array] $FeedList = [System.Array]::CreateInstance( [FeedEntry], $lst.Length )
+#        [int] $i=0
+#
+#        foreach($l in $lst)
+#        {
+#            # extract GUID sub string from "--> [90c83845-cce1-4f45-abeb-e50a5aa0a854] 'GreenSphere Feed'"
+#            #                               0    5                               ->36|  44    ->variable
+#            $FeedList[$i] = [FeedEntry]::new(
+#				[System.Guid]($l.Substring(5,36)),
+#				$l.Substring(44,$l.Length-45).Trim()
+#			)
+#            $i = $i+1
+#        }
+#        return $FeedList
+#    } else {
+#		Write-Error $result[1] -ErrorAction Stop
+#	}
+#}
+#
+#
+#function New-AS3Feed(
+#	[Parameter(Mandatory=$true, Position=0)] [Alias("n")] [string] $Name,
+#	[Parameter(Mandatory=$true, Position=1)] [Alias("p")] [System.Array] $ProductSkus,
+#	[Parameter(Mandatory=$true, Position=2)] [Alias("s")] [System.Array] $ChipSkus,
+#	[Parameter(Mandatory=$true, Position=3)] [Alias("c")] [System.Array] $ComponentIds,
+#	[Parameter(Mandatory=$true, Position=4)] [Alias("f")] [System.Array] $DependentFeedId
+#)
+#{
+#    if( $ImageID -is [System.Array])
+#    { 
+#        $imgIDs = [System.String]::Join(",", $ImageID)
+#    } else {
+#        $imgIDs = $ImageID
+#    }
+#
+#}
 
 
 <#
 .SYNOPSIS
 Checks prerequisites.
 .DESCRIPTION
-Creates CustomPSObject of type AppInfo with Name, ComponentID, ImageID & FilePath properties from 
+Creates CustomPSObject of type ImagePackage with Name, ComponentID, ImageID & FilePath properties from 
 given imagepackage file.
 .INPUTS
 None. You cannot pipe objects to ExtractFrom-Image.
 .OUTPUTS
-AppInfo structure containing Name, ComponentID, ImageID, FilePath 
+ImagePackage structure containing Name, ComponentID, ImageID, FilePath 
 .EXAMPLE
 PS> Check-Prerequisites
 
@@ -690,66 +683,61 @@ PS> Check-Prerequisites
 #>
 function Check-Prerequisites()
 {
+
+    Write-Host "`nChecking for image-packages in directory tree...."
 	if( -not (Test-Path -Path $strIoTConnectHLPath) )	{
 		Write-Error "Cannot find $strIoTConnectHLPath." -ErrorAction Stop
 	} else {
-		$Global:IoTConnectHL = ExtractFrom-ImagePackage -Path $strIoTConnectHLPath -Name "IoTConnect-App (POSIX)"
+		$Global:IoTConnectHL = ExtractFrom-ImagePackage -Path $strIoTConnectHLPath
 	}
 	if( -not (Test-Path -Path $strRedSphereRTPath) )	{
 		Write-Error "Cannot find $strRedSphereRTPath" -ErrorAction Stop
 	} else {
-		$Global:RedSphereRT = ExtractFrom-ImagePackage -Path $strRedSphereRTPath -Name "RedSphere-App (real-time)"
+		$Global:RedSphereRT = ExtractFrom-ImagePackage -Path $strRedSphereRTPath
 	}
 	if( -not (Test-Path -Path $strGreenSphereRTPath) )	{
 		Write-Error "Cannot find $strGreenSphereRTPat" -ErrorAction Stop
 	} else {
-		$Global:GreenSphereRT = ExtractFrom-ImagePackage -Path $strGreenSphereRTPath -Name "GreenSphere-App (real-time)"
+		$Global:GreenSphereRT = ExtractFrom-ImagePackage -Path $strGreenSphereRTPath
 	}
 	if( -not (Test-Path -Path $strBlueSphereRTPath) )	{
 		Write-Error "Cannot find $strBlueSphereRTPath" -ErrorAction Stop
 	} else {
-		$Global:BlueSphereRT = ExtractFrom-ImagePackage -Path $strBlueSphereRTPath -Name "BlueSphere-App (real-time)"
+		$Global:BlueSphereRT = ExtractFrom-ImagePackage -Path $strBlueSphereRTPath
 	}
 
-<# To be changed for 19.10
-    write-host "Retrieving Retail and Evaluation OS Feed-ids"
-    $feeds = Get-AS3FeedList 
-    $Global:strRetailFeedId =  $feeds.Where({$_.Name.Contains("Retail Azure Sphere OS")}).Id.ToString()
-    $Global:strEvalFeedId =  $feeds.Where({$_.Name.Contains("Retail Evaluation Azure Sphere OS")}).Id.ToString()
 
-    write-host "Checking for existing SKUs..."
-    $skus = Get-AS3SkuSet
+    Write-Host "`nChecking for products already available in Azure Sphere Security Service...."
+    [HashTable] $tblProducts = Get-AS3Products
 
-    $found = $skus.Where({$_.Name.Equals( $strRedSphereSku )})
-    if($found.Count -gt 0){
-        write-host "Found '$($found[0].Name)', Id: $($found[0].Id.ToString())" 
-        $SkuRedSphere = $found[0]
+    if( $tblProducts.ContainsKey( $strRedSphereProduct ) )
+    {
+        Write-Host "Found product '$strRedSphereProduct', retrieving additional data..."
+        $Global:RedSphereProduct = Get-AS3Product -ProductId $tblProducts[ $strRedSphereProduct ]
+        $Global:RedSphereProduct.DeviceGroupList = Get-AS3ProductDeviceGroups -ProductId $tblProducts[ $strRedSphereProduct ]
+    } else {
+        Write-Warning "Cannot find product '$strRedSphereProduct': follow the OTA sample steps to create the product..."
     }
 
-    $found = $skus.Where({$_.Name.Equals( $strGreenSphereSku )})
-    if($found.Count -gt 0){
-        write-host "Found '$($found[0].Name)', Id: $($found[0].Id.ToString())" 
-        $SkuGreenSphere = $found[0]
+    if( $tblProducts.ContainsKey( $strGreenSphereProduct ) )
+    {
+        Write-Host "Found product '$strGreenSphereProduct', retrieving additional data..."
+        $Global:GreenSphereProduct = Get-AS3Product -ProductId $tblProducts[ $strGreenSphereProduct ]
+        $Global:GreenSphereProduct.DeviceGroupList = Get-AS3ProductDeviceGroups -ProductId $tblProducts[ $strGreenSphereProduct ]
+    } else {
+        Write-Warning "Cannot find product '$strGreenSphereProduct': follow the OTA sample steps to create the product..."
     }
 
-    $found = $skus.Where({$_.Name.Equals( $strBlueSphereSku )})
-    if($found.Count -gt 0){
-        write-host "Found '$($found[0].Name)', Id: $($found[0].Id.ToString())" 
-        $SkuBlueSphere = $found[0]
+    if( $tblProducts.ContainsKey( $strBlueSphereProduct ) )
+    {
+        Write-Host "Found product '$strBluephereProduct', retrieving additional data..."
+        $Global:BlueSphereProduct = Get-AS3Product -ProductId $tblProducts[ $strBlueSphereProduct ]
+        $Global:BlueSphereProduct.DeviceGroupList = Get-AS3ProductDeviceGroups -ProductId $tblProducts[ $strBlueSphereProduct ]
+    } else {
+        Write-Warning "Cannot find product '$strBlueSphereProduct': follow the OTA sample steps to create the product..."
     }
 
-    $found = $skus.Where({$_.Name.Equals( $strRedGreenEvaluationSku )})
-    if($found.Count -gt 0){
-        write-host "Found '$($found[0].Name)', Id: $($found[0].Id.ToString())" 
-        $SkuRedGreenEvaluation = $found[0]
-    }
 
-    $found = $skus.Where({$_.Name.Equals( $strRedBlueEvaluationSku )})
-    if($found.Count -gt 0){
-        write-host "Found '$($found[0].Name)', Id: $($found[0].Id.ToString())" 
-        $SkuRedBlueEvaluation = $found[0]
-    }
-#>
 }
 
 
