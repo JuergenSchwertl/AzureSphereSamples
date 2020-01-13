@@ -455,13 +455,13 @@ None. You cannot pipe objects to New-AS3DeviceGroup.
 .OUTPUTS
 [System.Guid] DeviceGroupId for consistency reasons
 .EXAMPLE
-PS> New-AS3DeviceGroup -Name "TestDeviceGroup"
+PS> New-AS3ProductDeviceGroup -Name "TestDeviceGroup"
 Guid
 -----------                          
 f4e25978-6152-447b-a2a1-64577582f327
 #>
 
-function New-AS3DeviceGroup()
+function New-AS3ProductDeviceGroup()
 {
     param(
     [cmdletbinding( DefaultParameterSetName='ByName' )]
@@ -516,47 +516,27 @@ function New-AS3DeviceGroup()
 	}
 }
 
-#<#
-#.SYNOPSIS
-#Searches for a DeviceGroup in Azure Sphere Security Service by name
-#.DESCRIPTION
-#Finds a DeviceGroup in Azure Sphere Security Service with the given Name and returns the Guid of the DeviceGroup
-#.PARAMETER Name
-#Specifies the name for the new DeviceGroup.
-#.INPUTS
-#None. You cannot pipe objects to Find-AS3DeviceGroup.
-#.OUTPUTS
-#[System.Guid] DeviceGroupId
-#.EXAMPLE
-#PS> Find-AS3DeviceGroup -Name "TestDeviceGroup"
-#Guid
-#-----------                          
-#f4e25978-6152-447b-a2a1-64577582f327
-##>
-#function Find-AS3DeviceGroup(
-#	[Parameter(Mandatory=$true)][string] $Name
-#)
-#{
-#	$result = azsphere dg list
-#    if( Check-AS3Success $result )
-#    {
-#        foreach($l in $result)
-#        {
-#            if( ($l.Length -gt 50 ) -and ($l.StartsWith(" --> [ID: ")) -and ($l.Substring(49, $l.Length-50).CompareTo( $Name ) -eq 0 ) )
-#            { 
-#                Write-Host $l
-#                # extract GUID sub string from " --> [ID: cd037ae5-27ca-4a13-9e3b-2a9d87f9d7bd] 'System Software Only'"
-#		        return [System.Guid]( $l.Substring(10,36) )
-#            }
-#        }
-#		Write-Warning "DeviceGroup '$Name' not found"
-#        return $null
-#    } else {
-#		Write-Error $result[1] -ErrorAction Stop
-#	}
-#}
 
+function Get-AS3DeviceGroup(
+    [Parameter(Mandatory=$true, Position=0, HelpMessage="Retrieve DeviceGroup for given product.")]
+	[Alias("i")] [Guid] $DeviceGroupId
+)
+{
 
+	$result = & azsphere dg show -i $DeviceGroupId.ToString()
+    if( $LASTEXITCODE -eq 0 )
+    {
+        [String] $n
+        [DeviceGroup] $dg = [DeviceGroup]::new(
+            $result[2].Split(":").Item(1).Trim().SubString(1,36),
+
+        )
+
+        return $tblDGs
+    } else {
+		Write-Error $result[0] -ErrorAction Stop
+	}
+}
 
 
 <#
@@ -602,68 +582,7 @@ function Add-AS3Image(
         }
 	}
 }
-#
-#
-#<#
-#.SYNOPSIS
-#Lists all Feeds in the Azure Sphere Security Service 
-#.DESCRIPTION
-#Retrieves all Feeds in the Azure Sphere Security Service and returns a [System.Array] of [FeedEntry] instances
-#.INPUTS
-#None. You cannot pipe objects to Get-AS3FeedList.
-#.OUTPUTS
-#returns a [System.Array] of [FeedEntry] instances
-#.EXAMPLE
-#PS> Get-AS3FeedList
-#Id                                   Name                              
-#--                                   ----                              
-#3369f0e1-dedf-49ec-a602-2aa98669fd61 Retail Azure Sphere OS            
-#82bacf85-990d-4023-91c5-c6694a9fa5b4 Retail Evaluation Azure Sphere OS 
-##>
-#
-#function Get-AS3FeedList()
-#{
-#	$result = azsphere Feed list
-#    if( Check-AS3Success $result 4 )
-#    {
-#        [System.Array] $lst = [System.Array]::CreateInstance( [object], $result.Length-3 )
-#        [System.Array]::Copy($result,2, $lst, 0, $result.Length-3)
-#        [System.Array] $FeedList = [System.Array]::CreateInstance( [FeedEntry], $lst.Length )
-#        [int] $i=0
-#
-#        foreach($l in $lst)
-#        {
-#            # extract GUID sub string from "--> [90c83845-cce1-4f45-abeb-e50a5aa0a854] 'GreenSphere Feed'"
-#            #                               0    5                               ->36|  44    ->variable
-#            $FeedList[$i] = [FeedEntry]::new(
-#				[System.Guid]($l.Substring(5,36)),
-#				$l.Substring(44,$l.Length-45).Trim()
-#			)
-#            $i = $i+1
-#        }
-#        return $FeedList
-#    } else {
-#		Write-Error $result[1] -ErrorAction Stop
-#	}
-#}
-#
-#
-#function New-AS3Feed(
-#	[Parameter(Mandatory=$true, Position=0)] [Alias("n")] [string] $Name,
-#	[Parameter(Mandatory=$true, Position=1)] [Alias("p")] [System.Array] $ProductSkus,
-#	[Parameter(Mandatory=$true, Position=2)] [Alias("s")] [System.Array] $ChipSkus,
-#	[Parameter(Mandatory=$true, Position=3)] [Alias("c")] [System.Array] $ComponentIds,
-#	[Parameter(Mandatory=$true, Position=4)] [Alias("f")] [System.Array] $DependentFeedId
-#)
-#{
-#    if( $ImageID -is [System.Array])
-#    { 
-#        $imgIDs = [System.String]::Join(",", $ImageID)
-#    } else {
-#        $imgIDs = $ImageID
-#    }
-#
-#}
+
 
 
 <#
