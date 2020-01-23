@@ -527,12 +527,12 @@ function Get-AS3DeviceGroup(
     if( $LASTEXITCODE -eq 0 )
     {
         [String] $n
-        [DeviceGroup] $dg = [DeviceGroup]::new(
-            $result[2].Split(":").Item(1).Trim().SubString(1,36),
+        [DeviceGroup] $dg 
+            # = [DeviceGroup]::new(
+            #     $result[2].Split(":").Item(1).Trim().SubString(1,36),
+            # )
 
-        )
-
-        return $tblDGs
+        return $dg
     } else {
 		Write-Error $result[0] -ErrorAction Stop
 	}
