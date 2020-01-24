@@ -529,6 +529,9 @@ function New-AS3ProductDeviceGroup()
 }
 
 
+
+
+
 <#
 .SYNOPSIS
 Retrieves the deployments of the given device-group
@@ -566,13 +569,62 @@ function Get-AS3DeploymentList(
                 $_.Substring(57).TrimEnd() # extract image list
             ) 
         } )
-        Write-Verbose "[Get-AS3DeploymentList] Deployments: $($tblDeps -join ',')"
+        Write-Verbose "[Get-AS3DeploymentList] Deployments: $($tblDeps -join ', ')"
         return $tblDeps
     } else {
 		Write-Error $result[0] -ErrorAction Stop
 	}
 }
 
+
+<#
+.SYNOPSIS
+Creates a new Deployment for the given device-group
+.DESCRIPTION
+New-AS3Deployment creates a new deployment for a specific device-group
+.PRAMETER DeviceGroupId
+[Guid] for the device group. 
+.PRAMETER Images
+[Guid] or [Guid[]] one or more image ids. 
+.INPUTS
+None. You cannot pipe objects to New-AS3Deployment.
+.OUTPUTS
+[Deployment] the newly created deployment
+.EXAMPLE
+PS> New-AS3Deployment -i "guid" -ii (guid,guid)
+Id                                   DeploymentDateUTC   DeployedImages                                                              
+--                                   -----------------   --------------                                                              
+b639cb10-63f1-4f6e-ad76-35a4533ff546 24.01.2020 13:44:58 {9337f63a-19de-4fd4-aaba-d754bdeb1cad, 3e434151-c30f-4b72-99cd-d3db77d80760}
+#>
+function New-AS3Deployment(
+    [Parameter(Mandatory=$true, Position=0, HelpMessage="The device-group guid.")]
+	[Alias("i")] [Guid] $DeviceGroupId,
+    [Parameter(Mandatory=$true, Position=0, HelpMessage="one or more image IDs")]
+	[Alias("ii")] $Images
+)
+{
+
+    Write-Verbose "[New-AS3Deployment] for device-group $($DeviceGroupId.ToString())"
+
+    if( $Images -is [System.Array])
+    { 
+        $imgIDs = [System.String]::Join(",", $Images)
+
+    } else {
+        $imgIDs = $Images
+    }
+
+	$result = & azsphere dg dep create -i $DeviceGroupId.ToString() -ii $imgIDs
+
+    if( $LASTEXITCODE -eq 0 )
+    {
+        [Deployment[]] $tblDeps = Get-AS3DeploymentList -i $DeviceGroupId.ToString()
+        Write-Verbose "[New-AS3Deployment] Deployment $($tblDeps[0].Id) created $($tblDeps[0].DeploymentDateUTC) with images [$($tblDeps[0].DeployedImages -join ', ')]"
+        return $tblDeps[0]
+    } else {
+		Write-Error $result[0] -ErrorAction Stop
+	}
+}
 
 <#
 .SYNOPSIS
