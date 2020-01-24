@@ -90,6 +90,42 @@ Entity base class with Id, Name, Description
 }
 
 
+Class Deployment
+{
+    [Guid] $Id
+    [DateTime] $DeploymentDateUTC
+    [Guid[]] $DeployedImages
+
+    Deployment(){} 
+
+    Deployment( 
+        [String] $IdString,
+        [String] $Timestamp
+    )
+    {
+        $this.Id = [Guid]::new( $IdString )
+        $this.DeploymentDateUTC = [DateTime]::Parse($Timestamp)
+
+    }
+    Deployment( 
+        [String] $IdString,
+        [String] $Timestamp,
+        [String] $Images
+    )
+    {
+        $this.Id = [Guid]::new( $IdString )
+        $this.DeploymentDateUTC = [DateTime]::Parse($Timestamp)
+        $img = $Images.Substring(1,$Images.Length-2) #remove "[]" 
+        $imgLst = $img.Replace(", ", ",").Split(",") #get rid of ", " spaces
+        $this.DeployedImages = $imgLst.ForEach( {  return  [Guid]::new($_) } )
+    }
+
+	[string] ToString()
+    {
+        return $this.Id.ToString()
+    }
+}
+
 Enum OsFeedType
 {
 <#
@@ -111,6 +147,8 @@ ApplicationUpdatePolicy enumeration with On (allows OTA application updates) and
 }
 
 
+
+
 Class DeviceGroup : AS3EntityBase
 {
 <#
@@ -121,7 +159,8 @@ DeviceGroup class with Id, Name, Description, OS Feed Type and UpdatePolicy
     # public properties
     [OsFeedType] $OsFeed = [OsFeedType]::RetailEval
     [ApplicationUpdatePolicy] $ApplicationUpdate = [ApplicationUpdatePolicy]::On
-    [System.Array] $Deployments = $null
+    [Deployment] $CurrentDeployment = $null
+    [HashTable] $Deployments = $null
 
     # public constructor
     DeviceGroup( 
@@ -162,32 +201,6 @@ Product class with Id, Name, Description properties; public constructors and ToS
         [String] $Description
     ) : base($IdString, $Name, $Description ){ }
 
-}
-
-
-
-Class Deployment
-{
-    [Guid] $Id
-    [DateTime] $DeploymentDateUTC
-    [Guid[]] $DeployedImages
-
-    Deployment(){} 
-
-    Deployment( 
-        [String] $IdString,
-        [String] $Timestamp
-    )
-    {
-        $this.Id = [Guid]::new( $IdString )
-        $this.DeploymentDateUTC = [DateTime]::Parse($Timestamp)
-
-    }
-
-	[string] ToString()
-    {
-        return $this.Id.ToString()
-    }
 }
 
 
@@ -460,7 +473,6 @@ Guid
 -----------                          
 f4e25978-6152-447b-a2a1-64577582f327
 #>
-
 function New-AS3ProductDeviceGroup()
 {
     param(
@@ -517,20 +529,111 @@ function New-AS3ProductDeviceGroup()
 }
 
 
-function Get-AS3DeviceGroup(
-    [Parameter(Mandatory=$true, Position=0, HelpMessage="Retrieve DeviceGroup for given product.")]
+<#
+.SYNOPSIS
+Retrieves the deployments of the given device-group
+.DESCRIPTION
+Get-AS3DeploymentList retrieves the list of deployments for a specific device-group
+.PRAMETER DeviceGroupId
+[Guid] for the device group. 
+.INPUTS
+None. You cannot pipe objects to Get-AS3DeploymentList.
+.OUTPUTS
+[Deployment[]] array of deployments
+.EXAMPLE
+PS> Get-AS3DeploymentList -i "guid"
+Id                                   DeploymentDateUTC   DeployedImages                        
+--                                   -----------------   --------------                        
+a12b86c9-eb1d-4e87-a3e8-e86b7e4f4818 03.01.2020 14:34:22 {f1c5d8dd-16e6-499b-9a6d-b7fd828ee48e}
+#>
+function Get-AS3DeploymentList(
+    [Parameter(Mandatory=$true, Position=0, HelpMessage="Retrieve list of deployments for given device-group.")]
 	[Alias("i")] [Guid] $DeviceGroupId
 )
 {
 
-	$result = & azsphere dg show -i $DeviceGroupId.ToString()
+    Write-Verbose "[Get-AS3DeploymentList] for Id $($DeviceGroupId.ToString())"
+	$result = & azsphere dg dep list -i $DeviceGroupId.ToString()
+
     if( $LASTEXITCODE -eq 0 )
     {
-        [String] $n
-        [DeviceGroup] $dg 
-            # = [DeviceGroup]::new(
-            #     $result[2].Split(":").Item(1).Trim().SubString(1,36),
-            # )
+        [System.Array] $lst = [System.Array]::CreateInstance( [object], $result.Length-5 )
+        [System.Array]::Copy($result,4, $lst, 0, $result.Length-5)
+        [Deployment[]] $tblDeps = $lst.ForEach( {
+            [Deployment]::new( 
+                $_.Substring(0,36), # extract Guid from line
+                $_.Substring(37,19), # extract timestamp from line
+                $_.Substring(57).TrimEnd() # extract image list
+            ) 
+        } )
+        Write-Verbose "[Get-AS3DeploymentList] Deployments: $($tblDeps -join ',')"
+        return $tblDeps
+    } else {
+		Write-Error $result[0] -ErrorAction Stop
+	}
+}
+
+
+<#
+.SYNOPSIS
+Get-AS3DeviceGroup retrieves the device-group data for the given devive-group id
+.DESCRIPTION
+Get-AS3DeviceGroup retrieves the device-group data for the given devive-group id
+.PRAMETER DeviceGroupId
+[Guid] for the device group. 
+.INPUTS
+None. You cannot pipe objects to Get-AS3DeviceGroup.
+.OUTPUTS
+[Deployment[]] array of deployments
+.EXAMPLE
+PS> Get-AS3DeploymentList -i "guid"
+Id                                   DeploymentDateUTC   DeployedImages                        
+--                                   -----------------   --------------                        
+a12b86c9-eb1d-4e87-a3e8-e86b7e4f4818 03.01.2020 14:34:22 {f1c5d8dd-16e6-499b-9a6d-b7fd828ee48e}
+#>
+function Get-AS3DeviceGroup(
+    [Parameter(Mandatory=$true, Position=0, HelpMessage="Retrieve DeviceGroup details.")]
+	[Alias("i")] [Guid] $DeviceGroupId
+)
+{
+
+    Write-Verbose "[Get-AS3DeviceGroup] Retrieving for Id $($DeviceGroupId.ToString())"
+	$result = & azsphere dg show -i $DeviceGroupId.ToString()
+
+    if( $LASTEXITCODE -eq 0 )
+    {
+        [DeviceGroup] $dg = [DeviceGroup]::new(
+            $result[2].Split(":'").Item(2),
+            $result[3].Split(":'").Item(2),
+            $result[4].Split(":'").Item(2)
+            )
+        Write-Verbose "[Get-AS3DeviceGroup] Name: '$($dg.Name)'"
+
+        $dg.OsFeed = [OsFeedType]::Parse( [OsFeedType], $result[5].Split(":'").Item(2));
+        if( $result[6].Split(":").Item(1).Contains("Accept all updates") )
+        {
+            $dg.ApplicationUpdate = [ApplicationUpdatePolicy]::On
+        } else {
+            $dg.ApplicationUpdate = [ApplicationUpdatePolicy]::Off
+        }
+        if( -not $result[7].Contains("None") )
+        {
+            [string] $strCurrentDeployment = $result[8].Split(":'").Item(2)
+            [Deployment[]] $lstDeps = Get-AS3DeploymentList -i $DeviceGroupId.ToString()
+            [HashTable] $tblDeps = [HashTable]::new( $lstDeps.Length ) #@{}
+            $lstDeps.ForEach( {
+                $tblDeps.Add( 
+                    $_.Id.ToString(), # ImageId string as key
+                    $_                # [Deployment] as value
+                ) 
+            } )
+            [Deployment] $dep = $tblDeps[$strCurrentDeployment] 
+            $dg.CurrentDeployment = $dep
+            Write-Verbose "[Get-AS3DeviceGroup] Current Deployment: $($dep.Id.ToString()) created $($dep.DeploymentDateUTC.ToLongDateString()) $($dep.DeploymentDateUTC.ToLongTimeString())"
+
+        } else {
+            Write-Verbose $result[7]
+        }
 
         return $dg
     } else {
