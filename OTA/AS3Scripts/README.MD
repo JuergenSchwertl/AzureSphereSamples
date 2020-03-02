@@ -197,7 +197,7 @@ azsphere dg dep create -pn "RedSphere Product" -dgn "Production" -p ".\out\ARM-D
 azsphere dg dep create -pn "RedSphere Product" -dgn "Production OS Evaluation" -p ".\out\ARM-Debug-3+Beta1909\RedSphereRT\RedSphereRT.imagepackage" -f
 ```
 you will though receive an error message on the 2nd command, complaining that "*An image with the same ID ('f1c5d8dd-16e6-499b-9a6d-b7fd828ee48e') already exists.*"
-since the 1st command implicitly already uploaded the application image-package. 
+since the 1st command implicitly already uploaded the image-package for the RedSphereRT application. 
 Since running the same application (or application combinations) in deployments on different device groups is 
 a rather common scenario, we need to take a slightly different route and first upload the current application image-packages and 
 then create the deployments referencing the uploaded image packages by their ImageId.
@@ -209,77 +209,17 @@ azsphere img add -f ".\out\ARM-Debug-3+Beta1909\GreenSphereRT\BlueSphereRT.image
 azsphere img add -f ".\IoTConnectHL\out\ARM-Debug-3+Beta1909\IoTConnectHL.imagepackage" --force
 ```
 
-Please note the ImageID 
+To proceed further you need to note down the individual ImageID´s to create the deployments along the lines of  
 
-
-
-Trying to 
-
-azsphere dg dep create -pn "GreenSphere Product" -dgn "Production" -p ".\out\ARM-Debug-3+Beta1909\GreenSphereRT\GreenSphereRT.imagepackage" -f
-azsphere dg dep create -pn "BlueSphere Product" -dgn "Production" -p ".\out\ARM-Debug-3+Beta1909\BlueSphereRT\BlueSphereRT.imagepackage" -f
-
-
-For our "Field Test"
-
-
-
-Each appliance needs to run one of the real-time capable applications (*Red-/Green-/BlueSphereRT*) together with the connectivety app *IoTConnectHL*.
-In AS3 terms, this requires an ImageSet that contains two Images of two different Components:
-1. Create the Component-entries in AS3 by running the following script commands
-```powershell
-azsphere component create --componentid $IoTConnectHL.ComponentID  --name $IoTConnectHL.Name
-azsphere component create --componentid $RedSphereRT.ComponentID   --name $RedSphereRT.Name
-azsphere component create --componentid $GreenSphereRT.ComponentID --name $GreenSphereRT.Name
-azsphere component create --componentid $BlueSphereRT.ComponentID  --name $BlueSphereRT.Name
-```
-alternative you could use the included cmdlet *New-AS3Component* that wraps the same calls but also offers an ErrorAction to stop execution of the script
-```powershell
-New-AS3Component -ComponentID $IoTConnectHL.ComponentID  -Name $IoTConnectHL.Name
-New-AS3Component -ComponentID $RedSphereRT.ComponentID   -Name $RedSphereRT.Name
-New-AS3Component -ComponentID $GreenSphereRT.ComponentID -Name $GreenSphereRT.Name
-New-AS3Component -ComponentID $BlueSphereRT.ComponentID  -Name $BlueSphereRT.Name
-```
-2. Now upload the individual Images. We're using Beta-APIs in our applications, which requires to *--force* the upload.
-```powershell
-azsphere component image add --filepath $IoTConnectHL.FilePath --force
-azsphere component image add --filepath $RedSphereRT.FilePath --force
-azsphere component image add --filepath $GreenSphereRT.FilePath --force
-azsphere component image add --filepath $BlueSphereRT.FilePath --force
-```
-Similar to the above, the *Add-AS3ComponentImage* cmdlet wraps these calls, returning the ImageID for further use and stops script execution on error
-```powershell
-Add-AS3ComponentImage -FilePath $IoTConnectHL.FilePath
-Add-AS3ComponentImage -FilePath $RedSphereRT.FilePath
-Add-AS3ComponentImage -FilePath $GreenSphereRT.FilePath
-Add-AS3ComponentImage -FilePath $BlueSphereRT.FilePath
-```
-3. At last we create the three standard ImageSets with connectivety-app and real-time capable app and two additional "beta"-imagesets.
-*Note:* we preserve the returned ImageSetID of the cmdlet
-```powershell
-$RedImageSet   = New-AS3ImageSet $IoTConnectHL.ImageID,$RedSphereRT.ImageID   -Name "Connected-RedSphere v1.0"
-$GreenImageSet = New-AS3ImageSet $IoTConnectHL.ImageID,$GreenSphereRT.ImageID -Name "Connected-GreenSphere v1.0"
-$BlueImageSet  = New-AS3ImageSet $IoTConnectHL.ImageID,$BlueSphereRT.ImageID  -Name "Connected-RedSphere v1.0"
-
-$RedGreenImageSet = New-AS3ImageSet $IoTConnectHL.ImageID,$RedSphereRT.ImageID,$GreenSphereRT.ImageID  -Name "Connected-RedGreenSphere Beta1"
-$RedBlueImageSet = New-AS3ImageSet $IoTConnectHL.ImageID,$RedSphereRT.ImageID,$BlueSphereRT.ImageID   -Name "Connected-RedBlueSphere Beta1"
+```sh
+azsphere dg dep create -pn "RedSphere Product" -dgn "Production" -ii [RedSphereRT-ImageID] -f
+azsphere dg dep create -pn "RedSphere Product" -dgn "Production OS Evaluation" -ii [RedSphereRT-ImageID] -f
+azsphere dg dep create -pn "RedSphere Product" -dgn "Field Test" -ii [RedSphereRT-ImageID], [IoTConnectHL-ImageID] -f
 ```
 
+I leave it up to you to do the same for the other products.
 
 
-```powershell
-$SkuRedSphere = New-AS3ProductSKU -Name $strRedSphereSku -Description "In-field product"
-$SkuGreenSphere = New-AS3ProductSKU -Name $strGreenSphereSku -Description "In-field product"
-$SkuBlueSphere = New-AS3ProductSKU -Name $strBlueSphereSku -Description "In-field product"
-
-$SkuRedBlueEvaluation = New-AS3ProductSKU -Name $strRedBlueEvaluationSku -Description "Beta software only"
-$SkuRedGreenEvaluation = New-AS3ProductSKU -Name $strRedGreenEvaluationSku -Description "Beta software only"
-```
-
-
-At this stage, we now have developed and uploaded three Image-Sets with application combinations of the high level
-connectivety app and a single real-time capable app. Addionally ne have two Image-Sets with
-with two real-time capable apps (i.e. one app per M4 core).
-Let's now take a look at the Ops side.
 ---
 [Go back to "Multi-Core app and OTA deployment lab"](../README.MD)
 

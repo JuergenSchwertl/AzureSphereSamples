@@ -1,9 +1,9 @@
 
 # relative paths of imagepackages to the OTA sample (under the proviso being built for Debug)
-$strIoTConnectHLPath = ".\\IoTConnectHL\\out\\ARM-Debug-3+Beta1909\\IoTConnectHL.imagepackage"
-$strRedSphereRTPath = ".\\out\\ARM-Debug-3+Beta1909\\RedSphereRT\\RedSphereRT.imagepackage"
-$strGreenSphereRTPath = ".\\out\\ARM-Debug-3+Beta1909\\GreenSphereRT\\GreenSphereRT.imagepackage"
-$strBlueSphereRTPath = ".\\out\\ARM-Debug-3+Beta1909\\BlueSphereRT\\BlueSphereRT.imagepackage"
+$strIoTConnectHLPath = ".\\IoTConnectHL\\out\\ARM-Debug-4+Beta2001\\IoTConnectHL.imagepackage"
+$strRedSphereRTPath = ".\\out\\ARM-Debug-4+Beta2001\\RedSphereRT\\RedSphereRT.imagepackage"
+$strGreenSphereRTPath = ".\\out\\ARM-Debug-4+Beta2001\\GreenSphereRT\\GreenSphereRT.imagepackage"
+$strBlueSphereRTPath = ".\\out\\ARM-Debug-4+Beta2001\\BlueSphereRT\\BlueSphereRT.imagepackage"
 
 $strRedSphereProduct = "RedSphere Product"
 $strGreenSphereProduct = "GreenSphere Product"
@@ -189,7 +189,6 @@ Product class with Id, Name, Description properties; public constructors and ToS
 
     # public properties
     [HashTable] $DeviceGroupList = $null
-	[DeviceGroup] $Development = $null
 
     # public empty constructor
     Product() : base(){} 
@@ -378,11 +377,11 @@ function Get-AS3Product(
 
     if( $PSCmdlet.ParameterSetName -eq "ByName")
     {
-        Write-Verbose "Searching online for product name '$ProductName'."
+        Write-Verbose "[Get-AS3Product] Searching online for product name '$ProductName'."
         $result = & azsphere.exe product show -n $ProductName
     } else 
     {
-        Write-Verbose "Searching online for product id '$ProductId'."
+        Write-Verbose "[Get-AS3Product] Searching online for product id '$ProductId'."
         $result = & azsphere.exe product show -i $ProductId
     }
     if( $LASTEXITCODE -eq 0 )
@@ -433,11 +432,13 @@ function New-AS3Product(
 	$result = & azsphere product create -n "$Name" -d "$Description"
     if( $LASTEXITCODE -eq 0 )
     {
-        [String] $s = $result[ 0 ]
-        Write-Host $s
-		return [System.Guid]( $s.Split("'").Item(3) )
+        Write-Verbose "[New-AS3Product] Successfully created product ""$Name"". Retrieving product details... "
+        [Product] $prd = Get-AS3Product -ProductName "$Name"
+        Write-Verbose "[New-AS3Product] Retrieving product device group list... "
+        $prd.DeviceGroupList = Get-AS3ProductDeviceGroups -ProductId $prd.Id
+		return $prd
     } else {
-		Write-Error $result[0] -ErrorAction Stop
+		Write-Error $result -ErrorAction Stop
 	}
 }
 
@@ -715,13 +716,13 @@ function Add-AS3Image(
 	[Parameter(Mandatory=$true, Position=0)] [Alias("f")] $FilePath
 )
 {
-    Write-Host "Uploading $FilePath..."
+    Write-Verbose "[Add-AS3Image] Uploading file $FilePath..."
 
-	$result = azsphere img add -f $FilePath --force
-    if( Check-AS3Success $result 2 )
+	$result = & azsphere img add -f "$FilePath" --force
+    if( $LASTEXITCODE -eq 0 )
     {
         [String] $s = $result[ $result.Length-2 ]
-        Write-Host $s
+        Write-Verbose "[Add-AS3Image] Id $s"
 		return [System.Guid]::new( $s.Split("'").Item(1) )
     } else {
         if($result -is [System.Array])
@@ -760,22 +761,22 @@ function Check-Prerequisites()
 
     Write-Host "`nChecking for image-packages in directory tree...."
 	if( -not (Test-Path -Path $strIoTConnectHLPath) )	{
-		Write-Error "Cannot find $strIoTConnectHLPath." -ErrorAction Stop
+        Write-Warning "Cannot find $strIoTConnectHLPath.`nPlease check that you have built IoTConnectHL as ""ARM-Debug"" version." -WarningAction Stop
 	} else {
 		$Global:IoTConnectHL = ExtractFrom-ImagePackage -Path $strIoTConnectHLPath
 	}
 	if( -not (Test-Path -Path $strRedSphereRTPath) )	{
-		Write-Error "Cannot find $strRedSphereRTPath" -ErrorAction Stop
+        Write-Warning "Cannot find $strRedSphereRTPath.`nPlease check that you have built RedSphereRT as ""ARM-Debug"" version." -WarningAction Stop
 	} else {
 		$Global:RedSphereRT = ExtractFrom-ImagePackage -Path $strRedSphereRTPath
 	}
 	if( -not (Test-Path -Path $strGreenSphereRTPath) )	{
-		Write-Error "Cannot find $strGreenSphereRTPat" -ErrorAction Stop
+        Write-Warning "Cannot find $strGreenSphereRTPath.`nPlease check that you have built GreenSphereRT as ""ARM-Debug"" version." -WarningAction Stop
 	} else {
 		$Global:GreenSphereRT = ExtractFrom-ImagePackage -Path $strGreenSphereRTPath
 	}
 	if( -not (Test-Path -Path $strBlueSphereRTPath) )	{
-		Write-Error "Cannot find $strBlueSphereRTPath" -ErrorAction Stop
+        Write-Warning "Cannot find $strBlueSphereRTPath.`nPlease check that you have built BlueSphereRT as ""ARM-Debug"" version." -WarningAction Stop
 	} else {
 		$Global:BlueSphereRT = ExtractFrom-ImagePackage -Path $strBlueSphereRTPath
 	}
@@ -804,7 +805,7 @@ function Check-Prerequisites()
 
     if( $tblProducts.ContainsKey( $strBlueSphereProduct ) )
     {
-        Write-Host "Found product '$strBluephereProduct', retrieving additional data..."
+        Write-Host "Found product '$strBlueSphereProduct', retrieving additional data..."
         $Global:BlueSphereProduct = Get-AS3Product -ProductId $tblProducts[ $strBlueSphereProduct ]
         $Global:BlueSphereProduct.DeviceGroupList = Get-AS3ProductDeviceGroups -ProductId $tblProducts[ $strBlueSphereProduct ]
     } else {
