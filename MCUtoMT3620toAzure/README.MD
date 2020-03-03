@@ -133,7 +133,7 @@ azsphere tenant show-selected
 Copy the GUID value and paste it into the *"DeviceAuthentication"* value replacing the *\*\**your Azure Sphere Tenant id\*\** string content.
 
 **Step 3.** Open *azure_iot_utilities.h* on or about line **#41** and add the following code as shown below 
-(you can copy these lines also from *azure_iot_utilities-snippets.txt* from the Solution Items folder)
+(you can copy these lines also from [*azure_iot_utilities-snippets.txt*](./MCUtoMT3620toAzure/azure_iot_utilities-snippets.txt) from the CMake project folder)
 ```C
 /// <summary>
 ///     Creates and enqueues reported properties state using a prepared json string.

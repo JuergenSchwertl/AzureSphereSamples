@@ -1,4 +1,4 @@
-# AzureSphereSamples for 19.09/19.11 Azure Sphere SDK Versions
+# AzureSphereSamples for 20.01 Azure Sphere SDK Version
 This repo contains sources and links for Azure Sphere Bootcamp labs, amongst other Azure Sphere Samples for 
 connected MCUs, sensors and other peripherals.
 
