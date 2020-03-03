@@ -2,7 +2,6 @@
   "environments": [
     {
       "environment": "AzureSphere",
-
       "AzureSphereTargetApiSet": "3",
       "AzureSphereTargetHardwareDefinitionDirectory": "",
       "AzureSphereTargetHardwareDefinition": ""
@@ -13,9 +12,7 @@
       "name": "ARM-Debug",
       "generator": "Ninja",
       "configurationType": "Debug",
-      "inheritEnvironments": [
-        "AzureSphere"
-      ],
+      "inheritEnvironments": [ "AzureSphere" ],
       "buildRoot": "${projectDir}\\out\\${name}-${env.AzureSphereTargetApiSet}",
       "installRoot": "${projectDir}\\install\\${name}-${env.AzureSphereTargetApiSet}",
       "cmakeCommandArgs": "--no-warn-unused-cli",
@@ -24,19 +21,23 @@
       "variables": [
         {
           "name": "CMAKE_TOOLCHAIN_FILE",
-          "value": "${env.AzureSphereDefaultSDKDir}CMakeFiles\\AzureSphereToolchain.cmake"
+          "value": "${env.AzureSphereDefaultSDKDir}CMakeFiles\\AzureSphereToolchain.cmake",
+          "type": "STRING"
         },
         {
           "name": "AZURE_SPHERE_TARGET_API_SET",
-          "value": "${env.AzureSphereTargetApiSet}"
+          "value": "${env.AzureSphereTargetApiSet}",
+          "type": "STRING"
         },
         {
           "name": "AZURE_SPHERE_TARGET_HARDWARE_DEFINITION_DIRECTORY",
-          "value": "${projectDir}\\${env.AzureSphereTargetHardwareDefinitionDirectory}"
+          "value": "${projectDir}\\${env.AzureSphereTargetHardwareDefinitionDirectory}",
+          "type": "STRING"
         },
         {
           "name": "AZURE_SPHERE_TARGET_HARDWARE_DEFINITION",
-          "value": "${env.AzureSphereTargetHardwareDefinition}"
+          "value": "${env.AzureSphereTargetHardwareDefinition}",
+          "type": "STRING"
         }
       ]
     },
@@ -44,9 +45,7 @@
       "name": "ARM-Release",
       "generator": "Ninja",
       "configurationType": "Release",
-      "inheritEnvironments": [
-        "AzureSphere"
-      ],
+      "inheritEnvironments": [ "AzureSphere" ],
       "buildRoot": "${projectDir}\\out\\${name}-${env.AzureSphereTargetApiSet}",
       "installRoot": "${projectDir}\\install\\${name}-${env.AzureSphereTargetApiSet}",
       "cmakeCommandArgs": "--no-warn-unused-cli",
@@ -55,19 +54,23 @@
       "variables": [
         {
           "name": "CMAKE_TOOLCHAIN_FILE",
-          "value": "${env.AzureSphereDefaultSDKDir}CMakeFiles\\AzureSphereToolchain.cmake"
+          "value": "${env.AzureSphereDefaultSDKDir}CMakeFiles\\AzureSphereToolchain.cmake",
+          "type": "STRING"
         },
         {
           "name": "AZURE_SPHERE_TARGET_API_SET",
-          "value": "${env.AzureSphereTargetApiSet}"
+          "value": "${env.AzureSphereTargetApiSet}",
+          "type": "STRING"
         },
         {
           "name": "AZURE_SPHERE_TARGET_HARDWARE_DEFINITION_DIRECTORY",
-          "value": "${projectDir}\\${env.AzureSphereTargetHardwareDefinitionDirectory}"
+          "value": "${projectDir}\\${env.AzureSphereTargetHardwareDefinitionDirectory}",
+          "type": "STRING"
         },
         {
           "name": "AZURE_SPHERE_TARGET_HARDWARE_DEFINITION",
-          "value": "${env.AzureSphereTargetHardwareDefinition}"
+          "value": "${env.AzureSphereTargetHardwareDefinition}",
+          "type": "STRING"
         }
       ]
     }

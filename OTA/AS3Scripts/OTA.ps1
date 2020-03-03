@@ -229,6 +229,7 @@ Name ComponentID                          ImageID                              F
 Test f4e25978-6152-447b-a2a1-64577582f327 1b45e9b9-d339-4905-89c1-2a0ecf16f665 .\RedSphereRT.imagepackage
 #>
 function ExtractFrom-ImagePackage( 
+    [cmdletbinding()]
 	[Parameter(Mandatory=$true, Position=0)] [Alias("f")]  [string] $Path)
 {
     if( (Test-Path -Path $path ) -and ([System.IO.Path]::GetExtension($path) -eq ".imagepackage"))
@@ -278,19 +279,22 @@ RedSphere Product              48bc4d96-a2e9-4a3d-8ce7-db06996666f2
 #>
 function Get-AS3Products()
 {
+[cmdletbinding()]
+param()
 
 	$result = azsphere product list
     if( $LASTEXITCODE -eq 0 )
     {
-        [System.Array] $lst = [System.Array]::CreateInstance( [object], $result.Length-4 )
-        [System.Array]::Copy($result,3, $lst, 0, $result.Length-4)
+        Write-Verbose "[Get-AS3Products] $($result[0])"
+        [System.Array] $lst = [System.Array]::CreateInstance( [object], $result.Length-3 )
+        [System.Array]::Copy($result,3, $lst, 0, $result.Length-3)
 
         [HashTable] $tblProducts = [HashTable]::new( $lst.Length ) #@{}
         $lst.ForEach( { 
                 $tblProducts.Add( $_.Substring(37,$_.Length-37).Trim(), # Extract name from line
                                   [Guid]::new( $_.Substring(0,36) ) ) # extract Guid string from line and convert to [GUID]
         } )
-
+        Write-Verbose "[Get-AS3Products] extracted $($tblProducts.Count) products"
         return $tblProducts
     } else {
 		Write-Error $result[0] -ErrorAction Stop
@@ -314,6 +318,7 @@ CM300                          1124894e-79c2-4278-b3f2-c11563c14b2b
 RedSphere Product              48bc4d96-a2e9-4a3d-8ce7-db06996666f2
 #>
 function Get-AS3ProductDeviceGroups(
+    [cmdletbinding()]
     [Parameter(Mandatory=$true, Position=0, HelpMessage="Retrieve DeviceGroups for given product.")]
 	[Alias("i")] [Guid] $ProductId
 )
@@ -322,15 +327,16 @@ function Get-AS3ProductDeviceGroups(
 	$result = & azsphere prd dg list -i $ProductId.ToString()
     if( $LASTEXITCODE -eq 0 )
     {
-        [System.Array] $lst = [System.Array]::CreateInstance( [object], $result.Length-5 )
-        [System.Array]::Copy($result,4, $lst, 0, $result.Length-5)
+        Write-Verbose "[Get-AS3ProductDeviceGroups] $($result[1])"
+        [System.Array] $lst = [System.Array]::CreateInstance( [object], $result.Length-4 )
+        [System.Array]::Copy($result,4, $lst, 0, $result.Length-4)
 
         [HashTable] $tblDGs = [HashTable]::new( $lst.Length ) #@{}
         $lst.ForEach( { 
                 $tblDGs.Add( $_.Substring(37,$_.Length-37).Trim(), # Extract name from line
                                   [Guid]::new( $_.Substring(0,36) ) ) # extract Guid string from line and convert to [GUID]
         } )
-
+        Write-Verbose "[Get-AS3ProductDeviceGroups] extracted $($tblDGs.Count) device groups."
         return $tblDGs
     } else {
 		Write-Error $result[0] -ErrorAction Stop
@@ -378,11 +384,11 @@ function Get-AS3Product(
 
     if( $PSCmdlet.ParameterSetName -eq "ByName")
     {
-        Write-Verbose "Searching online for product name '$ProductName'."
+        Write-Verbose "[Get-AS3Product] Searching online for product name '$ProductName'."
         $result = & azsphere.exe product show -n $ProductName
     } else 
     {
-        Write-Verbose "Searching online for product id '$ProductId'."
+        Write-Verbose "[Get-AS3Product] Searching online for product id '$ProductId'."
         $result = & azsphere.exe product show -i $ProductId
     }
     if( $LASTEXITCODE -eq 0 )
@@ -426,18 +432,23 @@ Guid
 f4e25978-6152-447b-a2a1-64577582f327
 #>
 function New-AS3Product(
+    [cmdletbinding()]
 	[Parameter(Mandatory=$true)]  [Alias("n")] [string] $Name,
 	[Parameter(Mandatory=$false)] [Alias("d")] [string] $Description=""
 )
 {
+    Write-Verbose "[New-AS3Product] Creating product '$Name'"
 	$result = & azsphere product create -n "$Name" -d "$Description"
     if( $LASTEXITCODE -eq 0 )
     {
-        [String] $s = $result[ 0 ]
-        Write-Host $s
-		return [System.Guid]( $s.Split("'").Item(3) )
+        Write-Verbose "[New-AS3Product] $result[0]"
+        [Product] $prd = Get-AS3Product -ProductName "$Name" 
+        $prd.DeviceGroupList = Get-AS3ProductDeviceGroups -ProductId $prd.Id
+
+        Write-Verbose "[New-AS3Product] product $Name has id $($prd.Id)"
+		return $prd
     } else {
-		Write-Error $result[0] -ErrorAction Stop
+        Write-Error $result -ErrorAction Stop
 	}
 }
 
@@ -550,6 +561,7 @@ Id                                   DeploymentDateUTC   DeployedImages
 a12b86c9-eb1d-4e87-a3e8-e86b7e4f4818 03.01.2020 14:34:22 {f1c5d8dd-16e6-499b-9a6d-b7fd828ee48e}
 #>
 function Get-AS3DeploymentList(
+    [cmdletbinding()]
     [Parameter(Mandatory=$true, Position=0, HelpMessage="Retrieve list of deployments for given device-group.")]
 	[Alias("i")] [Guid] $DeviceGroupId
 )
@@ -560,8 +572,9 @@ function Get-AS3DeploymentList(
 
     if( $LASTEXITCODE -eq 0 )
     {
-        [System.Array] $lst = [System.Array]::CreateInstance( [object], $result.Length-5 )
-        [System.Array]::Copy($result,4, $lst, 0, $result.Length-5)
+        Write-Verbose "[Get-AS3DeploymentList] $($result[1])"
+        [System.Array] $lst = [System.Array]::CreateInstance( [object], $result.Length-4 )
+        [System.Array]::Copy($result,4, $lst, 0, $result.Length-4)
         [Deployment[]] $tblDeps = $lst.ForEach( {
             [Deployment]::new( 
                 $_.Substring(0,36), # extract Guid from line
@@ -569,7 +582,7 @@ function Get-AS3DeploymentList(
                 $_.Substring(57).TrimEnd() # extract image list
             ) 
         } )
-        Write-Verbose "[Get-AS3DeploymentList] Deployments: $($tblDeps -join ', ')"
+        Write-Verbose "[Get-AS3DeploymentList] extracted $($tblDeps.Count) deployments: $($tblDeps -join ', ')"
         return $tblDeps
     } else {
 		Write-Error $result[0] -ErrorAction Stop
@@ -597,6 +610,7 @@ Id                                   DeploymentDateUTC   DeployedImages
 b639cb10-63f1-4f6e-ad76-35a4533ff546 24.01.2020 13:44:58 {9337f63a-19de-4fd4-aaba-d754bdeb1cad, 3e434151-c30f-4b72-99cd-d3db77d80760}
 #>
 function New-AS3Deployment(
+    [cmdletbinding()]
     [Parameter(Mandatory=$true, Position=0, HelpMessage="The device-group guid.")]
 	[Alias("i")] [Guid] $DeviceGroupId,
     [Parameter(Mandatory=$true, Position=0, HelpMessage="one or more image IDs")]
@@ -644,6 +658,7 @@ Id                                   DeploymentDateUTC   DeployedImages
 a12b86c9-eb1d-4e87-a3e8-e86b7e4f4818 03.01.2020 14:34:22 {f1c5d8dd-16e6-499b-9a6d-b7fd828ee48e}
 #>
 function Get-AS3DeviceGroup(
+    [cmdletbinding()]
     [Parameter(Mandatory=$true, Position=0, HelpMessage="Retrieve DeviceGroup details.")]
 	[Alias("i")] [Guid] $DeviceGroupId
 )
@@ -712,6 +727,7 @@ Guid
 f4e25978-6152-447b-a2a1-64577582f327
 #>
 function Add-AS3Image(
+    [cmdletbinding()]
 	[Parameter(Mandatory=$true, Position=0)] [Alias("f")] $FilePath
 )
 {
@@ -757,6 +773,8 @@ PS> Check-Prerequisites
 #>
 function Check-Prerequisites()
 {
+[cmdletbinding()]
+param()
 
     Write-Host "`nChecking for image-packages in directory tree...."
 	if( -not (Test-Path -Path $strIoTConnectHLPath) )	{
@@ -804,7 +822,7 @@ function Check-Prerequisites()
 
     if( $tblProducts.ContainsKey( $strBlueSphereProduct ) )
     {
-        Write-Host "Found product '$strBluephereProduct', retrieving additional data..."
+        Write-Host "Found product '$strBlueSphereProduct', retrieving additional data..."
         $Global:BlueSphereProduct = Get-AS3Product -ProductId $tblProducts[ $strBlueSphereProduct ]
         $Global:BlueSphereProduct.DeviceGroupList = Get-AS3ProductDeviceGroups -ProductId $tblProducts[ $strBlueSphereProduct ]
     } else {
@@ -815,6 +833,6 @@ function Check-Prerequisites()
 }
 
 
-Check-Prerequisites
+Check-Prerequisites -Verbose
 
 

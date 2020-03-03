@@ -48,7 +48,7 @@ For that you'll find a collection of PowerShell cmdlets in this directory in the
 
 1. Open an Azure Sphere Developer Command Prompt Window and change the directory to OTA sample directory and start PowerShell using. 
 ```sh
-powershell -NoExit -Command .\AS3Scripts\OTA.ps1
+powershell -NoExit -Command Import-Module .\AS3Scripts\OTA.ps1
 ```
 
 Alternatively, if you want to peek at the source codes aside, you can start the PowerShell development environment with the script loaded. 
@@ -59,11 +59,16 @@ Press **F5** to populate the cmdlets and run the script:
 
 In both cases you should see output like
 ```
-ImagePackage .\\IoTConnectHL\\out\\ARM-Debug-3+Beta1909\\IoTConnectHL.imagepackage has ComponentID 33e04e8f-a020-4af8-80d0-8064343e0616 and ImageID e5a28a7d-5118-4e10-903a-4ed6482e8213.
-ImagePackage .\\out\\ARM-Debug-3+Beta1909\\RedSphereRT\\RedSphereRT.imagepackage has ComponentID f4e25978-6152-447b-a2a1-64577582f327 and ImageID 1b45e9b9-d339-4905-89c1-2a0ecf16f665.
-ImagePackage .\\out\\ARM-Debug-3+Beta1909\\GreenSphereRT\\GreenSphereRT.imagepackage has ComponentID 7e5fab32-801c-4edf-a1aa-9263652aa6bd and ImageID 5ee3ae4b-0a2b-48d6-a933-65e78bf8d105.
-ImagePackage .\\out\\ARM-Debug-3+Beta1909\\BlueSphereRT\\BlueSphereRT.imagepackage has ComponentID 07562362-3fec-46c8-b0af-db9507f32748 and ImageID 627f875f-78b9-4d5b-8704-ab16a7b54252.
-PS C:\Repos\AzureSphereSamples\OTA>
+Checking for image-packages in directory tree....
+Found 'IoTConnectHL' with ImageId 29441244-b818-49d4-941d-62b8d41def92
+Found 'RedSphereRT' with ImageId f443064f-e969-4d5d-ae2a-1fd6162fa5ac
+Found 'GreenSphereRT' with ImageId b950fb18-6d4b-4702-aaef-fd196c280b64
+Found 'BlueSphereRT' with ImageId c94089e9-1a26-48c9-b4b7-a1e9a3c42051
+
+Checking for products already available in Azure Sphere Security Service....
+WARNING: Cannot find product 'RedSphere Product': follow the OTA sample steps to create the product...
+WARNING: Cannot find product 'GreenSphere Product': follow the OTA sample steps to create the product...
+WARNING: Cannot find product 'BlueSphere Product': follow the OTA sample steps to create the product...PS C:\Repos\AzureSphereSamples\OTA>
 ```
 
 The script checks if the imagepackage files are readily available and sets a few prerequisites. To ease the handling 
@@ -118,7 +123,7 @@ For the "*RedSphere Product*" we want to add an additional device-group "*Color 
 
 You can either choose to follow the manual steps get the setup done or follow the PowerShell scripting route.
 
-### Manual operations
+## Manual operations
 
 **Looking at the Ops side**
 
@@ -209,17 +214,37 @@ azsphere img add -f ".\out\ARM-Debug-3+Beta1909\GreenSphereRT\BlueSphereRT.image
 azsphere img add -f ".\IoTConnectHL\out\ARM-Debug-3+Beta1909\IoTConnectHL.imagepackage" --force
 ```
 
-Please note the ImageID 
+At last here you'll need Notepad or OneNote open to note down the image id's of the individual image-packages. 
 
+```sh
+azsphere dg dep create -pn "RedSphere Product" -dgn "Production" -imageegid "[RedSphereRT ImageId]" -f
+azsphere dg dep create -pn "RedSphere Product" -dgn "Production OS Evaluation" -imageegid "[RedSphereRT ImageId]" -f
+```
+For our Fieldtest-devices we want to have deployments with the IoTConnect high-level app and the RedSphereRT real-time capable app accordingly
+```sh
+azsphere dg dep create -pn "RedSphere Product" -dgn "Field Test" -imageegid "[IOTConnectHL ImageId]","[RedSphereRT ImageId]" -f
+azsphere dg dep create -pn "RedSphere Product" -dgn "Field Test OS Evaluation" -imageegid "[IOTConnectHL ImageId]","[RedSphereRT ImageId]" -f
+```
 
+You can now start setting up the RedSphere and GreenSphere products accordingly and finally start moving your devie(s) around e.g. with
 
-Trying to 
+```sh
+azsphere dev update -pn "GreenSphere Product" -dgn "Field Test OS Evaluation" 
+azsphere dev show-deployment-status
+azsphere dev restart
+```
 
-azsphere dg dep create -pn "GreenSphere Product" -dgn "Production" -p ".\out\ARM-Debug-3+Beta1909\GreenSphereRT\GreenSphereRT.imagepackage" -f
-azsphere dg dep create -pn "BlueSphere Product" -dgn "Production" -p ".\out\ARM-Debug-3+Beta1909\BlueSphereRT\BlueSphereRT.imagepackage" -f
+Shortly afterward you should see your devices LED 1 stop blinking red and instead LED 2 start blinking green.
 
+## Scripting your way
 
-For our "Field Test"
+Similar to the above, we first create the three products 
+
+```powershell
+$RedSphereProduct = New-AS3Product -Name "$strRedSphereProduct" -Description "My $strRedSphereProduct product" -Verbose
+$GreenSphereProduct = New-AS3Product -Name "$strGreenSphereProduct" -Description "My $strGreenSphereProduct product" -Verbose
+$BlueSphereProduct = New-AS3Product -Name "$strBlueSphereProduct" -Description "My $strBlueSphereProduct product" -Verbose
+```
 
 
 
@@ -276,10 +301,7 @@ $SkuRedGreenEvaluation = New-AS3ProductSKU -Name $strRedGreenEvaluationSku -Desc
 ```
 
 
-At this stage, we now have developed and uploaded three Image-Sets with application combinations of the high level
-connectivety app and a single real-time capable app. Addionally ne have two Image-Sets with
-with two real-time capable apps (i.e. one app per M4 core).
-Let's now take a look at the Ops side.
+
 ---
 [Go back to "Multi-Core app and OTA deployment lab"](../README.MD)
 
