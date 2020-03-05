@@ -12,12 +12,16 @@ to the documentation in the [master directory](../README.MD).
 **Prep your device**
 
 1. Ensure that your Azure Sphere device is connected to your PC, and your PC is connected to the internet.
-1. Even if you've performed this set up previously, ensure that you have Azure Sphere SDK version 19.05 or above. In an Azure Sphere Developer Command Prompt, run **azsphere show-version** to check. Download and install the [latest SDK](https://aka.ms/AzureSphereSDKDownload) as needed.
+1. Even if you've performed this set up previously, ensure that you have Azure Sphere SDK version 20.01 or above. In an Azure Sphere Developer Command Prompt, run **azsphere show-version** to check. Download and install the [latest SDK](https://aka.ms/AzureSphereSDKDownload) as needed.
 1. Right-click the Azure Sphere Developer Command Prompt shortcut and select **More > Run as administrator**.
 1. At the command prompt issue the following command:
 
    ```
-   azsphere dev prep-debug --EnableRTCoreDebugging
+   azsphere device enable-development --EnableRTCoreDebugging
+   ```
+    or in short
+   ```
+   azsphere dev edv -r
    ```
 
    This command must be run as administrator when you enable real-time core debugging because it installs USB drivers for the debugger.
@@ -27,11 +31,30 @@ to the documentation in the [master directory](../README.MD).
 **Build and deploy the application**
 
 1. Start Visual Studio.
-1. From the **File** menu, select **Open > CMake...** and navigate to the folder that contains the sample.
+1. From the **File** menu, select **Open > CMake...** and navigate to the OTA folder (**Not** *the RedSphereRT-folder*).
 1. Select the file CMakeLists.txt and then click **Open**.
 1. From the **CMake** menu (if present), select **Build All**. If the menu is not present, open Solution Explorer, right-click the CMakeLists.txt file, and select **Build**. This step automatically performs the manual packaging steps. The output location of the Azure Sphere application appears in the Output window.
-1. From the **Select Startup Item** menu, on the tool bar, select **GDB Debugger (RTCore)**.
+1. From the **Select Startup Item** menu, on the tool bar, select **RedSphereRT (RTCore GDB)**.
 1. Press F5 to start the application with debugging. LED1 will blink red. Press button A to change the blink rate.
+
+**Note:** The *app_manifest.json* differs between the real-time capable applications obviously 
+on the *"Name"*, *"ComponentId"* properties and most notably in the used "Gpio".
+
+```json
+{
+  "SchemaVersion": 1,
+  "Name": "RedSphereRT",
+  "ComponentId": "F4E25978-6152-447B-A2A1-64577582F327",
+  "EntryPoint": "/bin/app",
+  "CmdArgs": [ "RedSphere" ],
+  "Capabilities": {
+    "AllowedApplicationConnections": [ "33e04e8f-a020-4af8-80d0-8064343e0616" ],
+    "Gpio": [ 8 ]
+  },
+  "ApplicationType": "RealTimeCapable"
+}
+```
+
 
 ---
 [Go back to "Multi-Core app and OTA deployment lab"](../README.MD)

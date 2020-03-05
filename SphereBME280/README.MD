@@ -64,17 +64,18 @@ Apart from creating the IoT Central application itself, the remaining steps will
 Setting up the certificate chain for DPS inside Azure IoT Central.
 
 There is also an extensive documentation on how to configure the IoT Central application on
-the expected telemetry, event etc. available on [Run the sample with Azure IoT Central](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/AzureIoT#run-the-sample-with-azure-iot-central).
+the expected telemetry, event etc. available on [Run the sample with Azure IoT Central](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/AzureIoT/IoTCentral.md).
 
-To stretch your brain a bit, look at the source code of [*main.c*](./SphereBME280/main.c) to see what telemetry
+To stretch your brain a bit, look at the source code of [*main.c*](./main.c) to see what telemetry
 it implements, what events, and what properties it supports (pls. note the different
 format of the Device Twin desired property). A couple hints:
 
-Looking at [*main.c* Line 100](./SphereBME280/main.c#L100) 
+Looking at [*main.c* Line 100](./main.c#L100) 
 ```C
 static const char cstrJsonTelemetry[] = "{\"temperature\":%0.2f,\"pressure\":%0.2f,\"humidity\":%0.2f}";
 static const char cstrJsonEvent[] = "{\"%s\":\"occurred\"}";
 ...
+static const char cstrEvtConnected[] = "connect";
 static const char cstrEvtButtonB[] = "buttonB";
 static const char cstrEvtButtonA[] = "buttonA";
 ```
@@ -86,7 +87,7 @@ you can likely deduct the schema for the telemetry data looking like:
 	"humidity" : 45.25
 }
 ```
-and the two events being called `buttonA` and `buttonB`.
+and the three events being called `connect`, `buttonA` and `buttonB`.
 
 To raise an event with Azure IoT Central, you need to send a device-to-cloud message with 
 the event-name as property-name and provide some arbitrary value; i.e. to raise 
@@ -109,7 +110,7 @@ Azure IoT Central already partially implements Azure IoT Plug&Play. The schema t
 	}
 }
 ```  
-which is reflected in the json-path in [*main.c* Line 270](./SphereBME280/main.c#L270) 
+which is reflected in the json-path in [*main.c* Line 270](./main.c#L270) 
 ```C
 /// <summary>
 ///     Device Twin update callback function, called when an update is received from the Azure IoT

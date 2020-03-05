@@ -75,37 +75,9 @@ This picture shows the boards wired up:
 
 ## Modifying the code
 
-**Step 1.**	In Visual Studio, open MCUtoMT3620toAzure\MCUtoMT3620toAzure.sln
+**Step 1.**	In Visual Studio, open the folder `MCUtoMT3620toAzure`
 
-**Step 2.** To prepare your *app_manifest.json* with your Azure IoT Hub settings, depending on your development environment, you may have two options.
-If you run Visual Studio 2017, you can use the "Add Connected Service"-wizard:
-
-**Option #1: "Add Connected Service"-wizard (Visual Studio 2017)**
-
-In the Solution Explorer, under the Mt3620AzureIoTHub solution, right click on Reference and "Add Connected Service? as shown below:
-
-![Add Connected Service](./images/VS_Add_Connected_Service.png)
-
-Select "Device Connectivity with Azure IoT", then your Azure Subscription, Connection Type: "Device Provisioning Service" and your previously created Device provisioning service from the list and press [Add]. 
-Make sure that the output shows updates to both `AllowedConnections` and `DeviceAuthentication` properties in the app_manifest.json file.
-```
-[11.02.2019 18:03:35.153] Adding Device Connectivity with Azure IoT to the project.
-[11.02.2019 18:03:35.329] The following hostnames have been added to the AllowedConnections attribute of app_manifest.json: global.azure-devices-provisioning.net, JS-MS-Iot-Hub.azure-devices.net
-[11.02.2019 18:03:35.341] The Azure Sphere tenant ID 'c0b88764-9273-46ab-bab2-effecf13f91c' has been added to the DeviceAuthentication attribute of app_manifest.json .
-[11.02.2019 18:03:36.441] Azure Sphere Device Provisioning Service scope id:'0ne0002304B'
-[11.02.2019 18:03:36.449] Successfully added Device Connectivity with Azure IoT to the project.
-```
-
-
-> *Pls. note*:
-> 
-> In the 19.02 version of the Azure Sphere SDK, the Add Connected Service wizard created the required files *azure_iot_tilities.c/.h* and *parson.c/.h* automatically, 
-> provisioned the DPS Scope ID and setup the *appmanifest.json*.
-> 
-> Since SDK version 19.05, the wizard only applies the required capability settings to the *app_manifest.json* but does **not** create the source files anymore. 
-> For your convenience, I've added these files in the project already.
-
-**Option #2: Manually entering *app_manifest.json* settings**
+**Step 2:** Update your *app_manifest.json* settings
 
 Lets manually copy the settings from the Azure Portal. Your *appmanifest.json* should look like 
 ```json
@@ -133,7 +105,7 @@ azsphere tenant show-selected
 Copy the GUID value and paste it into the *"DeviceAuthentication"* value replacing the *\*\**your Azure Sphere Tenant id\*\** string content.
 
 **Step 3.** Open *azure_iot_utilities.h* on or about line **#41** and add the following code as shown below 
-(you can copy these lines also from *azure_iot_utilities-snippets.txt* from the Solution Items folder)
+(you can copy these lines also from [*azure_iot_utilities-snippets.txt*](./MCUtoMT3620toAzure/azure_iot_utilities-snippets.txt) from the CMake project folder)
 ```C
 /// <summary>
 ///     Creates and enqueues reported properties state using a prepared json string.

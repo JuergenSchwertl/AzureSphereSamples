@@ -1,11 +1,16 @@
 ## Lab #3: Connecting a DHT sensor and send telemetry to Azure IoT Hub
-For this lab we'll need [this repo](https://github.com/JuergenSchwertl/AzureSphereSamples) cloned. It also contains hints 
-to extend the ePoll event_data_t structure to enable event context handling.
+For this lab we'll need [this repo](https://github.com/JuergenSchwertl/AzureSphereSamples) cloned. This lab focuses on three key learnings:
+
+1. Working with libraries in CMake
+2. Implementing/porting a one-wire data protocol and the challenges of using bit-banging in a non-deterministic POSIX environment
+2. Extending the ePoll event_data_t structure to enable event context handling.
 
 ![MT3620 with connected DHT11 sensor](./images/DHT_Wiring.png)
 
 ### Wiring the device
-This lab is the next step. Rather than use the MT3620 to uplift data for a legacy board (aka, the UNO) in this lab we directly connect the sensor to the MT3620.
+Rather than use the MT3620 to uplift data for a legacy board (aka, the UNO or NodeMCU respectively) in this lab we 
+directly connect a sensor to the MT3620.
+
 Hardware Setup.
 This lab requires four (4) pieces of hardware:
 * MT3620 – Azure Sphere
@@ -25,9 +30,25 @@ Assemble the hardware by attaching the DHT sensor to the MT3620, using the follo
 
 For information on the pinout of the board see [GPIO pinout](https://github.com/JuergenSchwertl/AzureSphereSamples#gpios).
 
+### Project setup
+>**Note:** If you had run through this scenario earlier you will notice that this high-level app sample is now using the CMake toolchain.
+
+This lab uses a CMake project structure that builds a library and the A7 core application and then links the library with the app.
+
+In the main *CMakeLists.txt* the [ADD_SUBDIRECTORY(DHTlib)](./CMakeLists.txt#L8) leads CMake to look for another *CMakeLists.txt* build definition in the *DHT11*-Directory.
+The [TARGET_LINK_LIBRARIES(...)](./CMakeLists.txt#L13) then includes the library in the link process.
+```CMake
+ADD_SUBDIRECTORY(DHTlib)
+...
+TARGET_LINK_LIBRARIES( ... DHTlib)
+```
+
+Looking at the [DHTlib/CMakeLists.txt](./DHT11/CMakeLists.txt) you'll find it builds a static library and that it's public header file 
+is being added to the list of include directories.
+
+
 ### Modifying the code
 
->**Note:** If you had run through this scenario earlier you will notice that this high-level app sample is now using the CMake toolchain.
 
 Step 1. In Visual Studio, in the Team Explorer Window open the CmakeLists.txt file in the IoTConnectHL directory using **File->Open...->Cmake...**.
 
@@ -206,8 +227,8 @@ static void LedUpdateHandler(event_data_t *eventData)
 }
 ```
 
-#### DHTlib-project and DHTlib.c
-The DHTlib project implements a static library to read the sensor data from a DHT 11 or DHT 22 sensor. The DHT 11 uses a 
+#### DHT11-library project and DHT11.c
+The DHT11 library project implements a static library to read the sensor data from a DHT 11 or DHT 22 sensor. The DHT 11 uses a 
 single wire protocol, where a 18ms low pulse from the Azure Sphere GPIO-port (configured as output) to pull the line to 0 to 
 initialize the data transfer.
 Then the DHT starts sending data after a 80µs low and 80µs high preamble. Each bit to be transferred is indicated by a 50µs low, followed

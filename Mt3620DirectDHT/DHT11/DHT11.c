@@ -1,4 +1,4 @@
-﻿#include "DHTlib.h"
+﻿#include "DHT11.h"
 
 /*
 *  DHTlib.c:
