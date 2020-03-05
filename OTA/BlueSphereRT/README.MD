@@ -14,7 +14,7 @@ For information about how to build the real-time capable application please refe
 1. Open an Azure Sphere Developer Command Prompt and navigate to the OTA folder. 
 1. Deploy the application using 
 ```sh
- azsphere dev sl deploy -p "out\ARM-Debug-3+Beta1909\BlueSphereRT\BlueSphereRT.imagepackage" 
+ azsphere dev sl deploy -p "out\ARM-Debug-4+Beta2001\BlueSphereRT\BlueSphereRT.imagepackage" 
 ```
 You will see that Led3 starts blinking in blue at a fast rate, likely at a different frequency than Led1 in red.
 1. Once you press Button A both will start blinking at the same frequency as both have received the 'BLNK' message 
