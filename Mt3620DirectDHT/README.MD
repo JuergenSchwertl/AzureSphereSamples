@@ -35,7 +35,7 @@ For information on the pinout of the board see [GPIO pinout](https://github.com/
 
 This lab uses a CMake project structure that builds a library and the A7 core application and then links the library with the app.
 
-In the main *CMakeLists.txt* the [ADD_SUBDIRECTORY(DHTlib)](./CMakeLists.txt#L8) leads CMake to look for another *CMakeLists.txt* build definition in the *DHTLib*-Directory.
+In the main *CMakeLists.txt* the [ADD_SUBDIRECTORY(DHTlib)](./CMakeLists.txt#L8) leads CMake to look for another *CMakeLists.txt* build definition in the *DHT11*-Directory.
 The [TARGET_LINK_LIBRARIES(...)](./CMakeLists.txt#L13) then includes the library in the link process.
 ```CMake
 ADD_SUBDIRECTORY(DHTlib)
@@ -43,7 +43,7 @@ ADD_SUBDIRECTORY(DHTlib)
 TARGET_LINK_LIBRARIES( ... DHTlib)
 ```
 
-Looking at the [DHTlib/CMakeLists.txt](./DHTlib/CMakeLists.txt) you'll find it builds a static library and that it's public header file 
+Looking at the [DHTlib/CMakeLists.txt](./DHT11/CMakeLists.txt) you'll find it builds a static library and that it's public header file 
 is being added to the list of include directories.
 
 
@@ -227,8 +227,8 @@ static void LedUpdateHandler(event_data_t *eventData)
 }
 ```
 
-#### DHTlib-project and DHTlib.c
-The DHTlib project implements a static library to read the sensor data from a DHT 11 or DHT 22 sensor. The DHT 11 uses a 
+#### DHT11-library project and DHT11.c
+The DHT11 library project implements a static library to read the sensor data from a DHT 11 or DHT 22 sensor. The DHT 11 uses a 
 single wire protocol, where a 18ms low pulse from the Azure Sphere GPIO-port (configured as output) to pull the line to 0 to 
 initialize the data transfer.
 Then the DHT starts sending data after a 80µs low and 80µs high preamble. Each bit to be transferred is indicated by a 50µs low, followed

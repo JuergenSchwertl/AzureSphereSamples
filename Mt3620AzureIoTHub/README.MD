@@ -81,7 +81,7 @@ You should now see something alike
 Once you hit the [Call Method]-button, after a second the blinking LED should change the color and 
 the "Return status" and "Return payload" should indicate success.
 
-Now look at the [description in *main.c*](./Mt3620AzureIoTHub/main.c#L29) to see what function the two buttons provide 
+Now look at the [description in *main.c*](./main.c#L29) to see what function the two buttons provide 
 and start experimenting with break points in Visual Studio and inspecting the variables.
 
 
