@@ -17,7 +17,7 @@
 
 #include "mt3620_rdb.h"
 #include "rgbled_utility.h"
-#include "DHTlib.h"
+#include "DHT11.h"
 
 #include "azure_iot_utilities.h"
 
