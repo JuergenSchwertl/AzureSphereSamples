@@ -15,7 +15,7 @@
 #include <applibs/log.h>
 #include <applibs/networking.h>
 
-#include "hw/mt3620_rdb.h"
+#include "mt3620_rdb.h"
 #include "UART_utilities.h"
 #include "MCU_utilities.h"
 

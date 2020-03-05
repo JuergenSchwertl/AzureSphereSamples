@@ -4,7 +4,7 @@
 /// included in the Azure IoT Device SDK for C.
 #pragma once
 
-#include <iothubtransportmqtt.h>
+#include <azureiot/iothubtransportmqtt.h>
 #include <applibs/networking.h>
 #include "parson.h"
 

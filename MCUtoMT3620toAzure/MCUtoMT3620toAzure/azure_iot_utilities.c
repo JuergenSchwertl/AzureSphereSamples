@@ -2,13 +2,14 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <time.h>
-#include <iothub_client_core_common.h>
-#include <iothub_device_client_ll.h>
-#include <iothub_client_options.h>
-#include <iothubtransportmqtt.h>
-#include <iothub.h>
+#include <azureiot/iothub_client_core_common.h>
+#include <azureiot/iothub_device_client_ll.h>
+#include <azureiot/iothub_client_options.h>
+#include <azureiot/iothubtransportmqtt.h>
+#include <azureiot/iothub.h>
+#include <azureiot/azure_sphere_provisioning.h>
+#include <azure_prov_client/prov_device_ll_client.h>
 #include <applibs/log.h>
-#include <azure_sphere_provisioning.h>
 #include "azure_iot_utilities.h"
 
 // Refer to https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-device-sdk-c-intro for more
