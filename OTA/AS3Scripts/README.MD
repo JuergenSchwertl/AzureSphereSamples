@@ -18,74 +18,12 @@ Evaluation version of the Azure Sphere Operating System.
 
 In this lab we will create different application constellations to be deployed by the Azure Sphere Security Service (AS3). To do that, 
 we'll setup Products, DeviceGroups and Deployments to deliver different application constellations to the devices.
-We'll be move our device between different DeviceGroups and Products.
+We'll also move our device between different DeviceGroups and Products to see how different applications will be deployed over the air.
   
 ## Prerequisites
 
 - Have the [IoTConnectHL application](../IoTConnectHL/README.MD) and the three [Realtime-capable applications](../RedSphereRT/README.MD) 
 imagepackages built and ready to run.
-
-## Prep your environment 
->**Note:** PowerShell by default is configured to only run scripts that are code-signed by a trusted CA. To run the *OTA.ps1* script you 
->therefore need to change the execution policy.
->
->To do this you need to open an administrative command shell and run
-```Powershell
-powershell Set-ExecutionPolicy unrestricted
-```
-Then close the admin command shell again since you should only run on elevated priviledges when absolutely required.
-
-We then need to prepare your device for OTA deployment. Open an Azure Sphere Developer Command Prompt Window, change the directory to OTA sample directory and then
-run the following command to enable your device to receive OTA application updates:
-```sh
-azsphere device enable-cloud-test
-```
-
-If you followed the Azure Sphere Bootcamp or read the [Deployment basics](https://docs.microsoft.com/en-us/azure-sphere/deployment/deployment-concepts) documentation, you
-should already have an understanding of the terms Component, Image, ImageSet and how a Deployment interacts with Products and Device-Groups.
-
-For that you'll find a collection of PowerShell cmdlets in this directory in the [OTA.ps1](./OTA.ps1) file.
-
-1. Open an Azure Sphere Developer Command Prompt Window and change the directory to OTA sample directory and start PowerShell using. 
-```sh
-powershell -NoExit -Command Import-Module .\AS3Scripts\OTA.ps1
-```
-
-Alternatively, if you want to peek at the source codes aside, you can start the PowerShell development environment with the script loaded. 
-```sh
-powershell_ise .\AS3Scripts\OTA.ps1
-```
-Press **F5** to populate the cmdlets and run the script:
-
-In both cases you should see output like
-```
-Checking for image-packages in directory tree....
-Found 'IoTConnectHL' with ImageId 29441244-b818-49d4-941d-62b8d41def92
-Found 'RedSphereRT' with ImageId f443064f-e969-4d5d-ae2a-1fd6162fa5ac
-Found 'GreenSphereRT' with ImageId b950fb18-6d4b-4702-aaef-fd196c280b64
-Found 'BlueSphereRT' with ImageId c94089e9-1a26-48c9-b4b7-a1e9a3c42051
-
-Checking for products already available in Azure Sphere Security Service....
-WARNING: Cannot find product 'RedSphere Product': follow the OTA sample steps to create the product...
-WARNING: Cannot find product 'GreenSphere Product': follow the OTA sample steps to create the product...
-WARNING: Cannot find product 'BlueSphere Product': follow the OTA sample steps to create the product...PS C:\Repos\AzureSphereSamples\OTA>
-```
-
-The script checks if the imagepackage files are readily available and sets a few prerequisites. To ease the handling 
-it sets global structures reading the ComponentID and ImageID directly from the .imagepackage files (see the *ExtractFrom-ImagePackage* cmdlet) 
-for each of the applications so you can reference them by name like: *$IoTConnectHL*, *$RedSphereRT*, *$BlueSphereRT* and *$GreenSphereRT*. 
-
-Just check one of the variables to see the content
-```sh
-PS C:\Repos\AzureSphereSamples\OTA> $IoTConnectHL
-
-Name                   ComponentID                          ImageID                              FilePath                                                            
-----                   -----------                          -------                              --------                                                            
-IoTConnect-App (POSIX) 33e04e8f-a020-4af8-80d0-8064343e0616 e5a28a7d-5118-4e10-903a-4ed6482e8213 .\\IoTConnectHL\\out\\ARM-Debug-3+Beta1909\\IoTConnectHL.imagepackage
-```
-*Note* that the Name-properties on purpose differ from the *app_manifest.json* settings.
-
-
 
 **Looking at the operations side**
 
@@ -170,7 +108,7 @@ Successfully retrieved the device group:
    Current Deployment: None
 ```
 2. Looking at the "Development" device-group, you'll realize that it has by default the **OS Feed Type: 'Retail'** set. As we 
-want to develop on the latest Azure Sphere Evaluation version we'll need to update the device-group to use 
+want to develop on the latest Azure Sphere Evaluation version we want to update the device-group to use 
 the **RetailEval** operating system feed:
 ```sh
 azsphere device-group update --productname "RedSphere Product" --devicegroupname "Development" --osfeed RetailEval
@@ -181,7 +119,7 @@ azsphere device-group create --productname "RedSphere Product" --name "Color Var
 ```
 
 
-Now it's your turn to create the products "*GreenSphere Product*" and "*BlueSphere Product*" and 
+4. Now it's your turn to create the products "*GreenSphere Product*" and "*BlueSphere Product*" and 
 to update the device-group "Development" with the Azure Sphere Evaluaton OS feed (Hint: the commands below show the
 help page with the parameters):
 ```sh
@@ -208,10 +146,22 @@ a rather common scenario, we need to take a slightly different route and first u
 then create the deployments referencing the uploaded image packages by their ImageId.
 
 ```sh
-azsphere img add -f ".\out\ARM-Debug-3+Beta1909\GreenSphereRT\RedSphereRT.imagepackage" --force
-azsphere img add -f ".\out\ARM-Debug-3+Beta1909\GreenSphereRT\GreenSphereRT.imagepackage" --force
-azsphere img add -f ".\out\ARM-Debug-3+Beta1909\GreenSphereRT\BlueSphereRT.imagepackage" --force
-azsphere img add -f ".\IoTConnectHL\out\ARM-Debug-3+Beta1909\IoTConnectHL.imagepackage" --force
+azsphere img add -f ".\out\ARM-Debug-4+Beta2001\RedSphereRT\RedSphereRT.imagepackage" --force
+azsphere img add -f ".\out\ARM-Debug-4+Beta2001\GreenSphereRT\GreenSphereRT.imagepackage" --force
+azsphere img add -f ".\out\ARM-Debug-4+Beta2001\BlueSphereRT\BlueSphereRT.imagepackage" --force
+azsphere img add -f ".\IoTConnectHL\out\ARM-Debug-4+Beta2001\IoTConnectHL.imagepackage" --force
+```
+
+you should see an output like:
+```
+C:\Repos\AzureSphereSamples\OTA>azsphere img add -f ".\out\ARM-Debug-4+Beta2001\RedSphereRT\RedSphereRT.imagepackage" --force
+warn: '.\out\ARM-Debug-4+Beta2001\RedSphereRT\RedSphereRT.imagepackage' targets Beta APIs that may change or be removed in future.
+Uploading image from file '.\out\ARM-Debug-4+Beta2001\RedSphereRT\RedSphereRT.imagepackage':
+ --> Image ID:       8e224bb1-9440-423d-9b8e-e2d05f1902a7
+ --> Component ID:   f4e25978-6152-447b-a2a1-64577582f327
+ --> Component name: 'RedSphereRT'
+Removing temporary state for uploaded image.
+Successfully uploaded image with ID '8e224bb1-9440-423d-9b8e-e2d05f1902a7' and name 'RedSphereRT' to component with ID 'f4e25978-6152-447b-a2a1-64577582f327'.
 ```
 
 To proceed further you need to note down the individual ImageID´s to create the deployments along the lines of  
@@ -220,9 +170,58 @@ To proceed further you need to note down the individual ImageID´s to create the 
 azsphere dg dep create -pn "RedSphere Product" -dgn "Production" -ii [RedSphereRT-ImageID] -f
 azsphere dg dep create -pn "RedSphere Product" -dgn "Production OS Evaluation" -ii [RedSphereRT-ImageID] -f
 azsphere dg dep create -pn "RedSphere Product" -dgn "Field Test" -ii [RedSphereRT-ImageID], [IoTConnectHL-ImageID] -f
+azsphere dg dep create -pn "RedSphere Product" -dgn "Field Test OS Evaluation" -ii [RedSphereRT-ImageID], [IoTConnectHL-ImageID] -f
 ```
-
 I leave it up to you to do the same for the other products.
+
+
+>**Note:**: 
+>If you don't like to copy&paste IDs, now would be a good time to switch to [PowerShell scripted operations](./SCRIPTED.MD) 
+
+
+We then need to prepare your device for OTA deployment. Open an Azure Sphere Developer Command Prompt Window, change the directory to OTA sample directory and then
+run the following command to enable your device to receive OTA application updates and at the sam etime assign it to one of our devicegroups:
+```sh
+azsphere device enable-cloud-test -pn "RedSphere Product" -dgn "Production"
+```
+During that process, your device will reboot and after a minute you'll see the 1st LED Blinking red.
+```sh
+azsphere dev img list-targeted
+azsphere dev img list-installed
+azsphere dev app show-status
+```
+will now show that the device is targeted with the RedSphereRT application, that this application is installed and also running.
+
+
+
+Now change it to another product and device group
+```sh
+azsphere device update -pn "GreenSphere Product" -dgn "Field Test"
+```
+You would expect the green LED starting blinking but will realize that not much is going to change. 
+```sh
+azsphere dev img list-targeted
+azsphere dev img list-installed
+azsphere dev app show-status
+```
+reveals that the device is now targeted with the GreenSphereRT and IoTConnectHL application but still RedSphere being installed and running.
+
+The reason is that Azure Sphere only checks for application updates every 24 hours (once the device certificate expires and is being renewed) and 
+since we just enabled cloud testing which rebootet the device we'd now have to wait for a day, unless we quickly hit the **Reset** button, to force a reboot.
+
+After Reboot it will still start the old (RedSphereRT) application while in the background it will be checking with the Azure Sphere Security Service for 
+application updates, find that it is now targeted the GreenSphereRT deployment, download the image package(s), then send a SIG_TERM to the RedSphereRT app
+to gracefully have it terminated and only afterwards start the GreenSphereRT .  
+```sh
+azsphere dev img list-targeted
+azsphere dev img list-installed
+azsphere dev app show-status
+```
+also reveals that we now have both targeted apps installed and running.
+
+### Well done!
+
+
 
 
 ---
