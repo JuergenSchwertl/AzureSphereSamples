@@ -12,10 +12,11 @@
 #include <applibs/log.h>
 #include <applibs/wificonfig.h>
 
-#include "hw/mt3620_rdb.h"
+#include "mt3620_rdb.h"
 #include "rgbled_utility.h"
 
-#include "libBME280.h"
+#include "BME280/Inc/libBME280.h"
+
 
 // This sample C application for a MT3620 Reference Development Board (Azure Sphere) demonstrates how to
 // connect an Azure Sphere device to Azure IoT Central. To use this sample, you must first
