@@ -11,6 +11,7 @@
 #include <applibs/gpio.h>
 #include <applibs/log.h>
 #include <applibs/wificonfig.h>
+#include <applibs/powermanagement.h>
 
 #include "mt3620_rdb.h"
 #include "rgbled_utility.h"
@@ -45,6 +46,8 @@
 // Direct Method related notes:
 // - Invoking the method named "LedColorControlMethod" with a payload containing '{"color":"red"}'
 //   will set the color of LED 1 to red;
+// - Invoking the method named "Reset" with a payload containing '{"reboot":"true"}'
+//   will reset the device;
 //
 // Device Twin related notes:
 // - Setting LedBlinkRateProperty in the Device Twin to a value from 0 to 2 causes the sample to
@@ -85,11 +88,14 @@ static int led1BlinkTimerFd = -1;
 static int led2BlinkTimerFd = -1;
 static int azureIoTDoWorkTimerFd = -1;
 static int telemetryTimerFd = -1;
+static int resetTimerFd = -1;
 
 static int i2cBME280Fd = -1;
 
-
 static const struct timespec telemetryTimerIntervals = {10, 0};
+// invoke reset 5 seconds after receiving command
+static const struct timespec resetTimerInterval = { 5, 0 };
+
 
 // Azure IoT poll periods
 static const int AzureIoTDefaultPollPeriodSeconds = 5;
@@ -104,6 +110,18 @@ static const char cstrJsonEvent[] = "{\"%s\":\"occurred\"}";
 static const char cstrEvtConnected[] = "connect";
 static const char cstrEvtButtonB[] = "buttonB";
 static const char cstrEvtButtonA[] = "buttonA";
+
+// direct method names
+static const char cstrLedColorControlMethod[] = "LedColorControlMethod";
+static const char cstrColorProperty[] = "color";
+static const char cstrNoColorResponse[] = "{ \"success\" : false, \"message\" : \"request does not contain an identifiable color\" }";
+static const char cstrColorOkResponse[] = "{ \"success\" : true, \"message\" : \"led color set to %s\" }";
+static const char cstrResetMethod[] = "ResetMethod";
+static const char cstrResetOkResponse[] = "{\"success\" : true, \"message\" : \"reset in 5 seconds\" }";
+static const char cstrResetProperty[] = "reset";
+static const char cstrTrueValue[] = "true";
+
+static const char cstrMethodNotFoundResponse[] = "{\"success\" : false, \"message\" : \"method %s not found\" }";
 
 // LED state
 static RgbLed led1 = RGBLED_INIT_VALUE;
@@ -306,6 +324,104 @@ static void *SetupHeapMessage(const char *messageFormat, size_t maxLength, ...)
     return message;
 }
 
+
+    void serialization_example(void) {
+        JSON_Value* root_value = json_value_init_object();
+        JSON_Object* root_object = json_value_get_object(root_value);
+        char* serialized_string = NULL;
+        json_object_set_string(root_object, "name", "John Smith");
+        json_object_set_number(root_object, "age", 25);
+        json_object_dotset_string(root_object, "address.city", "Cupertino");
+        json_object_dotset_value(root_object, "contact.emails", json_parse_string("[\"email@example.com\",\"email2@example.com\"]"));
+        serialized_string = json_serialize_to_string_pretty(root_value);
+        puts(serialized_string);
+        json_free_serialized_string(serialized_string);
+        json_value_free(root_value);
+    }
+
+static int LedColorControlMethod(const char* payload, size_t payloadSize,
+    char** responsePayload, size_t* responsePayloadSize)
+{
+    int result = 404; // HTTP status code.
+
+    RgbLedUtility_Colors ledColor = RgbLedUtility_Colors_Unknown;
+    // The payload should contains JSON such as: { "color": "red"}
+    char* directMethodCallContent = malloc(payloadSize + 1); // +1 to store null char at the end.
+    if (directMethodCallContent == NULL) {
+        Log_Debug("ERROR: Could not allocate buffer for direct method request payload.\n");
+        abort();
+    }
+
+    memcpy(directMethodCallContent, payload, payloadSize);
+    directMethodCallContent[payloadSize] = 0; // Null terminated string.
+    JSON_Value* payloadJson = json_parse_string(directMethodCallContent);
+    if (payloadJson == NULL) {
+        goto colorNotFound;
+    }
+    JSON_Object* colorJson = json_value_get_object(payloadJson);
+    if (colorJson == NULL) {
+        goto colorNotFound;
+    }
+    const char* colorName = json_object_get_string(colorJson, cstrColorProperty);
+    if (colorName == NULL) {
+        goto colorNotFound;
+    }
+
+    ledColor = RgbLedUtility_GetColorFromString(colorName, strlen(colorName));
+
+    // If color's name has not been identified.
+    if (ledColor != RgbLedUtility_Colors_Unknown) {
+        goto colorNotFound;
+    }
+
+    // Color's name has been identified.
+    result = 200;
+    const char* colorString = RgbLedUtility_GetStringFromColor(ledColor);
+    Log_Debug("INFO: LED color set to: '%s'.\n", colorString);
+    // Set the blinking LED color.
+    ledBlinkColor = ledColor;
+
+    size_t responseMaxLength = sizeof(cstrColorOkResponse) + strlen(colorString);
+    *responsePayload = SetupHeapMessage(cstrColorOkResponse, responseMaxLength, colorString);
+    if (*responsePayload == NULL) {
+        Log_Debug("ERROR: Could not allocate buffer for direct method response payload.\n");
+        abort();
+    }
+    *responsePayloadSize = strlen(*responsePayload);
+
+    return result;
+
+colorNotFound:
+    result = 400; // Bad request.
+    Log_Debug("INFO: Unrecognised direct method payload format.\n");
+
+    responseMaxLength = sizeof(cstrNoColorResponse);
+    *responsePayload = SetupHeapMessage(cstrNoColorResponse, responseMaxLength);
+    if (*responsePayload == NULL) {
+        Log_Debug("ERROR: Could not allocate buffer for direct method response payload.\n");
+        abort();
+    }
+    *responsePayloadSize = strlen(*responsePayload);
+
+    return result;
+}
+
+static int ResetMethod(const char* payload, size_t payloadSize,
+    char** responsePayload, size_t* responsePayloadSize)
+{
+    Log_Debug("INFO: received RESET command. Arm timer to 5 seconds.\n");
+    SetTimerFdToSingleExpiry(resetTimerFd, &resetTimerInterval);
+
+    responsePayloadSize = sizeof(cstrResetOkResponse);
+    *responsePayload = SetupHeapMessage(cstrNoColorResponse, responsePayloadSize);
+    if (*responsePayload == NULL) {
+        Log_Debug("ERROR: Could not allocate buffer for direct method response payload.\n");
+        abort();
+    }
+    return 200;
+}
+
+
 /// <summary>
 ///     Direct Method callback function, called when a Direct Method call is received from the Azure
 ///     IoT Hub.
@@ -329,84 +445,21 @@ static int DirectMethodCall(const char *methodName, const char *payload, size_t 
 
     int result = 404; // HTTP status code.
 
-    if (strcmp(methodName, "LedColorControlMethod") != 0) {
-        result = 404;
-        Log_Debug("INFO: Method not found called: '%s'.\n", methodName);
 
-        static const char noMethodFound[] = "\"method not found '%s'\"";
-        size_t responseMaxLength = sizeof(noMethodFound) + strlen(methodName);
-        *responsePayload = SetupHeapMessage(noMethodFound, responseMaxLength, methodName);
-        if (*responsePayload == NULL) {
-            Log_Debug("ERROR: Could not allocate buffer for direct method response payload.\n");
-            abort();
-        }
-        *responsePayloadSize = strlen(*responsePayload);
-        return result;
+     if (strncmp(methodName, cstrLedColorControlMethod, sizeof(cstrLedColorControlMethod)) == 0) {
+        return LedColorControlMethod(payload, payloadSize, responsePayload, responsePayloadSize);
     }
 
-    RgbLedUtility_Colors ledColor = RgbLedUtility_Colors_Unknown;
-    // The payload should contains JSON such as: { "color": "red"}
-    char *directMethodCallContent = malloc(payloadSize + 1); // +1 to store null char at the end.
-    if (directMethodCallContent == NULL) {
-        Log_Debug("ERROR: Could not allocate buffer for direct method request payload.\n");
-        abort();
+    if (strncmp(methodName, cstrResetMethod, sizeof(cstrResetMethod)) == 0) {
+        return ResetMethod(payload, payloadSize, responsePayload, responsePayloadSize);
     }
 
-    memcpy(directMethodCallContent, payload, payloadSize);
-    directMethodCallContent[payloadSize] = 0; // Null terminated string.
-    JSON_Value *payloadJson = json_parse_string(directMethodCallContent);
-    if (payloadJson == NULL) {
-        goto colorNotFound;
-    }
-    JSON_Object *colorJson = json_value_get_object(payloadJson);
-    if (colorJson == NULL) {
-        goto colorNotFound;
-    }
-    const char *colorName = json_object_get_string(colorJson, "color");
-    if (colorName == NULL) {
-        goto colorNotFound;
-    }
-
-    ledColor = RgbLedUtility_GetColorFromString(colorName, strlen(colorName));
-
-    // If color's name has not been identified.
-    if (ledColor == RgbLedUtility_Colors_Unknown) {
-        goto colorNotFound;
-    }
-
-    // Color's name has been identified.
-    result = 200;
-    const char *colorString = RgbLedUtility_GetStringFromColor(ledColor);
-    Log_Debug("INFO: LED color set to: '%s'.\n", colorString);
-    // Set the blinking LED color.
-    ledBlinkColor = ledColor;
-
-    static const char colorOkResponse[] =
-        "{ \"success\" : true, \"message\" : \"led color set to %s\" }";
-    size_t responseMaxLength = sizeof(colorOkResponse) + strlen(payload);
-    *responsePayload = SetupHeapMessage(colorOkResponse, responseMaxLength, colorString);
+    responsePayloadSize = sizeof(cstrMethodNotFoundResponse) + strlen(methodName);
+    *responsePayload = SetupHeapMessage(cstrMethodNotFoundResponse, responsePayloadSize, methodName);
     if (*responsePayload == NULL) {
         Log_Debug("ERROR: Could not allocate buffer for direct method response payload.\n");
         abort();
     }
-    *responsePayloadSize = strlen(*responsePayload);
-
-    return result;
-
-colorNotFound:
-    result = 400; // Bad request.
-    Log_Debug("INFO: Unrecognised direct method payload format.\n");
-
-    static const char noColorResponse[] =
-        "{ \"success\" : false, \"message\" : \"request does not contain an identifiable "
-        "color\" }";
-    responseMaxLength = sizeof(noColorResponse);
-    *responsePayload = SetupHeapMessage(noColorResponse, responseMaxLength);
-    if (*responsePayload == NULL) {
-        Log_Debug("ERROR: Could not allocate buffer for direct method response payload.\n");
-        abort();
-    }
-    *responsePayloadSize = strlen(*responsePayload);
 
     return result;
 }
@@ -577,12 +630,28 @@ static void TelemetryTimerHandler(EventData *eventData)
 	SendTelemetryMessage();
 }
 
+
+/// <summary>
+///     Handle reset timer event.
+/// </summary>
+static void ResetTimerHandler(EventData* eventData)
+{
+    if (ConsumeTimerFdEvent(eventData->fd) != 0) {
+        terminationRequired = true;
+        return;
+    }
+
+    PowerManagement_ForceSystemReboot();
+    terminationRequired = true;
+}
+
 // event handler data structures. Only the event handler field needs to be populated.
 static EventData buttonPollTimerEventData = {.eventHandler = &ButtonPollTimerHandler};
 static EventData led1EventData = {.eventHandler = &Led1UpdateHandler};
 static EventData led2EventData = {.eventHandler = &Led2UpdateHandler};
 static EventData azureIoTEventData = {.eventHandler = &AzureIoTDoWorkHandler};
 static EventData telemetryTimerEventData = { .eventHandler = &TelemetryTimerHandler };
+static EventData resetTimerEventData = { .eventHandler = &ResetTimerHandler };
 
 /// <summary>
 ///     Initialize peripherals, termination handler, and Azure IoT
@@ -660,6 +729,13 @@ static int InitPeripheralsAndHandlers(void)
 	if (telemetryTimerFd < 0) {
 		return -1;
 	}
+
+    // Set up a dis-armed timer for the reset interval
+    resetTimerFd = CreateTimerFdAndAddToEpoll(epollFd, &nullPeriod,
+        &resetTimerEventData, EPOLLIN);
+    if (resetTimerFd < 0) {
+        return -1;
+    }
 
     // Set up a timer for Azure IoT SDK DoWork execution.
     azureIoTPollPeriodSeconds = AzureIoTDefaultPollPeriodSeconds;

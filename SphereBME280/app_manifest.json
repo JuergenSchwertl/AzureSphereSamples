@@ -3,9 +3,9 @@
   "Name": "SphereBME280",
   "ComponentId": "82a16cf9-d4e1-4235-a6e5-14ed23c4cc18",
   "EntryPoint": "/bin/app",
-  "CmdArgs": [ "--- YOUR IOT CENTRAL DPS SCOPE ID ---" ],
+  "CmdArgs": [ "0ne000A5318" ],
   "Capabilities": {
-    "AllowedConnections": [ "global.azure-devices-provisioning.net", "--- YOUR IOT CENTRAL IOTHUB DNS NAME ---"  ],
+    "AllowedConnections": [ "global.azure-devices-provisioning.net", "iotc-d51104e7-3071-4dbe-b068-48fbd28598ad.azure-devices.net", "iotc-c4fafadf-23ee-48fa-bd0a-001632b37369.azure-devices.net", "iotc-39f969f6-a00f-4170-b9a5-f7ca7ffac058.azure-devices.net", "iotc-818d99b4-a95e-442c-9b74-69275d355f05.azure-devices.net", "iotc-8974d7f5-7592-438d-b5f4-1462b35cfa39.azure-devices.net", "iotc-cc74d45c-b9ed-43fb-9cac-f96a2caf8a05.azure-devices.net", "iotc-f37c4bc5-c3b1-44f4-ad6c-b8781eebf57b.azure-devices.net", "iotc-1e603b4e-a70c-4197-93c3-6bd8792d1d26.azure-devices.net", "iotc-987181de-4fd5-45e8-ab56-0f987be2ac87.azure-devices.net", "iotc-7e20aef1-6c4b-4ee3-87c9-80abfbe5bb63.azure-devices.net" ],
     "AllowedTcpServerPorts": [],
     "AllowedUdpServerPorts": [],
     "Gpio": [
@@ -27,6 +27,6 @@
     "WifiConfig": true,
     "NetworkConfig": false,
     "SystemTime": false,
-    "DeviceAuthentication": "--- YOUR AZURE SPHERE TENANT ID--- "
+    "DeviceAuthentication": "c0b88764-9273-46ab-bab2-effecf13f91c"
   }
 }
