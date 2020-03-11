@@ -8,6 +8,11 @@
 #include <applibs/networking.h>
 #include "parson.h"
 
+
+#define HTTP_OK             (200)
+#define HTTP_BAD_REQUEST    (400)
+#define HTTP_NOT_FOUND      (404)
+
 /// <summary>
 ///     Sets up the client in order to establish the communication channel to Azure IoT Hub.
 ///

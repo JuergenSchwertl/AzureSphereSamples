@@ -93,8 +93,8 @@ static int resetTimerFd = -1;
 static int i2cBME280Fd = -1;
 
 static const struct timespec telemetryTimerIntervals = {10, 0};
-// invoke reset 5 seconds after receiving command
-static const struct timespec resetTimerInterval = { 5, 0 };
+// invoke reset # seconds after receiving command
+static struct timespec resetTimerInterval = { 5, 0 };
 
 
 // Azure IoT poll periods
@@ -104,8 +104,11 @@ static const int AzureIoTMaxReconnectPeriodSeconds = 10 * 60;
 
 static int azureIoTPollPeriodSeconds = -1;
 
+
+static const char cstrErrorOutOfMemory[] = "ERROR: Could not allocate buffer for direct method response payload.\n";
+
+
 static const char cstrJsonTelemetry[] = "{\"temperature\":%0.2f,\"pressure\":%0.2f,\"humidity\":%0.2f}";
-//static const char cstrJsonEvent[] = "{\"event\":\"%s\"}";
 static const char cstrJsonEvent[] = "{\"%s\":\"occurred\"}";
 static const char cstrEvtConnected[] = "connect";
 static const char cstrEvtButtonB[] = "buttonB";
@@ -114,13 +117,12 @@ static const char cstrEvtButtonA[] = "buttonA";
 // direct method names
 static const char cstrLedColorControlMethod[] = "LedColorControlMethod";
 static const char cstrColorProperty[] = "color";
-static const char cstrNoColorResponse[] = "{ \"success\" : false, \"message\" : \"request does not contain an identifiable color\" }";
 static const char cstrColorOkResponse[] = "{ \"success\" : true, \"message\" : \"led color set to %s\" }";
 static const char cstrResetMethod[] = "ResetMethod";
-static const char cstrResetOkResponse[] = "{\"success\" : true, \"message\" : \"reset in 5 seconds\" }";
-static const char cstrResetProperty[] = "reset";
-static const char cstrTrueValue[] = "true";
+static const char cstrResetOkResponse[] = "{\"success\" : true, \"message\" : \"reset in %d seconds\" }";
+static const char cstrResetTimerProperty[] = "reset_timer";
 
+static const char cstrMethodBadDataResponse[] = "{ \"success\" : false, \"message\" : \"request does not contain identifiable data\" }";
 static const char cstrMethodNotFoundResponse[] = "{\"success\" : false, \"message\" : \"method %s not found\" }";
 
 // LED state
@@ -313,112 +315,130 @@ static void DeviceTwinUpdate(JSON_Object *desiredProperties)
 /// <returns>The pointer to the heap allocated memory.</returns>
 static void *SetupHeapMessage(const char *messageFormat, size_t maxLength, ...)
 {
+    char *message = malloc(maxLength + 1); // Ensure there is space for the null terminator put by vsnprintf.
+    if (message == NULL) {
+        Log_Debug(cstrErrorOutOfMemory);
+        abort();
+    }
+
     va_list args;
     va_start(args, maxLength);
-    char *message =
-        malloc(maxLength + 1); // Ensure there is space for the null terminator put by vsnprintf.
-    if (message != NULL) {
-        vsnprintf(message, maxLength, messageFormat, args);
-    }
+    vsnprintf(message, maxLength, messageFormat, args);
     va_end(args);
     return message;
 }
 
-
-    void serialization_example(void) {
-        JSON_Value* root_value = json_value_init_object();
-        JSON_Object* root_object = json_value_get_object(root_value);
-        char* serialized_string = NULL;
-        json_object_set_string(root_object, "name", "John Smith");
-        json_object_set_number(root_object, "age", 25);
-        json_object_dotset_string(root_object, "address.city", "Cupertino");
-        json_object_dotset_value(root_object, "contact.emails", json_parse_string("[\"email@example.com\",\"email2@example.com\"]"));
-        serialized_string = json_serialize_to_string_pretty(root_value);
-        puts(serialized_string);
-        json_free_serialized_string(serialized_string);
-        json_value_free(root_value);
+///<summary>
+/// Convert message payload (not NULL terminated) to heap allocated json value
+///</summary>
+/// <param name="payload">pointer to message payload buffer</param>
+/// <param name="payloadSize">size of payload buffer</param>
+/// <returns>The pointer to the heap allocated json value.</returns>
+static JSON_Value* GetJsonFromPayload(const char* payload, size_t payloadSize)
+{
+    char* pszPayloadString = malloc(payloadSize + 1); // +1 to store null char at the end.
+    if (pszPayloadString == NULL) {
+        Log_Debug(cstrErrorOutOfMemory);
+        abort();
     }
+    memcpy(pszPayloadString, payload, payloadSize);
+    pszPayloadString[payloadSize] = '\0'; // Null terminated string.
 
+    JSON_Value* jsonRootValue = json_parse_string(pszPayloadString);
+    free(pszPayloadString);
+
+    return jsonRootValue;
+}
+
+///<summary>
+/// LedColorControlMethod takes payload in form of { "color": "red"} to set LED blink color
+///</summary>
+/// <param name="payload">pointer to message payload buffer</param>
+/// <param name="payloadSize">size of payload buffer</param>
+/// <param name="responsePayload">address of pointer to message payload buffer</param>
+/// <param name="responsePayloadSize">address of size of payload buffer</param>
+/// <returns>HTTP status return value.</returns>
 static int LedColorControlMethod(const char* payload, size_t payloadSize,
     char** responsePayload, size_t* responsePayloadSize)
 {
-    int result = 404; // HTTP status code.
-
+    int result = HTTP_BAD_REQUEST; // HTTP status code : Bad Request.
     RgbLedUtility_Colors ledColor = RgbLedUtility_Colors_Unknown;
+    Log_Debug("[LedColorControlMethod]: Invoked.\n");
+
     // The payload should contains JSON such as: { "color": "red"}
-    char* directMethodCallContent = malloc(payloadSize + 1); // +1 to store null char at the end.
-    if (directMethodCallContent == NULL) {
-        Log_Debug("ERROR: Could not allocate buffer for direct method request payload.\n");
-        abort();
+    JSON_Value* jsonRootValue = GetJsonFromPayload(payload, payloadSize);
+    if (jsonRootValue != NULL) {
+        JSON_Object* jsonRootObject = json_value_get_object(jsonRootValue);
+        const char* pszColorName = json_object_get_string(jsonRootObject, cstrColorProperty);
+        if (pszColorName != NULL) {
+            size_t nColorNameLength = strlen(pszColorName);
+            ledColor = RgbLedUtility_GetColorFromString(pszColorName, nColorNameLength);
+            if (ledColor != RgbLedUtility_Colors_Unknown) { // Color's name has been identified.
+                Log_Debug("[LedColorControlMethod]: LED color set to: '%s'.\n", pszColorName);
+                size_t responseMaxLength = sizeof(cstrColorOkResponse) + nColorNameLength;
+                *responsePayload = SetupHeapMessage(cstrColorOkResponse, responseMaxLength, pszColorName);
+                *responsePayloadSize = strlen(*responsePayload);
+                result = HTTP_OK;
+
+                // Set the blinking LED color.
+                ledBlinkColor = ledColor;
+            }
+        }
+        json_value_free(jsonRootValue);
     }
 
-    memcpy(directMethodCallContent, payload, payloadSize);
-    directMethodCallContent[payloadSize] = 0; // Null terminated string.
-    JSON_Value* payloadJson = json_parse_string(directMethodCallContent);
-    if (payloadJson == NULL) {
-        goto colorNotFound;
+    if (result != HTTP_OK)
+    {
+        Log_Debug("[LedColorControlMethod]: Unrecognised payload.\n");
+        *responsePayload = SetupHeapMessage(cstrMethodBadDataResponse, sizeof(cstrMethodBadDataResponse));
+        *responsePayloadSize = strlen(*responsePayload);
     }
-    JSON_Object* colorJson = json_value_get_object(payloadJson);
-    if (colorJson == NULL) {
-        goto colorNotFound;
-    }
-    const char* colorName = json_object_get_string(colorJson, cstrColorProperty);
-    if (colorName == NULL) {
-        goto colorNotFound;
-    }
-
-    ledColor = RgbLedUtility_GetColorFromString(colorName, strlen(colorName));
-
-    // If color's name has not been identified.
-    if (ledColor != RgbLedUtility_Colors_Unknown) {
-        goto colorNotFound;
-    }
-
-    // Color's name has been identified.
-    result = 200;
-    const char* colorString = RgbLedUtility_GetStringFromColor(ledColor);
-    Log_Debug("INFO: LED color set to: '%s'.\n", colorString);
-    // Set the blinking LED color.
-    ledBlinkColor = ledColor;
-
-    size_t responseMaxLength = sizeof(cstrColorOkResponse) + strlen(colorString);
-    *responsePayload = SetupHeapMessage(cstrColorOkResponse, responseMaxLength, colorString);
-    if (*responsePayload == NULL) {
-        Log_Debug("ERROR: Could not allocate buffer for direct method response payload.\n");
-        abort();
-    }
-    *responsePayloadSize = strlen(*responsePayload);
-
-    return result;
-
-colorNotFound:
-    result = 400; // Bad request.
-    Log_Debug("INFO: Unrecognised direct method payload format.\n");
-
-    responseMaxLength = sizeof(cstrNoColorResponse);
-    *responsePayload = SetupHeapMessage(cstrNoColorResponse, responseMaxLength);
-    if (*responsePayload == NULL) {
-        Log_Debug("ERROR: Could not allocate buffer for direct method response payload.\n");
-        abort();
-    }
-    *responsePayloadSize = strlen(*responsePayload);
-
     return result;
 }
 
+///<summary>
+/// ResetMethod arms the reset counter 
+///</summary>
+/// <param name="payload">pointer to message payload buffer</param>
+/// <param name="payloadSize">size of payload buffer</param>
+/// <param name="responsePayload">address of pointer to message payload buffer</param>
+/// <param name="responsePayloadSize">address of size of payload buffer</param>
+/// <returns>HTTP status return value.</returns>
 static int ResetMethod(const char* payload, size_t payloadSize,
     char** responsePayload, size_t* responsePayloadSize)
 {
-    Log_Debug("INFO: received RESET command. Arm timer to 5 seconds.\n");
-    SetTimerFdToSingleExpiry(resetTimerFd, &resetTimerInterval);
+    int result = HTTP_BAD_REQUEST; // HTTP status code : Bad Request.
+    Log_Debug("[ResetMethod]: Invoked.\n");
 
-    responsePayloadSize = sizeof(cstrResetOkResponse);
-    *responsePayload = SetupHeapMessage(cstrNoColorResponse, responsePayloadSize);
-    if (*responsePayload == NULL) {
-        Log_Debug("ERROR: Could not allocate buffer for direct method response payload.\n");
-        abort();
+    // The payload should contain JSON such as: { "reset_timer": 5}
+    JSON_Value* jsonRootValue = GetJsonFromPayload(payload, payloadSize);
+    if (jsonRootValue != NULL) {
+        JSON_Object* jsonRootObject = json_value_get_object(jsonRootValue);
+        double dResetInterval = json_object_get_number(jsonRootObject, cstrResetTimerProperty);
+        if ((dResetInterval > 1) && (dResetInterval < 10)) {
+
+            resetTimerInterval.tv_sec = (time_t)dResetInterval;
+            Log_Debug("[ResetMethod]: set timer to %d seconds.\n", resetTimerInterval.tv_sec);
+            // Set the blinking LED color.
+            size_t responseMaxLength = sizeof(cstrResetOkResponse) + 8;
+            *responsePayload = SetupHeapMessage(cstrResetOkResponse, responseMaxLength, resetTimerInterval.tv_sec);
+            *responsePayloadSize = strlen(*responsePayload);
+            result = HTTP_OK;
+
+            // arm count down timer
+            SetTimerFdToSingleExpiry(resetTimerFd, &resetTimerInterval);
+        }
+        json_value_free(jsonRootValue);
     }
-    return 200;
+
+    if (result != HTTP_OK)
+    {
+        Log_Debug("[ResetMethod]: Unrecognised payload.\n");
+        *responsePayload = SetupHeapMessage(cstrMethodBadDataResponse, sizeof(cstrMethodBadDataResponse));
+        *responsePayloadSize = strlen(*responsePayload);
+    }
+    return result;
+
 }
 
 
@@ -443,24 +463,20 @@ static int DirectMethodCall(const char *methodName, const char *payload, size_t 
     *responsePayload = NULL;  // Reponse payload content.
     *responsePayloadSize = 0; // Response payload content size.
 
-    int result = 404; // HTTP status code.
+    int result = HTTP_NOT_FOUND; // HTTP status code.
 
-
-     if (strncmp(methodName, cstrLedColorControlMethod, sizeof(cstrLedColorControlMethod)) == 0) {
-        return LedColorControlMethod(payload, payloadSize, responsePayload, responsePayloadSize);
+    if (strncmp(methodName, cstrLedColorControlMethod, sizeof(cstrLedColorControlMethod)) == 0) {
+        result = LedColorControlMethod(payload, payloadSize, responsePayload, responsePayloadSize);
     }
-
-    if (strncmp(methodName, cstrResetMethod, sizeof(cstrResetMethod)) == 0) {
-        return ResetMethod(payload, payloadSize, responsePayload, responsePayloadSize);
+    else if (strncmp(methodName, cstrResetMethod, sizeof(cstrResetMethod)) == 0) {
+        result = ResetMethod(payload, payloadSize, responsePayload, responsePayloadSize);
     }
-
-    responsePayloadSize = sizeof(cstrMethodNotFoundResponse) + strlen(methodName);
-    *responsePayload = SetupHeapMessage(cstrMethodNotFoundResponse, responsePayloadSize, methodName);
-    if (*responsePayload == NULL) {
-        Log_Debug("ERROR: Could not allocate buffer for direct method response payload.\n");
-        abort();
-    }
-
+    else {
+        result = HTTP_NOT_FOUND;
+        *responsePayloadSize = sizeof(cstrMethodNotFoundResponse) + strlen(methodName);
+        *responsePayload = SetupHeapMessage(cstrMethodNotFoundResponse, *responsePayloadSize, methodName);
+     }
+ 
     return result;
 }
 
@@ -473,8 +489,14 @@ static void IoTHubConnectionStatusChanged(bool connected)
     connectedToIoTHub = connected;
 	if (connectedToIoTHub)
 	{
+        Log_Debug("[IoTHubConnectionStatusChanged]: Connected.\n");
+        SetTimerFdToPeriod(telemetryTimerFd, &telemetryTimerIntervals);
 		SendEventMessage(cstrEvtConnected);
-	}
+    }
+    else {
+        Log_Debug("[IoTHubConnectionStatusChanged]: Disconnected.\n");
+        SetTimerFdToPeriod(telemetryTimerFd, &nullPeriod);
+    }
 }
 
 /// <summary>
@@ -724,7 +746,7 @@ static int InitPeripheralsAndHandlers(void)
 
 
 	// Set up a timer for telemetry intervals
-	telemetryTimerFd = CreateTimerFdAndAddToEpoll(epollFd, &telemetryTimerIntervals,
+	telemetryTimerFd = CreateTimerFdAndAddToEpoll(epollFd, &nullPeriod,
 		&telemetryTimerEventData, EPOLLIN);
 	if (telemetryTimerFd < 0) {
 		return -1;
