@@ -79,7 +79,7 @@ can access them e.g. through  `$Global:RedSphereProduct.DeviceGroupList["Product
 
 The script has the relative paths to the image packages pre-defined and has extracted the ImageId of the ImagePackage already
 ```PowerShell
-Add-AS3Image -FilePath IoTConnectHL.FilePath
+Add-AS3Image -FilePath $IoTConnectHL.FilePath
 Add-AS3Image -FilePath $RedSphere.FilePath
 Add-AS3Image -FilePath $GreenSphereRT.FilePath
 Add-AS3Image -FilePath $BlueSphere.FilePath
