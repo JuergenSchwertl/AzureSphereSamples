@@ -22,7 +22,7 @@
       "$MT3620_RDB_BUTTON_B"
     ],
     "Uart": [],
-    "I2cMaster": [ "$MT3620_ISU2_I2C" ],
+    "I2cMaster": [ "$MT3620_ISU3_I2C" ],
     "SpiMaster": [],
     "WifiConfig": true,
     "NetworkConfig": false,
