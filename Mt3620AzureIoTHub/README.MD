@@ -4,7 +4,7 @@ Once you've verified that your Azure Sphere board runs your first application an
 Azure IoT Hub Device Provisioning Service, you're ready to go to connect Azure Sphere to Azure IoT Hub:
 
 >**Note:** If you had run through this scenario earlier you will notice that this high-level app sample is now using the CMake toolchain.
-1. In Visual Studio, in the Team Explorer Window open the CmakeLists.txt file in the IoTConnectHL directory using **File->Open...->Cmake...**.
+1. In Visual Studio, in the Team Explorer Window open the CmakeLists.txt file in the Mt3620AzureIoTHub directory using **File->Open...->Cmake...**.
 2. To prepares your *app_manifest.json* with your Azure IoT Hub settings, a CMake project does not offer the "Connect to Service..." Wizard.
 We therefore need to manually copy the settings from the Azure Portal. 
 ```json
