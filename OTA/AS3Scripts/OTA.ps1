@@ -737,7 +737,7 @@ function Add-AS3Image(
     {
         [String] $s = $result[ $result.Length-2 ]
         Write-Verbose "[Add-AS3Image] Id $s"
-		return [System.Guid]::new( $s.Split("'").Item(1) )
+		return $s
     } else {
         if($result -is [System.Array])
         {
