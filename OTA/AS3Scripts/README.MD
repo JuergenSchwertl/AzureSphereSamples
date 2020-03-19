@@ -169,8 +169,8 @@ To proceed further you need to note down the individual ImageID´s to create the 
 ```sh
 azsphere dg dep create -pn "RedSphere Product" -dgn "Production" -ii [RedSphereRT-ImageID] -f
 azsphere dg dep create -pn "RedSphere Product" -dgn "Production OS Evaluation" -ii [RedSphereRT-ImageID] -f
-azsphere dg dep create -pn "RedSphere Product" -dgn "Field Test" -ii [RedSphereRT-ImageID], [IoTConnectHL-ImageID] -f
-azsphere dg dep create -pn "RedSphere Product" -dgn "Field Test OS Evaluation" -ii [RedSphereRT-ImageID], [IoTConnectHL-ImageID] -f
+azsphere dg dep create -pn "RedSphere Product" -dgn "Field Test" -ii [RedSphereRT-ImageID],[IoTConnectHL-ImageID] -f
+azsphere dg dep create -pn "RedSphere Product" -dgn "Field Test OS Evaluation" -ii [RedSphereRT-ImageID],[IoTConnectHL-ImageID] -f
 ```
 I leave it up to you to do the same for the other products.
 
