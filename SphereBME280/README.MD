@@ -138,8 +138,6 @@ Step 4. Run the  [`ShowIoTCentralConfig.exe`](https://github.com/Azure/azure-sph
 and copy&paste the settings into your *app_manifest.json*
 
 Step 5. Run the application and see telemetry visualized in the dashboard.
-> There is currently an issue with the libBME280 not delivering the correct pressure values 
-> that I wasn't able to solve. If you find what's wrong, feel free to drop me a note or do a pull request with the fix.
 
 ---
 [Back to root](../README.MD#connecting-an-i2c-sensor-bosch-bme280-and-send-telemetry-to-azure-iot-central)

@@ -8,12 +8,16 @@
     "AllowedConnections": [],
     "AllowedTcpServerPorts": [],
     "AllowedUdpServerPorts": [],
-    "Gpio": [ 8, 9, 10, 12 ],
+    "Gpio": [
+      "$MT3620_RDB_BUTTON_A",
+      "$MT3620_RDB_BUTTON_B"
+    ],
     "Uart": [],
-    "I2cMaster": ["ISU0"],
+    "I2cMaster": [ "$MT3620_ISU3_I2C" ],
     "SpiMaster": [],
     "WifiConfig": false,
     "NetworkConfig": false,
-    "SystemTime": false
-  }
+    "SystemTime": true
+  },
+  "ApplicationType": "Default"
 }

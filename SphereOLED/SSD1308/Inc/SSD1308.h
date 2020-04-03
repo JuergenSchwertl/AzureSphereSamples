@@ -69,54 +69,82 @@
 ///<param name="i2cFd">I2C interface file descriptor</param>
 ///<param name="isPrimary">true if SSD1308 is on primary I2C address 0x3c, false if secondary address 0x3d is used</param>
 ///<returns>I2C file descriptor, -1 on error</returns>
-int OLED_Init(int i2cFd, bool isPrimary);
+int OLED_Init(int fdOledI2C, bool isPrimary);
 
 ///<summary>Set page adressing mode</summary>
-void OLED_SetPageMode(void);
+bool OLED_SetPageMode(void);
 ///<summary>Set horizontal adressing mode</summary>
-void OLED_SetHorizontalMode(void);
+bool OLED_SetHorizontalMode(void);
 ///<summary>Set vertical adressing mode</summary>
-void OLED_SetVerticalMode(void);
+bool OLED_SetVerticalMode(void);
 
 ///<summary>Set brightness of OLED display</summary>
 ///<param name="brightness">OLED display brightness (0..255)</param>
-void OLED_SetBrightness(uint8_t brightness);
+bool OLED_SetBrightness(uint8_t brightness);
 
 ///<summary>Set normal display (1 in RAM lights up dot)</summary>
-void OLED_SetNormalDisplay(void);
+bool OLED_SetNormalDisplay(void);
 ///<summary>Set inverse display (0 in RAM lights up dot)</summary>
-void OLED_SetInverseDisplay(void);
+bool OLED_SetInverseDisplay(void);
+
+///<summary>Display RAM content</summary>
+bool OLED_DisplayFromRAM(void);
+
+///<summary>Display all on</summary>
+bool OLED_DisplayAllOn(void);
+
+
+///<summary>Set display on</summary>
+bool OLED_DisplayOn(void);
+///<summary>Set display off</summary>
+bool OLED_DisplayOff(void);
+
+
+///<summary>Set display on/off</summary>
+///<param name="on">True: display on, False:Display off</param>
+bool OLED_Display(bool on);
+
+///<summary>Set Com output scan direction to Normal or Remapped. Depends on Multiplex ratio <see cref="OLED_setMultiplex"/></summary>
+///<param name="normal">True: Normal, False:Remapped</param>
+bool OLED_ScanDirection(bool normal);
+
+///<summary>Set display orientation (segment remap)</summary>
+///<param name="orientation">True: Normal, False:Flipped </param>
+bool OLED_DisplayOrientation(bool orientation);
 
 
 ///<summary>Set column and row address for next text output</summary>
 ///<param name="column">Column position (0..15)</param>
 ///<param name="row">Row position (0..7)</param>
-void OLED_SetTextPos(uint8_t column, uint8_t row);
+bool OLED_SetTextPos(uint8_t column, uint8_t row);
 
 ///<summary>Writes a character to the display at column and row set by <see cref="OLED_SetTextXY" /></summary>
 ///<param name="ch">Character to write to screen (32..127)</param>
-void OLED_PutChar(char ch);
+bool OLED_PutChar(char ch);
 
 ///<summary>Writes a string to the display at column and row set by <see cref="OLED_SetTextXY" /></summary>
 ///<param name="text">pointer to string to output to display</param>
-void OLED_PutString(const char *text);
+bool OLED_PutString(const char *text);
 
 ///<summary>Clears a line on display starting at column with length characters.</summary>
 ///<param name="column">Column to start at</param>
 ///<param name="row">Row number to clear</param>
 ///<param name="length">Number of characters to clear</param>
-void OLED_ClearPos(uint8_t column, uint8_t row, size_t length);
+bool OLED_ClearPos(uint8_t column, uint8_t row, size_t length);
+
+///<summary>Fills display RAM</summary>
+bool OLED_FillDisplay(uint8_t fillByte);
 
 ///<summary>Clears display RAM</summary>
-void OLED_ClearDisplay(void);
+bool OLED_ClearDisplay(void);
 
-//void OLED_drawBitmap(unsigned char *bitmaparray, int bytes);
+//bool OLED_drawBitmap(unsigned char *bitmaparray, int bytes);
 
-void OLED_SetHorizontalScrollProperties(uint8_t direction, uint8_t startPage, uint8_t endPage, uint8_t scrollSpeed);
-void OLED_SetVerticalScrollProperties(uint8_t direction, uint8_t startPage, uint8_t endPage, uint8_t scrollSpeed, uint8_t verticalOffset);
+bool OLED_SetHorizontalScrollProperties(uint8_t direction, uint8_t startPage, uint8_t endPage, uint8_t scrollSpeed);
+bool OLED_SetVerticalScrollProperties(uint8_t direction, uint8_t startPage, uint8_t endPage, uint8_t scrollSpeed, uint8_t verticalOffset);
 
-void OLED_ActivateScroll(void);
+bool OLED_ActivateScroll(void);
 
-void OLED_DeactivateScroll(void);
+bool OLED_DeactivateScroll(void);
 
 #endif
