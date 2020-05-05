@@ -147,4 +147,7 @@ bool OLED_ActivateScroll(void);
 
 bool OLED_DeactivateScroll(void);
 
+bool OLED_Test();
+
+
 #endif

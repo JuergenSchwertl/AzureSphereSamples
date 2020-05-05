@@ -68,6 +68,7 @@ static bool CheckButtonPressed(int gpioFd, GPIO_Value_Type* lastState)
     return false;
 }
 
+
 /// <summary>
 ///     Handle button timer event: if the button is pressed, change the LED blink rate.
 /// </summary>
@@ -104,16 +105,24 @@ static void ButtonTimerEventHandler(EventData *eventData)
 
     if (CheckButtonPressed(fdButtonB, &buttonBState))
     {
+        struct timespec waitPeriod = { 0, 250 * 1000 * 1000 };
         Log_Debug("Button B: Reset Display\n");
 
         OLED_Display(true);
         OLED_FillDisplay(0xFF);
         OLED_SetTextPos(0, 3);
         OLED_PutString("Display checked and working.");
-        OLED_SetInverseDisplay();
-        struct timespec waitPeriod = { 0, 250 * 1000 * 1000 };
+        //OLED_SetInverseDisplay();
+        //nanosleep(&waitPeriod, NULL);
+        //OLED_SetNormalDisplay();
+
+        OLED_Test();
         nanosleep(&waitPeriod, NULL);
-        OLED_SetNormalDisplay();
+        OLED_Test();
+        nanosleep(&waitPeriod, NULL);
+        OLED_Test();
+        nanosleep(&waitPeriod, NULL);
+
     }
 
 }

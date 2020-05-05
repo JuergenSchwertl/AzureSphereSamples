@@ -42,10 +42,16 @@
 #include "SSD1308defs.h"
 #include "Fonts.h"
 #include <applibs/log.h>
+#include <arm_neon.h>
 
 static SSD1308_AddressModes_t addressingMode;
 static int oledI2CFd = -1;
 static I2C_DeviceAddress oledI2CAddr = (I2C_DeviceAddress) SSD1308_I2C_PRIMARY_ADDRESS;
+
+typedef struct  __attribute__((__packed__)) _ssd1308_packet  {
+	uint8_t header;
+	uint8_t data;
+} ssd1308_packet_t;
 
 ///<summary>Sends a buffer command over I2C to the SSD1308</summary>
 /// <param name="data">pointer to byte buffer</param>
@@ -60,6 +66,10 @@ ssize_t oled_sendBuffer(const uint8_t *data, size_t length)
 	ssize_t nBytesSent =  I2CMaster_Write(oledI2CFd, oledI2CAddr, data, length);
 	struct timespec waitPeriod = { 0, 2 * 1000 * 1000 };
 	nanosleep(&waitPeriod, NULL);
+	if (length != nBytesSent)
+	{
+		Log_Debug("[OLED] sent only %d of %d bytes.\r", nBytesSent, length);
+	}
 	return nBytesSent;
 }
 
@@ -228,7 +238,7 @@ bool OLED_SetTextPos(uint8_t column, uint8_t row)
 	bool bSuccess = true;
 	bSuccess &= oled_sendCommand(SSD1308_SET_PAGE_START_ADDRESS + (row & 0x0F));
 	bSuccess &= oled_sendCommand(SSD1308_SET_COLUMN_ADDRESS_LOW + ((column << 3) & 0x0F));
-	bSuccess &= oled_sendCommand(SSD1308_SET_COLUMN_ADDRESS_LOW + ((column << 3) & 0x0F));
+	bSuccess &= oled_sendCommand(SSD1308_SET_COLUMN_ADDRESS_HIGH + ((column > 1) & 0x0F));
 	return bSuccess;
 
 	//uint8_t buf[6] =
@@ -330,28 +340,24 @@ bool OLED_ClearPos(uint8_t column, uint8_t row, size_t length)
 bool OLED_FillDisplay(uint8_t fillByte)
 {
 	bool bSuccess = true;
-	const size_t bufLen = OLED_HORIZONTAL_PIXELS*2; // line buffer+data prefix
-	uint8_t* pBuf = malloc(bufLen);
-	if (pBuf != NULL)
+	ssd1308_packet_t pkgBuf[OLED_HORIZONTAL_PIXELS]; // line buffer
+
+	register ssd1308_packet_t* pPkg = pkgBuf;
+	register ssd1308_packet_t* pPkgEnd = &pPkg[OLED_HORIZONTAL_PIXELS - 1];
+	register ssd1308_packet_t pkg = { .header = SSD1308_DATA_MODE_CONT, .data = fillByte };
+	while (pPkg < pPkgEnd)
 	{
-		register uint8_t* pB = pBuf;
-		for (int i = 0; i < OLED_HORIZONTAL_PIXELS-1; i++)
-		{
-			*pB++ = SSD1308_DATA_MODE_CONT;
-			*pB++ = fillByte;
-		}
-		*pB++ = SSD1308_DATA_MODE;
-		*pB++ = fillByte;
-		size_t bytesSent;
-		for (uint8_t row = 0; (row < 8) && bSuccess; row++)
-		{
-			OLED_SetTextPos(0, row);
-			oled_sendBuffer(pBuf, bufLen); // re-using buffer for all lines
-			//bSuccess &= OLED_SetTextPos(0, row);
-			//bSuccess &= ((bytesSent = oled_sendBuffer(pBuf, bufLen)) == bufLen); // re-using buffer for all lines
-		}
-		free(pBuf);
+		*pPkg++ = pkg;
 	}
+	pkg.header = SSD1308_DATA_MODE;
+	*pPkg++ = pkg;
+
+	for (uint8_t row = 0; (row < 8) /*&& bSuccess*/; row++)
+	{
+		bSuccess &= oled_sendCommand(SSD1308_SET_PAGE_START_ADDRESS + (row & 0x0F));
+		bSuccess &= (oled_sendBuffer((uint8_t) pkgBuf, sizeof(pkgBuf)) == sizeof(pkgBuf)); // re-using buffer for all lines
+	}
+
 	bSuccess &= OLED_SetTextPos(0, 0);
 	return bSuccess;
 }
@@ -365,7 +371,42 @@ bool OLED_ClearDisplay()
 
 
 
+bool OLED_Test()
+{
 
+	//OLED_SetTextPos(3, 1);
+	ssd1308_packet_t buf[] =
+	{
+		SSD1308_COMMAND_MODE_CONT,
+		//set page address
+		(uint8_t)(SSD1308_SET_PAGE_START_ADDRESS + (1 & 0x0F)),
+		SSD1308_COMMAND_MODE_CONT,
+		//set column lower address (Column*8px)
+		(uint8_t)(SSD1308_SET_COLUMN_ADDRESS_LOW + ((1 << 3) & 0x0F)),
+		SSD1308_COMMAND_MODE_CONT,
+		//set column higher address (Column*8px) >> 4
+		(uint8_t)(SSD1308_SET_COLUMN_ADDRESS_HIGH + ((1 >> 1) & 0x0F)),
+		SSD1308_DATA_MODE_CONT,
+		0xAA,
+		SSD1308_DATA_MODE_CONT,
+		0xAA,
+		SSD1308_DATA_MODE_CONT,
+		0xAA,
+		SSD1308_DATA_MODE_CONT,
+		0xAA,
+		SSD1308_DATA_MODE_CONT,
+		0xAA,
+		SSD1308_DATA_MODE_CONT,
+		0xAA,
+		SSD1308_DATA_MODE_CONT,
+		0xAA,
+		SSD1308_DATA_MODE,
+		0xAA
+	};
+	bool bSuccess = oled_sendBuffer(buf, sizeof(buf)) == sizeof(buf);
+	return bSuccess;
+
+}
 
 //
 //void OLED_drawBitmap(unsigned char *bitmaparray, int bytes)
@@ -447,8 +488,8 @@ int OLED_Init(int i2cFd, bool isPrimary)
 	}
 
 	OLED_Display( false );
-	OLED_DisplayOrientation(false);
 	oled_setPadsHardware(SSD1308_PAD_ALTERNATIVE);
+	OLED_DisplayOrientation(false);
 	OLED_ScanDirection(false);
 	OLED_SetMultiplex(63);
 	oled_setClockDivider(0x80);
@@ -460,7 +501,7 @@ int OLED_Init(int i2cFd, bool isPrimary)
 	OLED_DisplayFromRAM();
 	OLED_SetNormalDisplay();
 	OLED_DeactivateScroll();
-	OLED_ClearDisplay();
+	//OLED_ClearDisplay();
 	OLED_Display( true );
 
 	//if (oled_sendBuffer(oledResetSeq, sizeof(oledResetSeq)) != sizeof(oledResetSeq))
