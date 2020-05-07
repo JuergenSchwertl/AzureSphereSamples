@@ -15,7 +15,7 @@
 #include <applibs/log.h>
 #include <applibs/networking.h>
 
-#include "mt3620_rdb.h"
+#include <hw/mt3620_rdb.h>
 #include "UART_utilities.h"
 #include "MCU_utilities.h"
 
@@ -162,7 +162,7 @@ static int InitPeripheralsAndHandlers(void)
     }
 
 	// Create a UART_Config object, open the UART and set up UART event handler
-	if ((uartFd = UART_InitializeAndAddToEpoll(MT3620_RDB_HEADER2_ISU0_UART, epollFd, &MCU_ParseDataToIotHub)) < 0)
+	if ((uartFd = UART_InitializeAndAddToEpoll(MT3620_ISU0_UART, epollFd, &MCU_ParseDataToIotHub)) < 0)
 	{
 		return -1;
 	}

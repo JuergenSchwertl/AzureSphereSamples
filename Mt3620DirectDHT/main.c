@@ -15,7 +15,7 @@
 #include <applibs/networking.h>
 #include <applibs/wificonfig.h>
 
-#include "mt3620_rdb.h"
+#include <hw/mt3620_rdb.h>
 #include "rgbled_utility.h"
 #include "DHT11.h"
 
@@ -243,7 +243,7 @@ bool GetSensorDataJson(char * jsonBuffer, size_t jsonBufferSize, const char * cs
 		return false;
 	}
 
-	DHT_SensorData * pDHT = DHT_ReadData(MT3620_GPIO0);
+	DHT_SensorData * pDHT = DHT_ReadData(MT3620_GPIO0 );
 	if (pDHT == NULL)
 	{
 		strncpy(jsonBuffer, cstrJsonErrorNoData, jsonBufferSize);

@@ -1,11 +1,12 @@
 {
   "SchemaVersion": 1,
   "Name": "SphereBME280",
+  "ApplicationType": "Default",
   "ComponentId": "82a16cf9-d4e1-4235-a6e5-14ed23c4cc18",
   "EntryPoint": "/bin/app",
-  "CmdArgs": [ "0ne0003E5B3" ],
+  "CmdArgs": [ "--- YOUR IOT CENTRAL DPS SCOPE ID ---" ],
   "Capabilities": {
-    "AllowedConnections": [ "global.azure-devices-provisioning.net", "iotc-fa52149d-5584-4424-8189-f36d910f5902.azure-devices.net" ],
+    "AllowedConnections": [ "global.azure-devices-provisioning.net", "--- YOUR IOT CENTRAL IOTHUB DNS NAME ---" ],
     "AllowedTcpServerPorts": [],
     "AllowedUdpServerPorts": [],
     "Gpio": [
@@ -27,7 +28,7 @@
     "WifiConfig": true,
     "NetworkConfig": false,
     "SystemTime": false,
-    "DeviceAuthentication": "c0b88764-9273-46ab-bab2-effecf13f91c"
+    "DeviceAuthentication": "--- YOUR AZURE SPHERE TENANT ID--- "
   }
 }
 

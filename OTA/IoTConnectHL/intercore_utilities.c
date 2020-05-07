@@ -100,7 +100,7 @@ int InterCore_RegisterHandler(int epollFd, InterCoreEventData * pIcEventData)
 	pIcEventData->EpollFd = epollFd;
 
 	// Open connection to real-time capable application.
-	if ((fdSocket = Application_Socket(pIcEventData->ComponentId)) == -1) {
+	if ((fdSocket = Application_Connect(pIcEventData->ComponentId)) == -1) {
 		if (errno == EACCES)
 		{
 			//supress verbose output if app is not found

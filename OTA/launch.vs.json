@@ -14,7 +14,7 @@
       "applicationPath": "${cmake.buildRoot}\\RedSphereRT\\RedSphereRT.out",
       "imagePath": "${cmake.buildRoot}\\RedSphereRT\\RedSphereRT.imagepackage",
       "targetCore": "RTCore",
-      "partnerComponents": [ "33e04e8f-a020-4af8-80d0-8064343e0616" ]
+      "partnerComponents": [ "33e04e8f-a020-4af8-80d0-8064343e0616", "7E5FAB32-801C-4EDF-A1AA-9263652AA6BD", "07562362-3FEC-46C8-B0AF-DB9507F32748" ]
     },
     {
       "type": "azurespheredbg",
@@ -28,7 +28,7 @@
       "applicationPath": "${cmake.buildRoot}\\GreenSphereRT\\GreenSphereRT.out",
       "imagePath": "${cmake.buildRoot}\\GreenSphereRT\\GreenSphereRT.imagepackage",
       "targetCore": "RTCore",
-      "partnerComponents": [ "33e04e8f-a020-4af8-80d0-8064343e0616" ]
+      "partnerComponents": [ "33e04e8f-a020-4af8-80d0-8064343e0616", "F4E25978-6152-447B-A2A1-64577582F327", "07562362-3FEC-46C8-B0AF-DB9507F32748" ]
     },
     {
       "type": "azurespheredbg",
@@ -42,7 +42,7 @@
       "applicationPath": "${cmake.buildRoot}\\BlueSphereRT\\BlueSphereRT.out",
       "imagePath": "${cmake.buildRoot}\\BlueSphereRT\\BlueSphereRT.imagepackage",
       "targetCore": "RTCore",
-      "partnerComponents": [ "33e04e8f-a020-4af8-80d0-8064343e0616" ]
+      "partnerComponents": [ "33e04e8f-a020-4af8-80d0-8064343e0616", "F4E25978-6152-447B-A2A1-64577582F327", "7E5FAB32-801C-4EDF-A1AA-9263652AA6BD" ]
     }
   ]
 }

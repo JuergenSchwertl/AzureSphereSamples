@@ -11,7 +11,7 @@
 #include <applibs/log.h>
 #include <applibs/wificonfig.h>
 
-#include "mt3620_rdb.h"
+#include <hw/mt3620_rdb.h>
 #include "rgbled_utility.h"
 
 // This sample C application for a MT3620 Reference Development Board (Azure Sphere) demonstrates how to
@@ -53,12 +53,6 @@
 // - log (messages shown in Visual Studio's Device Output window during debugging);
 // - wificonfig (configure WiFi settings);
 // - azureiot (interaction with Azure IoT services)
-
-#ifndef AZURE_IOT_HUB_CONFIGURED
-#error \
-    "WARNING: Please add a project reference to the Connected Service first \
-(right-click References -> Add Connected Service)."
-#endif
 
 #include "azure_iot_utilities.h"
 

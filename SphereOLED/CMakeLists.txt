@@ -6,14 +6,18 @@ PROJECT(SphereOLED C)
 
 message("Project ${PROJECT_NAME}")
 
-ADD_SUBDIRECTORY(SSD1308)
+azsphere_configure_tools(TOOLS_REVISION "20.04")
+azsphere_configure_api(TARGET_API_SET "5")
 
-# this project contains a public header file, so the directory needs to be added to the list of include directories of parent projects
-# TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PUBLIC ../Hardware/mt3620_rdb/inc)
+# Add the OLED display driver
+ADD_SUBDIRECTORY(SSD1308)
 
 # Create executable
 ADD_EXECUTABLE(${PROJECT_NAME} main.c epoll_timerfd_utilities.c )
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} m applibs pthread gcc_s c SSD1308)
 
+# This application targets the Seeed MT3620 Development Board so target for mt3620_rdb
+azsphere_target_hardware_definition(${PROJECT_NAME} TARGET_DIRECTORY "../Hardware/mt3620_rdb" TARGET_DEFINITION "mt3620_rdb.json")
+
 # Add MakeImage post-build command
-INCLUDE("${AZURE_SPHERE_MAKE_IMAGE_FILE}")
+azsphere_target_add_image_package(${PROJECT_NAME})
