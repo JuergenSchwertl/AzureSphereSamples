@@ -108,7 +108,6 @@ static int azureIoTPollPeriodSeconds = -1;
 static const char cstrErrorOutOfMemory[] = "ERROR: Could not allocate buffer for direct method response payload.\n";
 
 
-static const char cstrJsonTelemetry[] = "{\"temperature\":%0.2f,\"pressure\":%0.2f,\"humidity\":%0.2f}";
 static const char cstrJsonEvent[] = "{\"%s\":\"occurred\"}";
 static const char cstrEvtConnected[] = "connect";
 static const char cstrEvtButtonB[] = "buttonB";
@@ -116,14 +115,38 @@ static const char cstrEvtButtonA[] = "buttonA";
 
 // direct method names
 static const char cstrLedColorControlMethod[] = "LedColorControlMethod";
-static const char cstrColorProperty[] = "color";
-static const char cstrColorOkResponse[] = "{ \"success\" : true, \"message\" : \"led color set to %s\" }";
 static const char cstrResetMethod[] = "ResetMethod";
-static const char cstrResetOkResponse[] = "{\"success\" : true, \"message\" : \"reset in %d seconds\" }";
-static const char cstrResetTimerProperty[] = "reset_timer";
 
-static const char cstrMethodBadDataResponse[] = "{ \"success\" : false, \"message\" : \"request does not contain identifiable data\" }";
-static const char cstrMethodNotFoundResponse[] = "{\"success\" : false, \"message\" : \"method %s not found\" }";
+// forward declarations for method handlers
+HTTP_STATUS_CODE LedColorControlMethod(JSON_Value* jsonParameters, JSON_Value** jsonResponseAddress);
+HTTP_STATUS_CODE ResetMethod(JSON_Value* jsonParameters, JSON_Value** jsonResponseAddress);
+
+// list of method registrations
+static const MethodRegistration Methods[] = {
+    {.MethodName = cstrLedColorControlMethod, .MethodHandler = &LedColorControlMethod},
+    {.MethodName = cstrResetMethod, .MethodHandler = &ResetMethod},
+    {.MethodName = NULL, .MethodHandler = NULL}
+};
+
+
+// json property names
+static const char cstrColorProperty[] = "color";
+static const char cstrResetTimerProperty[] = "reset_timer";
+static const char cstrSuccessProperty[] = "success";
+static const char cstrMessageProperty[] = "message";
+static const char cstrTemperatureProperty[] = "temperature";
+static const char cstrPressureProperty[] = "pressure";
+static const char cstrHumidityProperty[] = "humidity";
+
+// method response messages
+static const char cstrColorResponseMsg[] = "LED color set to %s";
+static const char cstrResetResponseMsg[] = "Reset in %d seconds";
+
+static const char cstrBadDataResponseMsg[] = "Request does not contain identifiable data.";
+
+
+
+
 
 // LED state
 static RgbLed led1 = RGBLED_INIT_VALUE;
@@ -253,12 +276,18 @@ static void SendTelemetryMessage(void)
 		char strJsonData[128];
 		if (BME280_GetSensorData(&bmeData) == 0)
 		{
-			snprintf(strJsonData, sizeof(strJsonData), cstrJsonTelemetry,
-				bmeData.temperature, bmeData.pressure, bmeData.humidity); //
-			Log_Debug("[Send] %s\r\n",strJsonData);
+			Log_Debug("[Send] Temperature: %.2f, Pressure: %.2f, Humidity: %.2f\n", bmeData.temperature, bmeData.pressure, bmeData.humidity);
 
-			// Send a message
-			AzureIoT_SendMessage(strJsonData);
+            JSON_Value * jsonValue = json_value_init_object();
+            JSON_Object* jsonObject = json_value_get_object( jsonValue );
+            json_object_set_number(jsonObject, cstrTemperatureProperty, bmeData.temperature);
+            json_object_set_number(jsonObject, cstrPressureProperty, bmeData.pressure);
+            json_object_set_number(jsonObject, cstrHumidityProperty, bmeData.humidity);
+            
+            // Send a message
+            AzureIoT_SendJsonMessage(jsonValue);
+
+            json_value_free(jsonValue);
 
 			// Set the send/receive LED2 to blink once immediately to indicate 
 			// the message has been queued.
@@ -353,132 +382,97 @@ static JSON_Value* GetJsonFromPayload(const char* payload, size_t payloadSize)
 ///<summary>
 /// LedColorControlMethod takes payload in form of { "color": "red"} to set LED blink color
 ///</summary>
-/// <param name="payload">pointer to message payload buffer</param>
-/// <param name="payloadSize">size of payload buffer</param>
-/// <param name="responsePayload">address of pointer to message payload buffer</param>
-/// <param name="responsePayloadSize">address of size of payload buffer</param>
+/// <param name="jsonParameters">json message payload</param>
+/// <param name="jsonResponseAddress">address of response message payload</param>
 /// <returns>HTTP status return value.</returns>
-static int LedColorControlMethod(const char* payload, size_t payloadSize,
-    char** responsePayload, size_t* responsePayloadSize)
+static HTTP_STATUS_CODE LedColorControlMethod(JSON_Value * jsonParameters, JSON_Value** jsonResponseAddress)
 {
-    int result = HTTP_BAD_REQUEST; // HTTP status code : Bad Request.
-    RgbLedUtility_Colors ledColor = RgbLedUtility_Colors_Unknown;
     Log_Debug("[LedColorControlMethod]: Invoked.\n");
 
+    HTTP_STATUS_CODE result = HTTP_BAD_REQUEST; // HTTP status code : Bad Request.
+    RgbLedUtility_Colors ledColor = RgbLedUtility_Colors_Unknown;
+    JSON_Value* jsonResponse = json_value_init_object();
+    JSON_Object* jsonObject = json_value_get_object(jsonResponse);
+
     // The payload should contains JSON such as: { "color": "red"}
-    JSON_Value* jsonRootValue = GetJsonFromPayload(payload, payloadSize);
-    if (jsonRootValue != NULL) {
-        JSON_Object* jsonRootObject = json_value_get_object(jsonRootValue);
+    if (jsonParameters != NULL) {
+        JSON_Object* jsonRootObject = json_value_get_object(jsonParameters);
         const char* pszColorName = json_object_get_string(jsonRootObject, cstrColorProperty);
         if (pszColorName != NULL) {
             size_t nColorNameLength = strlen(pszColorName);
             ledColor = RgbLedUtility_GetColorFromString(pszColorName, nColorNameLength);
             if (ledColor != RgbLedUtility_Colors_Unknown) { // Color's name has been identified.
-                Log_Debug("[LedColorControlMethod]: LED color set to: '%s'.\n", pszColorName);
-                size_t responseMaxLength = sizeof(cstrColorOkResponse) + nColorNameLength;
-                *responsePayload = SetupHeapMessage(cstrColorOkResponse, responseMaxLength, pszColorName);
-                *responsePayloadSize = strlen(*responsePayload);
-                result = HTTP_OK;
 
+                json_object_set_boolean(jsonObject, cstrSuccessProperty, true);
+                char* pszMsg = SetupHeapMessage(cstrColorResponseMsg, pszColorName);
+                json_object_set_string(jsonObject, cstrMessageProperty, pszMsg);
+                free(pszMsg);
+                
                 // Set the blinking LED color.
                 ledBlinkColor = ledColor;
+                Log_Debug("[LedColorControlMethod]: LED color set to: '%s'.\n", pszColorName);
+                result = HTTP_OK;
             }
         }
-        json_value_free(jsonRootValue);
     }
 
     if (result != HTTP_OK)
     {
         Log_Debug("[LedColorControlMethod]: Unrecognised payload.\n");
-        *responsePayload = SetupHeapMessage(cstrMethodBadDataResponse, sizeof(cstrMethodBadDataResponse));
-        *responsePayloadSize = strlen(*responsePayload);
+        json_object_set_boolean(jsonObject, cstrSuccessProperty, false);
+        json_object_set_string(jsonObject, cstrMessageProperty, cstrBadDataResponseMsg);
     }
+
+    *jsonResponseAddress = jsonResponse;
     return result;
 }
 
 ///<summary>
 /// ResetMethod arms the reset counter 
 ///</summary>
-/// <param name="payload">pointer to message payload buffer</param>
-/// <param name="payloadSize">size of payload buffer</param>
-/// <param name="responsePayload">address of pointer to message payload buffer</param>
-/// <param name="responsePayloadSize">address of size of payload buffer</param>
+/// <param name="jsonParameters">json message payload</param>
+/// <param name="jsonResponseAddress">address of response message payload</param>
 /// <returns>HTTP status return value.</returns>
-static int ResetMethod(const char* payload, size_t payloadSize,
-    char** responsePayload, size_t* responsePayloadSize)
+static HTTP_STATUS_CODE ResetMethod(JSON_Value* jsonParameters, JSON_Value** jsonResponseAddress)
 {
-    int result = HTTP_BAD_REQUEST; // HTTP status code : Bad Request.
     Log_Debug("[ResetMethod]: Invoked.\n");
 
+    HTTP_STATUS_CODE result = HTTP_BAD_REQUEST; // HTTP status code : Bad Request.
+    JSON_Value* jsonResponse = json_value_init_object();
+    JSON_Object* jsonObject = json_value_get_object(jsonResponse);
+
     // The payload should contain JSON such as: { "reset_timer": 5}
-    JSON_Value* jsonRootValue = GetJsonFromPayload(payload, payloadSize);
-    if (jsonRootValue != NULL) {
-        JSON_Object* jsonRootObject = json_value_get_object(jsonRootValue);
+    if (jsonParameters != NULL) {
+        JSON_Object* jsonRootObject = json_value_get_object(jsonParameters);
         double dResetInterval = json_object_get_number(jsonRootObject, cstrResetTimerProperty);
         if ((dResetInterval > 1) && (dResetInterval < 10)) {
 
             resetTimerInterval.tv_sec = (time_t)dResetInterval;
-            Log_Debug("[ResetMethod]: set timer to %d seconds.\n", resetTimerInterval.tv_sec);
-            // Set the blinking LED color.
-            size_t responseMaxLength = sizeof(cstrResetOkResponse) + 8;
-            *responsePayload = SetupHeapMessage(cstrResetOkResponse, responseMaxLength, resetTimerInterval.tv_sec);
-            *responsePayloadSize = strlen(*responsePayload);
-            result = HTTP_OK;
-
             // arm count down timer
             SetTimerFdToSingleExpiry(resetTimerFd, &resetTimerInterval);
+            Log_Debug("[ResetMethod]: set timer to %d seconds.\n", resetTimerInterval.tv_sec);
+
+            json_object_set_boolean(jsonObject, cstrSuccessProperty, true);
+            char* pszMsg = SetupHeapMessage(cstrResetResponseMsg, dResetInterval);
+            json_object_set_string(jsonObject, cstrMessageProperty, pszMsg);
+            free(pszMsg);
+
+            result = HTTP_OK;
         }
-        json_value_free(jsonRootValue);
     }
 
     if (result != HTTP_OK)
     {
         Log_Debug("[ResetMethod]: Unrecognised payload.\n");
-        *responsePayload = SetupHeapMessage(cstrMethodBadDataResponse, sizeof(cstrMethodBadDataResponse));
-        *responsePayloadSize = strlen(*responsePayload);
+        json_object_set_boolean(jsonObject, cstrSuccessProperty, false);
+        json_object_set_string(jsonObject, cstrMessageProperty, cstrBadDataResponseMsg);
     }
-    return result;
 
-}
-
-
-/// <summary>
-///     Direct Method callback function, called when a Direct Method call is received from the Azure
-///     IoT Hub.
-/// </summary>
-/// <param name="methodName">The name of the method being called.</param>
-/// <param name="payload">The payload of the method.</param>
-/// <param name="responsePayload">The response payload content. This must be a heap-allocated
-/// string, 'free' will be called on this buffer by the Azure IoT Hub SDK.</param>
-/// <param name="responsePayloadSize">The size of the response payload content.</param>
-/// <returns>200 HTTP status code if the method name is "LedColorControlMethod" and the color is
-/// correctly parsed;
-/// 400 HTTP status code is the color has not been recognised in the payload;
-/// 404 HTTP status code if the method name is unknown.</returns>
-static int DirectMethodCall(const char *methodName, const char *payload, size_t payloadSize,
-                            char **responsePayload, size_t *responsePayloadSize)
-{
-    // Prepare the payload for the response. This is a heap allocated null terminated string.
-    // The Azure IoT Hub SDK is responsible of freeing it.
-    *responsePayload = NULL;  // Reponse payload content.
-    *responsePayloadSize = 0; // Response payload content size.
-
-    int result = HTTP_NOT_FOUND; // HTTP status code.
-
-    if (strncmp(methodName, cstrLedColorControlMethod, sizeof(cstrLedColorControlMethod)) == 0) {
-        result = LedColorControlMethod(payload, payloadSize, responsePayload, responsePayloadSize);
-    }
-    else if (strncmp(methodName, cstrResetMethod, sizeof(cstrResetMethod)) == 0) {
-        result = ResetMethod(payload, payloadSize, responsePayload, responsePayloadSize);
-    }
-    else {
-        result = HTTP_NOT_FOUND;
-        *responsePayloadSize = sizeof(cstrMethodNotFoundResponse) + strlen(methodName);
-        *responsePayload = SetupHeapMessage(cstrMethodNotFoundResponse, *responsePayloadSize, methodName);
-     }
- 
+    *jsonResponseAddress = jsonResponse;
     return result;
 }
+
+
 
 /// <summary>
 ///     IoT Hub connection status callback function.
@@ -712,7 +706,7 @@ static int InitPeripheralsAndHandlers(void)
     // Set the Azure IoT hub related callbacks
     AzureIoT_SetMessageReceivedCallback(&MessageReceived);
     AzureIoT_SetDeviceTwinUpdateCallback(&DeviceTwinUpdate);
-    AzureIoT_SetDirectMethodCallback(&DirectMethodCall);
+    AzureIoT_RegisterDirectMethodHandlers(&Methods);
     AzureIoT_SetConnectionStatusCallback(&IoTHubConnectionStatusChanged);
 
     // Display the currently connected WiFi connection.

@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <time.h>
-#include <azureiot/iothub_client_core_common.h>
 #include <azureiot/iothub_device_client_ll.h>
 #include <azureiot/iothub_client_options.h>
 #include <azureiot/iothubtransportmqtt.h>
@@ -26,6 +25,12 @@ static char scopeId[16] = ""; // Your DPS Scope ID is filled on app start";
 ///     delivery.
 /// </summary>
 static DeviceTwinDeliveryConfirmationFnType deviceTwinConfirmationCb = 0;
+
+/// <summary>
+///     Pointer to array of MethodRegistration records.
+///     Last array record needs to have NULL, NULL as end marker;
+/// </summary>
+static MethodRegistration* pRegisteredMethods = NULL;
 
 /// <summary>
 ///     Function invoked whenever a Direct Method call is received from the IoT Hub.
@@ -68,6 +73,41 @@ static bool iothubAuthenticated = false;
 ///     Used to set the keepalive period over MQTT to 20 seconds.
 /// </summary>
 static int keepalivePeriodSeconds = 20;
+
+/// <summary>
+///     Content-Type and Content-Encoding system property values
+/// </summary>
+const char cstrJsonContentType[] = "application%2Fjson";
+const char cstrPlainTextContentType[] = "text%2Fplain";
+const char cstrUtf8Encoding[] = "utf-8";
+
+
+
+
+typedef struct IOTHUB_MESSAGE_HANDLE_DATA_TAG
+{
+    IOTHUBMESSAGE_CONTENT_TYPE contentType;
+    union
+    {
+        unsigned char * byteArray;
+        char * string;
+    } value;
+    void * properties;
+    char* messageId;
+    char* correlationId;
+    char* userDefinedContentType;
+    char* contentEncoding;
+    char* outputName;
+    char* inputName;
+    char* connectionModuleId;
+    char* connectionDeviceId;
+    void * diagnosticData;
+    bool is_security_message;
+}IOTHUB_MESSAGE_HANDLE_DATA;
+
+
+
+
 
 /// <summary>
 ///     Set of bundle of root certificate authorities.
@@ -230,6 +270,62 @@ static char *getAzureSphereProvisioningResultString(
     }
 }
 
+///<summary>
+/// Convert message payload (not NULL terminated) to heap allocated json value
+///</summary>
+/// <param name="pszPayload">pointer to message pszPayload buffer</param>
+/// <param name="nPayloadSize">size of payload buffer</param>
+/// <returns>The pointer to the heap allocated json value.</returns>
+static JSON_Value* getJsonFromPayload(const char* pszPayload, size_t nPayloadSize)
+{
+    char* pszPayloadString = malloc(nPayloadSize + 1); // +1 to store null char at the end.
+    if (pszPayloadString == NULL) {
+        LogMessage("ERROR: Not enough memory");
+        abort();
+    }
+    memcpy(pszPayloadString, pszPayload, nPayloadSize);
+    pszPayloadString[nPayloadSize] = '\0'; // Null terminated string.
+
+    JSON_Value* jsonRootValue = json_parse_string(pszPayloadString);
+    free(pszPayloadString);
+
+    return jsonRootValue;
+}
+
+///<summary>
+/// Convert json value to heap allocated message payload with size
+///</summary>
+/// <param name="pszPayload">OUT parameter: address of message payload buffer pointer</param>
+/// <param name="nPayloadSize">OUT parameter: address of size variable</param>
+/// <returns>IOTHUB_CLIENT_OK on successful serialisation</returns>
+static IOTHUB_CLIENT_RESULT setPayloadFromJson(JSON_Value* jsonValue, unsigned char** ppszResponse, size_t* pResponseSize)
+{
+    if ((ppszResponse == NULL) || (pResponseSize == NULL)){
+        return IOTHUB_CLIENT_INVALID_ARG;
+    }
+
+    char* pszPayload = NULL;
+    size_t nPayloadSize = 0;
+
+    if ((jsonValue == NULL) || ((nPayloadSize = json_serialization_size(jsonValue)) == 0)) {
+        return IOTHUB_CLIENT_OK; // nothing to report
+    }
+
+    if ((pszPayload = (char*)malloc(nPayloadSize)) == NULL) {
+        LogMessage("ERROR: not enough memory.\n");
+        abort();
+    }
+
+    if (json_serialize_to_buffer(jsonValue, pszPayload, nPayloadSize) == JSONFailure) {
+        LogMessage("ERROR: Invalid json\n");
+        return IOTHUB_CLIENT_INVALID_ARG;
+    }
+
+    *pResponseSize = nPayloadSize;
+    *ppszResponse = pszPayload;
+    return IOTHUB_CLIENT_OK;
+}
+
 /// <summary>
 ///     Sets up the client in order to establish the communication channel to Azure IoT Hub.
 ///
@@ -366,7 +462,49 @@ void AzureIoT_DoPeriodicTasks(void)
 }
 
 /// <summary>
-///     Creates and enqueues a message to be delivered the IoT Hub. The message is not actually
+///     Creates and enqueues a json message to be delivered the IoT Hub. The message is not actually
+///     sent immediately, but it is sent on the next invocation of AzureIoT_DoPeriodicTasks().
+/// </summary>
+/// <param name="jsonPayload">The json payload of the message to send.</param>
+void AzureIoT_SendJsonMessage(JSON_Value* jsonPayload)
+{
+    if (iothubClientHandle == NULL) {
+        LogMessage("WARNING: IoT Hub client not initialized\n");
+        return;
+    }
+
+    char* messagePayload = json_serialize_to_string(jsonPayload);
+
+    IOTHUB_MESSAGE_HANDLE messageHandle = IoTHubMessage_CreateFromString(messagePayload);
+
+    if (messageHandle == 0) {
+        LogMessage("WARNING: unable to create a new IoTHubMessage\n");
+        return;
+    }
+    //// Set Message properties
+    //(void)IoTHubMessage_SetMessageId(messageHandle, "MSG_ID");
+    //(void)IoTHubMessage_SetCorrelationId(messageHandle, "CORE_ID");
+    
+    (void)IoTHubMessage_SetContentTypeSystemProperty(messageHandle, cstrJsonContentType);
+    (void)IoTHubMessage_SetContentEncodingSystemProperty(messageHandle, cstrUtf8Encoding);
+
+    //// Add custom properties to message, i.e. for IoT Hub Message Routing
+    //(void)IoTHubMessage_SetProperty(messageHandle, "property_key", "property_value");
+
+    if (IoTHubDeviceClient_LL_SendEventAsync(iothubClientHandle, messageHandle, sendMessageCallback,
+        /*&callback_param*/ 0) != IOTHUB_CLIENT_OK) {
+        LogMessage("WARNING: failed to hand over the message to IoTHubClient\n");
+    }
+    else {
+        LogMessage("INFO: IoTHubClient accepted the message for delivery\n");
+    }
+
+    IoTHubMessage_Destroy(messageHandle);
+    json_free_serialized_string(messagePayload);
+}
+
+/// <summary>
+///     Creates and enqueues a text message to be delivered the IoT Hub. The message is not actually
 ///     sent immediately, but it is sent on the next invocation of AzureIoT_DoPeriodicTasks().
 /// </summary>
 /// <param name="messagePayload">The payload of the message to send.</param>
@@ -383,6 +521,9 @@ void AzureIoT_SendMessage(const char *messagePayload)
         LogMessage("WARNING: unable to create a new IoTHubMessage\n");
         return;
     }
+
+    //JSchwert: Test Pointer
+    IOTHUB_MESSAGE_HANDLE_DATA* msgPtr = (IOTHUB_MESSAGE_HANDLE_DATA *)messageHandle;
 
     if (IoTHubDeviceClient_LL_SendEventAsync(iothubClientHandle, messageHandle, sendMessageCallback,
                                              /*&callback_param*/ 0) != IOTHUB_CLIENT_OK) {
@@ -417,90 +558,78 @@ static void reportStatusCallback(int result, void *context)
 }
 
 /// <summary>
-///     Creates and enqueues a report containing the name and value pair of a Device Twin
-///     reported property. The report is not actually sent immediately, but it is sent on the
-///     next invocation of AzureIoT_DoPeriodicTasks().
-/// </summary>
-void AzureIoT_TwinReportState(const char *propertyName, size_t propertyValue)
-{
-    if (iothubClientHandle == NULL) {
-        LogMessage("ERROR: client not initialized\n");
-        return;
-    }
-
-    char *reportedPropertiesString = NULL;
-    JSON_Value *reportedPropertiesRootJson = json_value_init_object();
-    if (reportedPropertiesRootJson == NULL) {
-        LogMessage("ERROR: could not create the JSON_Value for Device Twin reporting.\n");
-        return;
-    }
-
-    JSON_Object *reportedPropertiesJson = json_value_get_object(reportedPropertiesRootJson);
-    if (reportedPropertiesJson == NULL) {
-        LogMessage("ERROR: could not get the JSON_Object for Device Twin reporting.\n");
-        goto cleanup;
-    }
-
-    if (JSONSuccess !=
-        json_object_set_number(reportedPropertiesJson, propertyName, propertyValue)) {
-        LogMessage("ERROR: could not set the property value for Device Twin reporting.\n");
-        goto cleanup;
-    }
-
-    reportedPropertiesString = json_serialize_to_string(reportedPropertiesRootJson);
-    if (reportedPropertiesString == NULL) {
-        LogMessage(
-            "ERROR: could not serialize the JSON payload to string for Device "
-            "Twin reporting.\n");
-        goto cleanup;
-    }
-
-    if (IoTHubDeviceClient_LL_SendReportedState(
-            iothubClientHandle, (unsigned char *)reportedPropertiesString,
-            strlen(reportedPropertiesString), reportStatusCallback, 0) != IOTHUB_CLIENT_OK) {
-        LogMessage("ERROR: failed to set reported property '%s'.\n", propertyName);
-    } else {
-        LogMessage("INFO: Set reported property '%s' to value %d.\n", propertyName, propertyValue);
-    }
-
-cleanup:
-    if (reportedPropertiesRootJson != NULL) {
-        json_value_free(reportedPropertiesRootJson);
-    }
-    if (reportedPropertiesString != NULL) {
-        json_free_serialized_string(reportedPropertiesString);
-    }
-}
-
-/// <summary>
 ///     Creates and enqueues reported properties state using a prepared json string.
 ///     The report is not actually sent immediately, but it is sent on the next 
 ///     invocation of AzureIoT_DoPeriodicTasks().
 /// </summary>
-void AzureIoT_TwinReportStateJson(
-	char* reportedPropertiesString,
-	size_t reportedPropertiesSize)
+///<param name="pszProperties">Reported Properties in json string notation</param>
+///<param name="nPropertiesSize">Size of properties string</param>
+///<returns>IOTHUB_CLIENT_RESULT_OK if report successfully enqueued</returns>
+IOTHUB_CLIENT_RESULT AzureIoT_TwinReportState(
+    char* pszProperties,
+    size_t nPropertiesSize)
 {
-	if (iothubClientHandle == NULL) {
-		LogMessage("ERROR: client not initialized\n");
-	}
-	else {
-		if (reportedPropertiesString != NULL) {
-			if (IoTHubDeviceClient_LL_SendReportedState(iothubClientHandle,
-				(unsigned char*)reportedPropertiesString, reportedPropertiesSize,
-				reportStatusCallback, 0) != IOTHUB_CLIENT_OK) {
-				LogMessage("ERROR: failed to set reported state as '%s'.\n",
-					reportedPropertiesString);
-			}
-			else {
-				LogMessage("INFO: Reported state as '%s'.\n", reportedPropertiesString);
-			}
-		}
-		else {
-			LogMessage("ERROR: no JSON string for Device Twin reporting.\n");
-		}
-	}
+    if (iothubClientHandle == NULL) {
+        LogMessage("ERROR: client not initialized\n");
+        return IOTHUB_CLIENT_ERROR;
+    }
+
+    if (pszProperties == NULL || nPropertiesSize == 0)
+    {   // nothing to report
+        return IOTHUB_CLIENT_OK;
+    }
+
+    IOTHUB_CLIENT_RESULT result = IoTHubDeviceClient_LL_SendReportedState(iothubClientHandle, 
+            pszProperties, nPropertiesSize, reportStatusCallback, 0);
+    
+    if (result != IOTHUB_CLIENT_OK) {
+        LogMessage("ERROR: %s with properties %s\n", IOTHUB_CLIENT_RESULTStrings(result), pszProperties);
+    }
+    else {
+        LogMessage("INFO: reported properties %s\n", pszProperties);
+    }
+
+    return result;
 }
+
+
+/// <summary>
+///     Creates and enqueues IoT Hub Device Twin reported properties. 
+///     The report is not actually sent immediately, but it is sent on the
+///     next invocation of AzureIoT_DoPeriodicTasks().
+/// </summary>
+///<param name="jsonState">Reported Properties as JSON_Value</param>
+///<returns>IOTHUB_CLIENT_RESULT_OK if report successfully enqueued</returns>
+IOTHUB_CLIENT_RESULT AzureIoT_TwinReportStateJson(const JSON_Value* jsonState)
+{
+    IOTHUB_CLIENT_RESULT result = IOTHUB_CLIENT_ERROR;
+    size_t nBufSize = 0;
+    unsigned char* pBuf = NULL;
+
+    if (iothubClientHandle == NULL) {
+        LogMessage("ERROR: client not initialized\n");
+        return IOTHUB_CLIENT_ERROR;
+    }
+
+    if ((jsonState == NULL) || ((nBufSize = json_serialization_size(jsonState)) == 0)) {
+        return IOTHUB_CLIENT_OK; // nothing to report
+    }
+
+    if ((pBuf = (char*)malloc(nBufSize)) == NULL) {
+        LogMessage("ERROR: not enough memory.\n");
+        abort();
+    }
+
+    if (json_serialize_to_buffer(jsonState, pBuf, nBufSize) == JSONFailure) {
+        LogMessage("ERROR: Invalid json\n");
+        result = IOTHUB_CLIENT_INVALID_ARG;
+    } else {
+        result = AzureIoT_TwinReportState(pBuf, nBufSize);
+    }
+    free( pBuf );
+    return result;
+}
+
 
 /// <summary>
 ///     Sets a callback function invoked whenever a message is received from IoT Hub.
@@ -527,7 +656,8 @@ void AzureIoT_SetMessageConfirmationCallback(MessageDeliveryConfirmationFnType c
 /// <param name="context">User specified context</param>
 static void sendMessageCallback(IOTHUB_CLIENT_CONFIRMATION_RESULT result, void *context)
 {
-    LogMessage("INFO: Message received by IoT Hub. Result is: %d\n", result);
+    
+    LogMessage("INFO: Message received by IoT Hub. Result is: %s\n", IOTHUB_CLIENT_CONFIRMATION_RESULTStrings(result));
     if (messageDeliveryConfirmationCb)
         messageDeliveryConfirmationCb(result == IOTHUB_CLIENT_CONFIRMATION_OK);
 }
@@ -545,9 +675,10 @@ static IOTHUBMESSAGE_DISPOSITION_RESULT receiveMessageCallback(IOTHUB_MESSAGE_HA
 {
     const unsigned char *buffer = NULL;
     size_t size = 0;
-    if (IoTHubMessage_GetByteArray(message, &buffer, &size) != IOTHUB_MESSAGE_OK) {
-        LogMessage("WARNING: failure performing IoTHubMessage_GetByteArray\n");
-        return IOTHUBMESSAGE_REJECTED;
+    IOTHUB_MESSAGE_RESULT result;
+    if ((result = IoTHubMessage_GetByteArray(message, &buffer, &size)) != IOTHUB_MESSAGE_OK) {
+        LogMessage("WARNING: failure performing IoTHubMessage_GetByteArray: %s\n", IOTHUB_MESSAGE_RESULTStrings( result ));
+        return result;
     }
 
     // 'buffer' is not zero terminated.
@@ -582,6 +713,17 @@ void AzureIoT_SetDirectMethodCallback(DirectMethodCallFnType callback)
     directMethodCallCb = callback;
 }
 
+
+/// <summary>
+///     Registers an array of Direct Method handlers. Superseded by <seealso cref="AzureIoT_SetDirectMethodCallback">AzureIoT_SetDirectMethodCallback</seealso>
+/// </summary>
+/// <param name="methods">list of MethodRegistration entries (ended by NULL,NULL)</param>
+void AzureIoT_RegisterDirectMethodHandlers(MethodRegistration * methods)
+{
+    pRegisteredMethods = methods;
+}
+
+
 /// <summary>
 ///     Sets the function callback invoked whenever a Device Twin update from the IoT Hub is
 ///     received.
@@ -596,33 +738,55 @@ void AzureIoT_SetDeviceTwinUpdateCallback(TwinUpdateFnType callback)
 /// <summary>
 ///     Callback when direct method is called.
 /// </summary>
-static int directMethodCallback(const char *methodName, const unsigned char *payload, size_t size,
+static int directMethodCallback(const char *methodName, const unsigned char *payload, size_t payloadSize,
                                 unsigned char **response, size_t *responseSize,
                                 void *userContextCallback)
 {
     LogMessage("INFO: Trying to invoke method %s\n", methodName);
 
-    int result = 404;
+    *responseSize = 0;
+    *response = NULL;
+    int result = HTTP_NOT_FOUND;
 
+    // if raw directMethodCallback is registered, use this
     if (directMethodCallCb != NULL) {
-        char *responseFromCallback = NULL;
-        size_t responseFromCallbackSize = 0;
+        return directMethodCallCb(methodName, payload, payloadSize, response, responseSize);
+    } 
+    
+    // if method handlers are registered, loop through list of registered methods
+    if ((pRegisteredMethods != NULL))
+    {
+        MethodRegistration* pMethod = pRegisteredMethods;
+        size_t nSize = strlen(methodName);
 
-        result = directMethodCallCb(methodName, payload, size, &responseFromCallback,
-                                    &responseFromCallbackSize);
-        *responseSize = responseFromCallbackSize;
-        *response = responseFromCallback;
-    } else {
-        LogMessage("INFO: No method '%s' found, HttpStatus=%d\n", methodName, result);
-        static const char methodNotFound[] = "\"No method found\"";
-        *responseSize = strlen(methodNotFound);
-        *response = (unsigned char *)malloc(*responseSize);
-        if (*response != NULL) {
-            strncpy((char *)(*response), methodNotFound, *responseSize);
-        } else {
-            LogMessage("ERROR: Cannot create response message for method call.\n");
-            abort();
+        while ((pMethod->MethodName != NULL) && (pMethod->MethodHandler != NULL))
+        {
+            if (strncmp(methodName, pMethod->MethodName, nSize) == 0) {
+                JSON_Value* jsonParameters = getJsonFromPayload(payload, payloadSize);
+                JSON_Value* jsonResponse = NULL;
+
+                result = pMethod->MethodHandler(jsonParameters, &jsonResponse);
+                if (jsonParameters != NULL) {
+                    json_value_free(jsonParameters);
+                }
+                if (jsonResponse != NULL) {
+                    setPayloadFromJson(jsonResponse, response, responseSize);
+                    json_value_free(jsonResponse);
+                }
+                return result;
+            }
         }
+    }
+
+    LogMessage("INFO: Method '%s' not found\n", methodName);
+    static const char methodNotFound[] = "\"No method found\"";
+    *responseSize = strlen(methodNotFound);
+    *response = (unsigned char *)malloc(*responseSize);
+    if (*response != NULL) {
+        strncpy((char *)(*response), methodNotFound, *responseSize);
+    } else {
+        LogMessage("ERROR: Cannot create response message for method call.\n");
+        abort();
     }
 
     return result;
@@ -634,23 +798,14 @@ static int directMethodCallback(const char *methodName, const unsigned char *pay
 static void twinCallback(DEVICE_TWIN_UPDATE_STATE updateState, const unsigned char *payLoad,
                          size_t payLoadSize, void *userContextCallback)
 {
-    size_t nullTerminatedJsonSize = payLoadSize + 1;
-    char *nullTerminatedJsonString = (char *)malloc(nullTerminatedJsonSize);
-    if (nullTerminatedJsonString == NULL) {
-        LogMessage("ERROR: Could not allocate buffer for twin update payload.\n");
-        abort();
+    if (twinUpdateCb == NULL) {
+        LogMessage("WARNING: Received device twin update but no handler available.");
+        return;
     }
 
-    // Copy the provided buffer to a null terminated buffer.
-    memcpy(nullTerminatedJsonString, payLoad, payLoadSize);
-    // Add the null terminator at the end.
-    nullTerminatedJsonString[nullTerminatedJsonSize - 1] = 0;
-
-    JSON_Value *rootProperties = NULL;
-    rootProperties = json_parse_string(nullTerminatedJsonString);
+    JSON_Value* rootProperties = getJsonFromPayload(payLoad, payLoadSize);
     if (rootProperties == NULL) {
-        LogMessage("WARNING: Cannot parse the string as JSON content.\n");
-        goto cleanup;
+        return;
     }
 
     JSON_Object *rootObject = json_value_get_object(rootProperties);
@@ -658,15 +813,10 @@ static void twinCallback(DEVICE_TWIN_UPDATE_STATE updateState, const unsigned ch
     if (desiredProperties == NULL) {
         desiredProperties = rootObject;
     }
-    // Call the provided Twin Device callback if any.
-    if (twinUpdateCb != NULL) {
-        twinUpdateCb(desiredProperties);
-    }
+    // Call the provided Twin Device callback
+    twinUpdateCb(desiredProperties);
 
-cleanup:
-    // Release the allocated memory.
     json_value_free(rootProperties);
-    free(nullTerminatedJsonString);
 }
 
 /// <summary>
