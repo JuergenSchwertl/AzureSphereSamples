@@ -149,9 +149,9 @@ void AzureIoT_SetDeviceTwinUpdateCallback(TwinUpdateFnType callback);
 /// <param name="responsePayloadSize">The size of the response payload provided by the
 /// callee.</param>
 /// <returns>The HTTP status code. e.g. 404 for method not found.</returns>
-typedef int (*DirectMethodCallFnType)(const char *directMethodName, const char *payload,
-                                      size_t payloadSize, char **responsePayload,
-                                      size_t *responsePayloadSize);
+typedef int (*DirectMethodCallFnType)(const char *directMethodName, 
+                                      const unsigned char *payload, size_t payloadSize, 
+                                      unsigned char **responsePayload, size_t *responsePayloadSize);
 
 /// <summary>
 ///     Sets the function to be invoked whenever a Direct Method call from the IoT Hub is received.
@@ -182,7 +182,7 @@ typedef struct MethodRegistrationTag {
 ///     Registers an array of Direct Method handlers. Superseded by <seealso cref="AzureIoT_SetDirectMethodCallback">AzureIoT_SetDirectMethodCallback</seealso>
 /// </summary>
 /// <param name="methods">list of MethodRegistration entries (ended by NULL,NULL)</param>
-void AzureIoT_RegisterDirectMethodHandlers(MethodRegistration* methods)
+void AzureIoT_RegisterDirectMethodHandlers(const MethodRegistration* methods);
 
 
 /// <summary>

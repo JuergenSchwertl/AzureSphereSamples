@@ -5,16 +5,17 @@
 
 // applibs_versions.h defines the API struct versions to use for applibs APIs.
 #include "applibs_versions.h"
-#include "epoll_timerfd_utilities.h"
 
+#include <applibs/log.h>
 #include <applibs/i2c.h>
 #include <applibs/gpio.h>
-#include <applibs/log.h>
+#include <applibs/networking.h>
 #include <applibs/wificonfig.h>
 #include <applibs/powermanagement.h>
 
 #include "mt3620_rdb.h"
 #include "rgbled_utility.h"
+#include "epoll_timerfd_utilities.h"
 
 #include "BME280/Inc/libBME280.h"
 
@@ -273,7 +274,7 @@ static void SendTelemetryMessage(void)
 {
     if (connectedToIoTHub) {
 		bme280_data_t bmeData;
-		char strJsonData[128];
+		
 		if (BME280_GetSensorData(&bmeData) == 0)
 		{
 			Log_Debug("[Send] Temperature: %.2f, Pressure: %.2f, Humidity: %.2f\n", bmeData.temperature, bmeData.pressure, bmeData.humidity);
@@ -357,27 +358,27 @@ static void *SetupHeapMessage(const char *messageFormat, size_t maxLength, ...)
     return message;
 }
 
-///<summary>
-/// Convert message payload (not NULL terminated) to heap allocated json value
-///</summary>
-/// <param name="payload">pointer to message payload buffer</param>
-/// <param name="payloadSize">size of payload buffer</param>
-/// <returns>The pointer to the heap allocated json value.</returns>
-static JSON_Value* GetJsonFromPayload(const char* payload, size_t payloadSize)
-{
-    char* pszPayloadString = malloc(payloadSize + 1); // +1 to store null char at the end.
-    if (pszPayloadString == NULL) {
-        Log_Debug(cstrErrorOutOfMemory);
-        abort();
-    }
-    memcpy(pszPayloadString, payload, payloadSize);
-    pszPayloadString[payloadSize] = '\0'; // Null terminated string.
-
-    JSON_Value* jsonRootValue = json_parse_string(pszPayloadString);
-    free(pszPayloadString);
-
-    return jsonRootValue;
-}
+/////<summary>
+///// Convert message payload (not NULL terminated) to heap allocated json value
+/////</summary>
+///// <param name="payload">pointer to message payload buffer</param>
+///// <param name="payloadSize">size of payload buffer</param>
+///// <returns>The pointer to the heap allocated json value.</returns>
+//static JSON_Value* GetJsonFromPayload(const char* payload, size_t payloadSize)
+//{
+//    char* pszPayloadString = malloc(payloadSize + 1); // +1 to store null char at the end.
+//    if (pszPayloadString == NULL) {
+//        Log_Debug(cstrErrorOutOfMemory);
+//        abort();
+//    }
+//    memcpy(pszPayloadString, payload, payloadSize);
+//    pszPayloadString[payloadSize] = '\0'; // Null terminated string.
+//
+//    JSON_Value* jsonRootValue = json_parse_string(pszPayloadString);
+//    free(pszPayloadString);
+//
+//    return jsonRootValue;
+//}
 
 ///<summary>
 /// LedColorControlMethod takes payload in form of { "color": "red"} to set LED blink color
@@ -385,7 +386,7 @@ static JSON_Value* GetJsonFromPayload(const char* payload, size_t payloadSize)
 /// <param name="jsonParameters">json message payload</param>
 /// <param name="jsonResponseAddress">address of response message payload</param>
 /// <returns>HTTP status return value.</returns>
-static HTTP_STATUS_CODE LedColorControlMethod(JSON_Value * jsonParameters, JSON_Value** jsonResponseAddress)
+HTTP_STATUS_CODE LedColorControlMethod(JSON_Value * jsonParameters, JSON_Value** jsonResponseAddress)
 {
     Log_Debug("[LedColorControlMethod]: Invoked.\n");
 
@@ -404,7 +405,7 @@ static HTTP_STATUS_CODE LedColorControlMethod(JSON_Value * jsonParameters, JSON_
             if (ledColor != RgbLedUtility_Colors_Unknown) { // Color's name has been identified.
 
                 json_object_set_boolean(jsonObject, cstrSuccessProperty, true);
-                char* pszMsg = SetupHeapMessage(cstrColorResponseMsg, pszColorName);
+                char* pszMsg = SetupHeapMessage(cstrColorResponseMsg, 64, pszColorName);
                 json_object_set_string(jsonObject, cstrMessageProperty, pszMsg);
                 free(pszMsg);
                 
@@ -433,7 +434,7 @@ static HTTP_STATUS_CODE LedColorControlMethod(JSON_Value * jsonParameters, JSON_
 /// <param name="jsonParameters">json message payload</param>
 /// <param name="jsonResponseAddress">address of response message payload</param>
 /// <returns>HTTP status return value.</returns>
-static HTTP_STATUS_CODE ResetMethod(JSON_Value* jsonParameters, JSON_Value** jsonResponseAddress)
+HTTP_STATUS_CODE ResetMethod(JSON_Value* jsonParameters, JSON_Value** jsonResponseAddress)
 {
     Log_Debug("[ResetMethod]: Invoked.\n");
 
@@ -453,7 +454,7 @@ static HTTP_STATUS_CODE ResetMethod(JSON_Value* jsonParameters, JSON_Value** jso
             Log_Debug("[ResetMethod]: set timer to %d seconds.\n", resetTimerInterval.tv_sec);
 
             json_object_set_boolean(jsonObject, cstrSuccessProperty, true);
-            char* pszMsg = SetupHeapMessage(cstrResetResponseMsg, dResetInterval);
+            char* pszMsg = SetupHeapMessage(cstrResetResponseMsg, 64, dResetInterval);
             json_object_set_string(jsonObject, cstrMessageProperty, pszMsg);
             free(pszMsg);
 
@@ -704,10 +705,10 @@ static int InitPeripheralsAndHandlers(void)
     }
 
     // Set the Azure IoT hub related callbacks
-    AzureIoT_SetMessageReceivedCallback(&MessageReceived);
-    AzureIoT_SetDeviceTwinUpdateCallback(&DeviceTwinUpdate);
-    AzureIoT_RegisterDirectMethodHandlers(&Methods);
-    AzureIoT_SetConnectionStatusCallback(&IoTHubConnectionStatusChanged);
+    AzureIoT_SetMessageReceivedCallback( &MessageReceived );
+    AzureIoT_SetDeviceTwinUpdateCallback( &DeviceTwinUpdate );
+    AzureIoT_RegisterDirectMethodHandlers( &Methods[0] );
+    AzureIoT_SetConnectionStatusCallback( &IoTHubConnectionStatusChanged );
 
     // Display the currently connected WiFi connection.
     DebugPrintCurrentlyConnectedWiFiNetwork();

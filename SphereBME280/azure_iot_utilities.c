@@ -273,17 +273,17 @@ static char *getAzureSphereProvisioningResultString(
 ///<summary>
 /// Convert message payload (not NULL terminated) to heap allocated json value
 ///</summary>
-/// <param name="pszPayload">pointer to message pszPayload buffer</param>
+/// <param name="pbPayload">pointer to message pszPayload buffer</param>
 /// <param name="nPayloadSize">size of payload buffer</param>
 /// <returns>The pointer to the heap allocated json value.</returns>
-static JSON_Value* getJsonFromPayload(const char* pszPayload, size_t nPayloadSize)
+static JSON_Value* getJsonFromPayload(const unsigned char* pbPayload, size_t nPayloadSize)
 {
     char* pszPayloadString = malloc(nPayloadSize + 1); // +1 to store null char at the end.
     if (pszPayloadString == NULL) {
         LogMessage("ERROR: Not enough memory");
         abort();
     }
-    memcpy(pszPayloadString, pszPayload, nPayloadSize);
+    memcpy(pszPayloadString, pbPayload, nPayloadSize);
     pszPayloadString[nPayloadSize] = '\0'; // Null terminated string.
 
     JSON_Value* jsonRootValue = json_parse_string(pszPayloadString);
@@ -295,12 +295,13 @@ static JSON_Value* getJsonFromPayload(const char* pszPayload, size_t nPayloadSiz
 ///<summary>
 /// Convert json value to heap allocated message payload with size
 ///</summary>
-/// <param name="pszPayload">OUT parameter: address of message payload buffer pointer</param>
-/// <param name="nPayloadSize">OUT parameter: address of size variable</param>
+/// <param name="jsonValue">json parameters</param>
+/// <param name="ppbPayload">OUT parameter: address of message payload buffer pointer</param>
+/// <param name="pnResponseSize">OUT parameter: address of size variable</param>
 /// <returns>IOTHUB_CLIENT_OK on successful serialisation</returns>
-static IOTHUB_CLIENT_RESULT setPayloadFromJson(JSON_Value* jsonValue, unsigned char** ppszResponse, size_t* pResponseSize)
+static IOTHUB_CLIENT_RESULT setPayloadFromJson(JSON_Value* jsonValue, unsigned char** ppbResponse, size_t* pnResponseSize)
 {
-    if ((ppszResponse == NULL) || (pResponseSize == NULL)){
+    if ((ppbResponse == NULL) || (pnResponseSize == NULL)){
         return IOTHUB_CLIENT_INVALID_ARG;
     }
 
@@ -321,8 +322,8 @@ static IOTHUB_CLIENT_RESULT setPayloadFromJson(JSON_Value* jsonValue, unsigned c
         return IOTHUB_CLIENT_INVALID_ARG;
     }
 
-    *pResponseSize = nPayloadSize;
-    *ppszResponse = pszPayload;
+    *pnResponseSize = nPayloadSize;
+    *ppbResponse = (unsigned char *)pszPayload;
     return IOTHUB_CLIENT_OK;
 }
 
@@ -524,6 +525,7 @@ void AzureIoT_SendMessage(const char *messagePayload)
 
     //JSchwert: Test Pointer
     IOTHUB_MESSAGE_HANDLE_DATA* msgPtr = (IOTHUB_MESSAGE_HANDLE_DATA *)messageHandle;
+    Log_Debug(msgPtr->connectionDeviceId);
 
     if (IoTHubDeviceClient_LL_SendEventAsync(iothubClientHandle, messageHandle, sendMessageCallback,
                                              /*&callback_param*/ 0) != IOTHUB_CLIENT_OK) {
@@ -583,7 +585,7 @@ IOTHUB_CLIENT_RESULT AzureIoT_TwinReportState(
             pszProperties, nPropertiesSize, reportStatusCallback, 0);
     
     if (result != IOTHUB_CLIENT_OK) {
-        LogMessage("ERROR: %s with properties %s\n", IOTHUB_CLIENT_RESULTStrings(result), pszProperties);
+        LogMessage("ERROR: IOTHUB_CLIENT_RESULT %d with properties %s\n", result, pszProperties);
     }
     else {
         LogMessage("INFO: reported properties %s\n", pszProperties);
@@ -657,7 +659,7 @@ void AzureIoT_SetMessageConfirmationCallback(MessageDeliveryConfirmationFnType c
 static void sendMessageCallback(IOTHUB_CLIENT_CONFIRMATION_RESULT result, void *context)
 {
     
-    LogMessage("INFO: Message received by IoT Hub. Result is: %s\n", IOTHUB_CLIENT_CONFIRMATION_RESULTStrings(result));
+    LogMessage("INFO: Message received by IoT Hub. Result is: %d\n", result);
     if (messageDeliveryConfirmationCb)
         messageDeliveryConfirmationCb(result == IOTHUB_CLIENT_CONFIRMATION_OK);
 }
@@ -677,7 +679,7 @@ static IOTHUBMESSAGE_DISPOSITION_RESULT receiveMessageCallback(IOTHUB_MESSAGE_HA
     size_t size = 0;
     IOTHUB_MESSAGE_RESULT result;
     if ((result = IoTHubMessage_GetByteArray(message, &buffer, &size)) != IOTHUB_MESSAGE_OK) {
-        LogMessage("WARNING: failure performing IoTHubMessage_GetByteArray: %s\n", IOTHUB_MESSAGE_RESULTStrings( result ));
+        LogMessage("WARNING: failure performing IoTHubMessage_GetByteArray: %d\n", result);
         return result;
     }
 
@@ -703,11 +705,10 @@ static IOTHUBMESSAGE_DISPOSITION_RESULT receiveMessageCallback(IOTHUB_MESSAGE_HA
 }
 
 /// <summary>
-///     Sets the function to be invoked whenever a Direct Method call from the IoT Hub is
+///     Sets a raw low-level function to be invoked whenever a Direct Method call from the IoT Hub is
 ///     received.
 /// </summary>
-/// <param name="callback">The callback function invoked when a Direct Method call is
-/// received</param>
+/// <param name="callback">The callback function invoked when a Direct Method call is received</param>
 void AzureIoT_SetDirectMethodCallback(DirectMethodCallFnType callback)
 {
     directMethodCallCb = callback;
@@ -718,9 +719,9 @@ void AzureIoT_SetDirectMethodCallback(DirectMethodCallFnType callback)
 ///     Registers an array of Direct Method handlers. Superseded by <seealso cref="AzureIoT_SetDirectMethodCallback">AzureIoT_SetDirectMethodCallback</seealso>
 /// </summary>
 /// <param name="methods">list of MethodRegistration entries (ended by NULL,NULL)</param>
-void AzureIoT_RegisterDirectMethodHandlers(MethodRegistration * methods)
+void AzureIoT_RegisterDirectMethodHandlers(const MethodRegistration * methods)
 {
-    pRegisteredMethods = methods;
+    pRegisteredMethods = (MethodRegistration*) methods;
 }
 
 
