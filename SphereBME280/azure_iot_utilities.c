@@ -75,39 +75,16 @@ static bool iothubAuthenticated = false;
 static int keepalivePeriodSeconds = 20;
 
 /// <summary>
+///     Message Id system property.
+/// </summary>
+static unsigned int uMessageId = 0;
+
+/// <summary>
 ///     Content-Type and Content-Encoding system property values
 /// </summary>
 const char cstrJsonContentType[] = "application%2Fjson";
 const char cstrPlainTextContentType[] = "text%2Fplain";
 const char cstrUtf8Encoding[] = "utf-8";
-
-
-
-
-typedef struct IOTHUB_MESSAGE_HANDLE_DATA_TAG
-{
-    IOTHUBMESSAGE_CONTENT_TYPE contentType;
-    union
-    {
-        unsigned char * byteArray;
-        char * string;
-    } value;
-    void * properties;
-    char* messageId;
-    char* correlationId;
-    char* userDefinedContentType;
-    char* contentEncoding;
-    char* outputName;
-    char* inputName;
-    char* connectionModuleId;
-    char* connectionDeviceId;
-    void * diagnosticData;
-    bool is_security_message;
-}IOTHUB_MESSAGE_HANDLE_DATA;
-
-
-
-
 
 /// <summary>
 ///     Set of bundle of root certificate authorities.
@@ -434,7 +411,7 @@ static void PeriodicLogVarArgs(time_t *lastInvokedTime, time_t periodInSeconds, 
     if (ts.tv_sec > *lastInvokedTime + periodInSeconds) {
         va_list args;
         va_start(args, format);
-        Log_Debug("[Azure IoT Hub client] ");
+        Log_Debug("[Azure IoT] ");
         Log_DebugVarArgs(format, args);
         va_end(args);
         *lastInvokedTime = ts.tv_sec;
@@ -463,34 +440,37 @@ void AzureIoT_DoPeriodicTasks(void)
 }
 
 /// <summary>
-///     Creates and enqueues a json message to be delivered the IoT Hub. The message is not actually
+///     Creates and enqueues a plain text message to be delivered to the IoT Hub. The message is not actually
 ///     sent immediately, but it is sent on the next invocation of AzureIoT_DoPeriodicTasks().
 /// </summary>
-/// <param name="jsonPayload">The json payload of the message to send.</param>
-void AzureIoT_SendJsonMessage(JSON_Value* jsonPayload)
+/// <param name="messagePayload">The payload of the message to send.</param>
+void AzureIoT_SendMessageWithContentType(const char* messagePayload, const char *contentType, const char * encoding)
 {
     if (iothubClientHandle == NULL) {
         LogMessage("WARNING: IoT Hub client not initialized\n");
         return;
     }
 
-    char* messagePayload = json_serialize_to_string(jsonPayload);
-
     IOTHUB_MESSAGE_HANDLE messageHandle = IoTHubMessage_CreateFromString(messagePayload);
-
     if (messageHandle == 0) {
         LogMessage("WARNING: unable to create a new IoTHubMessage\n");
         return;
     }
-    //// Set Message properties
-    //(void)IoTHubMessage_SetMessageId(messageHandle, "MSG_ID");
+
+    //// Set Message properties: for MessageId, use a running message count value.
+    char szMessageId[16];
+    snprintf(szMessageId, sizeof(szMessageId), "%d", uMessageId++);
+    (void)IoTHubMessage_SetMessageId(messageHandle, szMessageId);
+
     //(void)IoTHubMessage_SetCorrelationId(messageHandle, "CORE_ID");
-    
-    (void)IoTHubMessage_SetContentTypeSystemProperty(messageHandle, cstrJsonContentType);
-    (void)IoTHubMessage_SetContentEncodingSystemProperty(messageHandle, cstrUtf8Encoding);
+
+
+    (void)IoTHubMessage_SetContentTypeSystemProperty(messageHandle, contentType);
+    (void)IoTHubMessage_SetContentEncodingSystemProperty(messageHandle, encoding);
 
     //// Add custom properties to message, i.e. for IoT Hub Message Routing
     //(void)IoTHubMessage_SetProperty(messageHandle, "property_key", "property_value");
+
 
     if (IoTHubDeviceClient_LL_SendEventAsync(iothubClientHandle, messageHandle, sendMessageCallback,
         /*&callback_param*/ 0) != IOTHUB_CLIENT_OK) {
@@ -501,41 +481,32 @@ void AzureIoT_SendJsonMessage(JSON_Value* jsonPayload)
     }
 
     IoTHubMessage_Destroy(messageHandle);
-    json_free_serialized_string(messagePayload);
 }
 
+
 /// <summary>
-///     Creates and enqueues a text message to be delivered the IoT Hub. The message is not actually
+///     Creates and enqueues a plain text message to be delivered to the IoT Hub. The message is not actually
 ///     sent immediately, but it is sent on the next invocation of AzureIoT_DoPeriodicTasks().
 /// </summary>
 /// <param name="messagePayload">The payload of the message to send.</param>
-void AzureIoT_SendMessage(const char *messagePayload)
+void AzureIoT_SendTextMessage(const char *messagePayload)
 {
-    if (iothubClientHandle == NULL) {
-        LogMessage("WARNING: IoT Hub client not initialized\n");
-        return;
-    }
-
-    IOTHUB_MESSAGE_HANDLE messageHandle = IoTHubMessage_CreateFromString(messagePayload);
-
-    if (messageHandle == 0) {
-        LogMessage("WARNING: unable to create a new IoTHubMessage\n");
-        return;
-    }
-
-    //JSchwert: Test Pointer
-    IOTHUB_MESSAGE_HANDLE_DATA* msgPtr = (IOTHUB_MESSAGE_HANDLE_DATA *)messageHandle;
-    Log_Debug(msgPtr->connectionDeviceId);
-
-    if (IoTHubDeviceClient_LL_SendEventAsync(iothubClientHandle, messageHandle, sendMessageCallback,
-                                             /*&callback_param*/ 0) != IOTHUB_CLIENT_OK) {
-        LogMessage("WARNING: failed to hand over the message to IoTHubClient\n");
-    } else {
-        LogMessage("INFO: IoTHubClient accepted the message for delivery\n");
-    }
-
-    IoTHubMessage_Destroy(messageHandle);
+    AzureIoT_SendMessageWithContentType(messagePayload, cstrPlainTextContentType, cstrUtf8Encoding);
 }
+
+
+/// <summary>
+///     Creates and enqueues a json message to be delivered the IoT Hub. The message is not actually
+///     sent immediately, but it is sent on the next invocation of AzureIoT_DoPeriodicTasks().
+/// </summary>
+/// <param name="jsonPayload">The json payload of the message to send.</param>
+void AzureIoT_SendJsonMessage(JSON_Value* jsonPayload)
+{
+    char* messagePayload = json_serialize_to_string(jsonPayload);
+    AzureIoT_SendMessageWithContentType(messagePayload, cstrJsonContentType, cstrUtf8Encoding);
+    json_free_serialized_string(messagePayload);
+}
+
 
 /// <summary>
 ///     Sets the function to be invoked whenever the Device Twin properties have been delivered
@@ -772,10 +743,12 @@ static int directMethodCallback(const char *methodName, const unsigned char *pay
                 }
                 if (jsonResponse != NULL) {
                     setPayloadFromJson(jsonResponse, response, responseSize);
+                    Log_Debug(".......... %d '%s'\n", *responseSize, *response);
                     json_value_free(jsonResponse);
                 }
                 return result;
             }
+            pMethod++;
         }
     }
 

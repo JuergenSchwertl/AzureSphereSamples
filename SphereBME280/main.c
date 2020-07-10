@@ -23,7 +23,8 @@
 // This sample C application for a MT3620 Reference Development Board (Azure Sphere) demonstrates how to
 // connect an Azure Sphere device to Azure IoT Central. To use this sample, you must first
 // run the ShowIoTCentralConfig.exe from <see href="https://github.com/Azure/azure-sphere-samples/tree/master/Samples/AzureIoT/Tools" />
-// which outputs the required "AllowedConnections" property for the Manifest (app_manifest.json) .
+// which outputs the required "CmdArgs" with the DPS scope id and "AllowedConnections" properties 
+// for the Manifest (app_manifest.json) .
 // You will also need to update the "DeviceAuthentication" property in the manifest 
 // with your Azure Sphere TenantID. To find your TenantId, i.e. run the Azure Sphere Command line
 //		azsphere tenant show-selected
@@ -36,8 +37,7 @@
 //
 // A description of the sample follows:
 // - LED 1 blinks constantly.
-// - Pressing button A toggles the rate at which LED 1 blinks
-//   between three values.
+// - Pressing button A toggles the rate at which LED 1 blinks between three values.
 // - Pressing button B triggers reading sensor data and sending a message to the IoT Hub.
 // - LED 2 flashes red when button B is pressed (and a
 //   message is sent) and flashes yellow when a message is received.
@@ -46,9 +46,9 @@
 //
 // Direct Method related notes:
 // - Invoking the method named "LedColorControlMethod" with a payload containing '{"color":"red"}'
-//   will set the color of LED 1 to red;
-// - Invoking the method named "Reset" with a payload containing '{"reboot":"true"}'
-//   will reset the device;
+//   will set the color of blinking LED 1 to red.
+// - Invoking the method named "ResetMethod" with a payload containing '{"reset_timer":5}'
+//   will arm a reset-timer to reboot the device after # seconds.
 //
 // Device Twin related notes:
 // - Setting LedBlinkRateProperty in the Device Twin to a value from 0 to 2 causes the sample to
@@ -108,11 +108,10 @@ static int azureIoTPollPeriodSeconds = -1;
 
 static const char cstrErrorOutOfMemory[] = "ERROR: Could not allocate buffer for direct method response payload.\n";
 
-
-static const char cstrJsonEvent[] = "{\"%s\":\"occurred\"}";
 static const char cstrEvtConnected[] = "connect";
 static const char cstrEvtButtonB[] = "buttonB";
 static const char cstrEvtButtonA[] = "buttonA";
+static const char cstrOccurred[] = "occurred";
 
 // direct method names
 static const char cstrLedColorControlMethod[] = "LedColorControlMethod";
@@ -121,6 +120,9 @@ static const char cstrResetMethod[] = "ResetMethod";
 // forward declarations for method handlers
 HTTP_STATUS_CODE LedColorControlMethod(JSON_Value* jsonParameters, JSON_Value** jsonResponseAddress);
 HTTP_STATUS_CODE ResetMethod(JSON_Value* jsonParameters, JSON_Value** jsonResponseAddress);
+
+// forward declarations for close handlers
+void ClosePeripheralsAndHandlers(void);
 
 // list of method registrations
 static const MethodRegistration Methods[] = {
@@ -138,16 +140,15 @@ static const char cstrMessageProperty[] = "message";
 static const char cstrTemperatureProperty[] = "temperature";
 static const char cstrPressureProperty[] = "pressure";
 static const char cstrHumidityProperty[] = "humidity";
+static const char cstrLedBlinkRateProperty[] = "LedBlinkRateProperty";
+static const char cstrLedBlinkRateValuePath[] = "LedBlinkRateProperty.value";
+static const char cstrValueProperty[] = "value";
 
 // method response messages
 static const char cstrColorResponseMsg[] = "LED color set to %s";
 static const char cstrResetResponseMsg[] = "Reset in %d seconds";
 
 static const char cstrBadDataResponseMsg[] = "Request does not contain identifiable data.";
-
-
-
-
 
 // LED state
 static RgbLed led1 = RGBLED_INIT_VALUE;
@@ -168,8 +169,27 @@ static const struct timespec defaultBlinkTimeLed2 = {0, 300 * 1000 * 1000};
 // Connectivity state
 static bool connectedToIoTHub = false;
 
+// forward declarations for timer handler
+void ButtonPollTimerHandler(EventData* eventData);
+void Led1UpdateHandler(EventData* eventData);
+void Led2UpdateHandler(EventData* eventData);
+void AzureIoTDoWorkHandler(EventData* eventData);
+void TelemetryTimerHandler(EventData* eventData);
+void ResetTimerHandler(EventData* eventData);
+
+// event handler data structures. Only the event handler field needs to be populated.
+static EventData buttonPollTimerEventData = { .eventHandler = &ButtonPollTimerHandler };
+static EventData led1EventData = { .eventHandler = &Led1UpdateHandler };
+static EventData led2EventData = { .eventHandler = &Led2UpdateHandler };
+static EventData azureIoTEventData = { .eventHandler = &AzureIoTDoWorkHandler };
+static EventData telemetryTimerEventData = { .eventHandler = &TelemetryTimerHandler };
+static EventData resetTimerEventData = { .eventHandler = &ResetTimerHandler };
+
+
+
 // Termination state
 static volatile sig_atomic_t terminationRequired = false;
+
 
 /// <summary>
 ///     Signal handler for termination requests. This handler must be async-signal-safe.
@@ -237,8 +257,17 @@ static void SetLedRate(const struct timespec *rate)
     }
 
     if (connectedToIoTHub) {
+        // create property in standard notation { "LedBlinkRateProperty" : 1 }
+        JSON_Value* jsonRoot = json_value_init_object();
+        json_object_set_number(json_object(jsonRoot), cstrLedBlinkRateProperty, (double)blinkIntervalIndex);
+
+        // REMARK: only IoT Central desired property is in { "LedBlinkRateProperty" : { "value" : 1 } } 
+        //json_object_dotset_number(json_object(jsonRoot), cstrLedBlinkRateValuePath, (double) blinkIntervalIndex);
+
         // Report the current state to the Device Twin on the IoT Hub.
-        AzureIoT_TwinReportState("LedBlinkRateProperty", blinkIntervalIndex);
+        AzureIoT_TwinReportStateJson(jsonRoot);
+
+        json_value_free(jsonRoot);
     } else {
         Log_Debug("WARNING: Cannot send reported property; not connected to the IoT Hub.\n");
     }
@@ -250,12 +279,15 @@ static void SetLedRate(const struct timespec *rate)
 static void SendEventMessage(const char * cstrEvent)
 {
 	if (connectedToIoTHub) {
-		char strJsonData[128];
-		snprintf(strJsonData, sizeof(strJsonData), cstrJsonEvent, cstrEvent);
-		Log_Debug("[Send] %s\r\n", strJsonData);
+		Log_Debug("[Send] Event %s has occurred\r\n", cstrEvent);
+
+        JSON_Value* jsonRoot = json_value_init_object();
+        json_object_set_string(json_object(jsonRoot), cstrEvent, cstrOccurred);
 
 		// Send a message
-		AzureIoT_SendMessage(strJsonData);
+		AzureIoT_SendJsonMessage(jsonRoot);
+
+        json_value_free(jsonRoot);
 
 		// Set the send/receive LED2 to blink once immediately to indicate 
 		// the message has been queued.
@@ -279,16 +311,16 @@ static void SendTelemetryMessage(void)
 		{
 			Log_Debug("[Send] Temperature: %.2f, Pressure: %.2f, Humidity: %.2f\n", bmeData.temperature, bmeData.pressure, bmeData.humidity);
 
-            JSON_Value * jsonValue = json_value_init_object();
-            JSON_Object* jsonObject = json_value_get_object( jsonValue );
+            JSON_Value * jsonRoot = json_value_init_object();
+            JSON_Object* jsonObject = json_value_get_object( jsonRoot );
             json_object_set_number(jsonObject, cstrTemperatureProperty, bmeData.temperature);
             json_object_set_number(jsonObject, cstrPressureProperty, bmeData.pressure);
             json_object_set_number(jsonObject, cstrHumidityProperty, bmeData.humidity);
             
             // Send a message
-            AzureIoT_SendJsonMessage(jsonValue);
+            AzureIoT_SendJsonMessage(jsonRoot);
 
-            json_value_free(jsonValue);
+            json_value_free(jsonRoot);
 
 			// Set the send/receive LED2 to blink once immediately to indicate 
 			// the message has been queued.
@@ -318,10 +350,9 @@ static void MessageReceived(const char *payload)
 /// properties received from the Azure IoT Hub.</param>
 static void DeviceTwinUpdate(JSON_Object *desiredProperties)
 {
-	static const char cstrValuePath[] = "LedBlinkRateProperty.value";
-	if (json_object_dothas_value_of_type(desiredProperties, cstrValuePath, JSONNumber))
+	if (json_object_dothas_value_of_type(desiredProperties, cstrLedBlinkRateValuePath, JSONNumber))
 	{
-		size_t desiredBlinkRate = (size_t)json_object_dotget_number(desiredProperties, cstrValuePath);
+		size_t desiredBlinkRate = (size_t)json_object_dotget_number(desiredProperties, cstrLedBlinkRateValuePath);
 
 		blinkIntervalIndex = desiredBlinkRate % blinkIntervalsCount; // Clamp value to [0..blinkIntervalsCount) .
 
@@ -358,27 +389,6 @@ static void *SetupHeapMessage(const char *messageFormat, size_t maxLength, ...)
     return message;
 }
 
-/////<summary>
-///// Convert message payload (not NULL terminated) to heap allocated json value
-/////</summary>
-///// <param name="payload">pointer to message payload buffer</param>
-///// <param name="payloadSize">size of payload buffer</param>
-///// <returns>The pointer to the heap allocated json value.</returns>
-//static JSON_Value* GetJsonFromPayload(const char* payload, size_t payloadSize)
-//{
-//    char* pszPayloadString = malloc(payloadSize + 1); // +1 to store null char at the end.
-//    if (pszPayloadString == NULL) {
-//        Log_Debug(cstrErrorOutOfMemory);
-//        abort();
-//    }
-//    memcpy(pszPayloadString, payload, payloadSize);
-//    pszPayloadString[payloadSize] = '\0'; // Null terminated string.
-//
-//    JSON_Value* jsonRootValue = json_parse_string(pszPayloadString);
-//    free(pszPayloadString);
-//
-//    return jsonRootValue;
-//}
 
 ///<summary>
 /// LedColorControlMethod takes payload in form of { "color": "red"} to set LED blink color
@@ -392,9 +402,10 @@ HTTP_STATUS_CODE LedColorControlMethod(JSON_Value * jsonParameters, JSON_Value**
 
     HTTP_STATUS_CODE result = HTTP_BAD_REQUEST; // HTTP status code : Bad Request.
     RgbLedUtility_Colors ledColor = RgbLedUtility_Colors_Unknown;
-    JSON_Value* jsonResponse = json_value_init_object();
-    JSON_Object* jsonObject = json_value_get_object(jsonResponse);
+    //JSON_Value* jsonResponse = json_value_init_object();
+    //JSON_Object* jsonObject = json_value_get_object(jsonResponse);
 
+    JSON_Value* jsonResponse = NULL;
     // The payload should contains JSON such as: { "color": "red"}
     if (jsonParameters != NULL) {
         JSON_Object* jsonRootObject = json_value_get_object(jsonParameters);
@@ -404,9 +415,10 @@ HTTP_STATUS_CODE LedColorControlMethod(JSON_Value * jsonParameters, JSON_Value**
             ledColor = RgbLedUtility_GetColorFromString(pszColorName, nColorNameLength);
             if (ledColor != RgbLedUtility_Colors_Unknown) { // Color's name has been identified.
 
-                json_object_set_boolean(jsonObject, cstrSuccessProperty, true);
+                //json_object_set_boolean(jsonObject, cstrSuccessProperty, true);
                 char* pszMsg = SetupHeapMessage(cstrColorResponseMsg, 64, pszColorName);
-                json_object_set_string(jsonObject, cstrMessageProperty, pszMsg);
+                //json_object_set_string(jsonObject, cstrMessageProperty, pszMsg);
+                jsonResponse = json_value_init_string(pszMsg);
                 free(pszMsg);
                 
                 // Set the blinking LED color.
@@ -420,8 +432,9 @@ HTTP_STATUS_CODE LedColorControlMethod(JSON_Value * jsonParameters, JSON_Value**
     if (result != HTTP_OK)
     {
         Log_Debug("[LedColorControlMethod]: Unrecognised payload.\n");
-        json_object_set_boolean(jsonObject, cstrSuccessProperty, false);
-        json_object_set_string(jsonObject, cstrMessageProperty, cstrBadDataResponseMsg);
+        //json_object_set_boolean(jsonObject, cstrSuccessProperty, false);
+        //json_object_set_string(jsonObject, cstrMessageProperty, cstrBadDataResponseMsg);
+        jsonResponse = json_value_init_string(cstrBadDataResponseMsg);
     }
 
     *jsonResponseAddress = jsonResponse;
@@ -445,16 +458,16 @@ HTTP_STATUS_CODE ResetMethod(JSON_Value* jsonParameters, JSON_Value** jsonRespon
     // The payload should contain JSON such as: { "reset_timer": 5}
     if (jsonParameters != NULL) {
         JSON_Object* jsonRootObject = json_value_get_object(jsonParameters);
-        double dResetInterval = json_object_get_number(jsonRootObject, cstrResetTimerProperty);
-        if ((dResetInterval > 1) && (dResetInterval < 10)) {
+        time_t tResetInterval = (time_t) json_object_get_number(jsonRootObject, cstrResetTimerProperty);
+        if ((tResetInterval > 1) && (tResetInterval < 10)) {
 
-            resetTimerInterval.tv_sec = (time_t)dResetInterval;
+            resetTimerInterval.tv_sec = (time_t)tResetInterval;
             // arm count down timer
             SetTimerFdToSingleExpiry(resetTimerFd, &resetTimerInterval);
             Log_Debug("[ResetMethod]: set timer to %d seconds.\n", resetTimerInterval.tv_sec);
 
             json_object_set_boolean(jsonObject, cstrSuccessProperty, true);
-            char* pszMsg = SetupHeapMessage(cstrResetResponseMsg, 64, dResetInterval);
+            char* pszMsg = SetupHeapMessage(cstrResetResponseMsg, 64, (int)tResetInterval);
             json_object_set_string(jsonObject, cstrMessageProperty, pszMsg);
             free(pszMsg);
 
@@ -497,7 +510,7 @@ static void IoTHubConnectionStatusChanged(bool connected)
 /// <summary>
 ///     Handle the blinking for LED1.
 /// </summary>
-static void Led1UpdateHandler(EventData *eventData)
+void Led1UpdateHandler(EventData *eventData)
 {
     if (ConsumeTimerFdEvent(led1BlinkTimerFd) != 0) {
         terminationRequired = true;
@@ -523,7 +536,7 @@ static void Led1UpdateHandler(EventData *eventData)
 /// <summary>
 ///     Handle the blinking for LED2.
 /// </summary>
-static void Led2UpdateHandler(EventData *eventData)
+void Led2UpdateHandler(EventData *eventData)
 {
     if (ConsumeTimerFdEvent(led2BlinkTimerFd) != 0) {
         terminationRequired = true;
@@ -560,7 +573,7 @@ static bool IsButtonPressed(int fd, GPIO_Value_Type *oldState)
 /// <summary>
 ///     Handle button timer event: if the button is pressed, change the LED blink rate.
 /// </summary>
-static void ButtonPollTimerHandler(EventData *eventData)
+void ButtonPollTimerHandler(EventData *eventData)
 {
     if (ConsumeTimerFdEvent(buttonPollTimerFd) != 0) {
         terminationRequired = true;
@@ -570,12 +583,6 @@ static void ButtonPollTimerHandler(EventData *eventData)
     // If the button A is pressed, change the LED blink interval, and update the Twin Device.
     static GPIO_Value_Type blinkButtonState;
     if (IsButtonPressed(ledBlinkRateButtonGpioFd, &blinkButtonState)) {
-
-
-		bme280_data_t data;
-		BME280_GetSensorData(&data);
-
-		
 		blinkIntervalIndex = (blinkIntervalIndex + 1) % blinkIntervalsCount;
         SetLedRate(&blinkIntervals[blinkIntervalIndex]);
 		SendEventMessage(cstrEvtButtonA);
@@ -592,7 +599,7 @@ static void ButtonPollTimerHandler(EventData *eventData)
 /// <summary>
 ///     Hand over control periodically to the Azure IoT SDK's DoWork.
 /// </summary>
-static void AzureIoTDoWorkHandler(EventData *eventData)
+void AzureIoTDoWorkHandler(EventData *eventData)
 {
     if (ConsumeTimerFdEvent(azureIoTDoWorkTimerFd) != 0) {
         terminationRequired = true;
@@ -637,7 +644,7 @@ static void AzureIoTDoWorkHandler(EventData *eventData)
 /// <summary>
 ///     Handle telemetry timer event.
 /// </summary>
-static void TelemetryTimerHandler(EventData *eventData)
+void TelemetryTimerHandler(EventData *eventData)
 {
 	if (ConsumeTimerFdEvent(eventData->fd) != 0) {
 		terminationRequired = true;
@@ -651,7 +658,7 @@ static void TelemetryTimerHandler(EventData *eventData)
 /// <summary>
 ///     Handle reset timer event.
 /// </summary>
-static void ResetTimerHandler(EventData* eventData)
+void ResetTimerHandler(EventData* eventData)
 {
     if (ConsumeTimerFdEvent(eventData->fd) != 0) {
         terminationRequired = true;
@@ -661,14 +668,6 @@ static void ResetTimerHandler(EventData* eventData)
     PowerManagement_ForceSystemReboot();
     terminationRequired = true;
 }
-
-// event handler data structures. Only the event handler field needs to be populated.
-static EventData buttonPollTimerEventData = {.eventHandler = &ButtonPollTimerHandler};
-static EventData led1EventData = {.eventHandler = &Led1UpdateHandler};
-static EventData led2EventData = {.eventHandler = &Led2UpdateHandler};
-static EventData azureIoTEventData = {.eventHandler = &AzureIoTDoWorkHandler};
-static EventData telemetryTimerEventData = { .eventHandler = &TelemetryTimerHandler };
-static EventData resetTimerEventData = { .eventHandler = &ResetTimerHandler };
 
 /// <summary>
 ///     Initialize peripherals, termination handler, and Azure IoT
@@ -694,9 +693,22 @@ static int InitPeripheralsAndHandlers(void)
         return -1;
     }
 
+    Log_Debug("INFO: Opening MT3620_ISU3_I2C.\n");
+    if ((i2cBME280Fd = I2CMaster_Open(MT3620_ISU3_I2C)) < 0)
+    {
+        return -1;
+    }
+
     // Open file descriptors for the RGB LEDs and store them in the rgbLeds array (and in turn in
     // the ledBlink, ledMessageEventSentReceived, ledNetworkStatus variables)
     RgbLedUtility_OpenLeds(rgbLeds, rgbLedsCount, ledsPins);
+
+    // Initialize I2C sensor(s)
+    Log_Debug("INFO: Initializing BME280 I2C sensor on primary address.\n");
+    bool bInitSuccessful = BME280_Init(i2cBME280Fd, GROOVE_BME280_I2C_ADDRESS);
+    if (!bInitSuccessful) {
+        return -1;
+    }
 
     // Initialize the Azure IoT SDK
     if (!AzureIoT_Initialize()) {
@@ -725,7 +737,7 @@ static int InitPeripheralsAndHandlers(void)
         return -1;
     }
 
-    // Set up a timer for blinking LED2 once.
+    // Set up a a dis-armed timer for blinking LED2 once.
     led2BlinkTimerFd = CreateTimerFdAndAddToEpoll(epollFd, &nullPeriod, &led2EventData, EPOLLIN);
     if (led2BlinkTimerFd < 0) {
         return -1;
@@ -763,38 +775,29 @@ static int InitPeripheralsAndHandlers(void)
         return -1;
     }
 
-	Log_Debug("INFO: Opening MT3620_I2C_ISU2.\n");
-	if ((i2cBME280Fd = I2CMaster_Open(MT3620_ISU3_I2C)) < 0)
-	{
-		return -1;
-	}
-
-	Log_Debug("INFO: Initializing BME280 I2C sensor on primary address.\n");
-	bool bInitSuccessful = BME280_Init(i2cBME280Fd, GROOVE_BME280_I2C_ADDRESS);
-	if (!bInitSuccessful) {
-		return -1;
-	}
-
-
-
     return 0;
 }
 
 /// <summary>
 ///     Close peripherals and Azure IoT
 /// </summary>
-static void ClosePeripheralsAndHandlers(void)
+void ClosePeripheralsAndHandlers(void)
 {
     Log_Debug("INFO: Closing GPIOs and Azure IoT client.\n");
 
-    // Close all file descriptors
+    // Close timer file descriptors
+    CloseFdAndPrintError(resetTimerFd, "ResetTimer");
+    CloseFdAndPrintError(telemetryTimerFd, "TelemetryTimer");
+    CloseFdAndPrintError(buttonPollTimerFd, "ButtonPollTimer");
+    CloseFdAndPrintError(led2BlinkTimerFd, "Led2BlinkTimer");
+    CloseFdAndPrintError(led1BlinkTimerFd, "Led1BlinkTimer");
+    CloseFdAndPrintError(azureIoTDoWorkTimerFd, "IoTDoWorkTimer");
+    CloseFdAndPrintError(epollFd, "Epoll");
+
+    // Close IO file descriptors
     CloseFdAndPrintError(ledBlinkRateButtonGpioFd, "LedBlinkRateButtonGpio");
     CloseFdAndPrintError(sendMessageButtonGpioFd, "SendMessageButtonGpio");
-    CloseFdAndPrintError(buttonPollTimerFd, "ButtonPollTimer");
-    CloseFdAndPrintError(azureIoTDoWorkTimerFd, "IoTDoWorkTimer");
-    CloseFdAndPrintError(led1BlinkTimerFd, "Led1BlinkTimer");
-    CloseFdAndPrintError(led2BlinkTimerFd, "Led2BlinkTimer");
-    CloseFdAndPrintError(epollFd, "Epoll");
+    CloseFdAndPrintError(i2cBME280Fd, "I2C ISU3");
 
     // Close the LEDs and leave then off
     RgbLedUtility_CloseLeds(rgbLeds, rgbLedsCount);

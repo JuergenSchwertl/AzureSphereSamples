@@ -82,18 +82,25 @@ IOTHUB_CLIENT_RESULT AzureIoT_TwinReportState( char* pszProperties, size_t nProp
 IOTHUB_CLIENT_RESULT AzureIoT_TwinReportStateJson(const JSON_Value* jsonState);
 
 /// <summary>
+///     Creates and enqueues a plain text message to be delivered to the IoT Hub. The message is not actually
+///     sent immediately, but it is sent on the next invocation of AzureIoT_DoPeriodicTasks().
+/// </summary>
+/// <param name="messagePayload">The payload of the message to send.</param>
+void AzureIoT_SendMessageWithContentType(const char* messagePayload, const char* contentType, const char* encoding);
+
+/// <summary>
+///     Creates and enqueues a plain text message to be delivered to the IoT Hub. The message is not actually
+///     sent immediately, but it is sent on the next invocation of AzureIoT_DoPeriodicTasks().
+/// </summary>
+/// <param name="messagePayload">The payload of the message to send.</param>
+void AzureIoT_SendTextMessage(const char* messagePayload);
+
+/// <summary>
 ///     Creates and enqueues a json message to be delivered the IoT Hub. The message is not actually
 ///     sent immediately, but it is sent on the next invocation of AzureIoT_DoPeriodicTasks().
 /// </summary>
 /// <param name="jsonPayload">The json payload of the message to send.</param>
 void AzureIoT_SendJsonMessage(JSON_Value* jsonPayload);
-
-/// <summary>
-///     Creates and enqueues a message to be delivered the IoT Hub. The message is not actually sent
-///     immediately, but it is sent on the next invocation of AzureIoT_DoPeriodicTasks().
-/// </summary>
-/// <param name="messagePayload">The payload of the message to send.</param>
-void AzureIoT_SendMessage(const char *messagePayload);
 
 /// <summary>
 ///     Keeps IoT Hub Client alive by exchanging data with the Azure IoT Hub.
