@@ -1,0 +1,539 @@
+{
+  "@id": "urn:SphereBME280Lab:capabilityModel:1",
+  "@type": "CapabilityModel",
+  "implements": [
+    {
+      "@id": "urn:SphereBME280Lab:DeviceInformation:interface:1",
+      "@type": "InterfaceInstance",
+      "name": "DeviceInformation",
+      "schema": {
+        "@id": "urn:azureiot:DeviceManagement:DeviceInformation:1",
+        "@type": "Interface",
+        "displayName": {
+          "en": "Device information"
+        },
+        "contents": [
+          {
+            "@id": "urn:azureiot:DeviceManagement:DeviceInformation:manufacturer:1",
+            "@type": "Property",
+            "comment": "Company name of the device manufacturer. This could be the same as the name of the original equipment manufacturer (OEM). Ex. Contoso.",
+            "displayName": {
+              "en": "Manufacturer"
+            },
+            "name": "manufacturer",
+            "schema": "string"
+          },
+          {
+            "@id": "urn:azureiot:DeviceManagement:DeviceInformation:model:1",
+            "@type": "Property",
+            "comment": "Device model name or ID. Ex. Surface Book 2.",
+            "displayName": {
+              "en": "Device model"
+            },
+            "name": "model",
+            "schema": "string"
+          },
+          {
+            "@id": "urn:azureiot:DeviceManagement:DeviceInformation:swVersion:1",
+            "@type": "Property",
+            "comment": "Version of the software on your device. This could be the version of your firmware. Ex. 1.3.45",
+            "displayName": {
+              "en": "Software version"
+            },
+            "name": "swVersion",
+            "schema": "string"
+          },
+          {
+            "@id": "urn:azureiot:DeviceManagement:DeviceInformation:osName:1",
+            "@type": "Property",
+            "comment": "Name of the operating system on the device. Ex. Windows 10 IoT Core.",
+            "displayName": {
+              "en": "Operating system name"
+            },
+            "name": "osName",
+            "schema": "string"
+          },
+          {
+            "@id": "urn:azureiot:DeviceManagement:DeviceInformation:processorArchitecture:1",
+            "@type": "Property",
+            "comment": "Architecture of the processor on the device. Ex. x64 or ARM.",
+            "displayName": {
+              "en": "Processor architecture"
+            },
+            "name": "processorArchitecture",
+            "schema": "string"
+          },
+          {
+            "@id": "urn:azureiot:DeviceManagement:DeviceInformation:processorManufacturer:1",
+            "@type": "Property",
+            "comment": "Name of the manufacturer of the processor on the device. Ex. Intel.",
+            "displayName": {
+              "en": "Processor manufacturer"
+            },
+            "name": "processorManufacturer",
+            "schema": "string"
+          },
+          {
+            "@id": "urn:azureiot:DeviceManagement:DeviceInformation:totalStorage:1",
+            "@type": "Property",
+            "comment": "Total available storage on the device in kilobytes. Ex. 2048000 kilobytes.",
+            "displayName": {
+              "en": "Total storage"
+            },
+            "name": "totalStorage",
+            "displayUnit": {
+              "en": "kilobytes"
+            },
+            "schema": "long"
+          },
+          {
+            "@id": "urn:azureiot:DeviceManagement:DeviceInformation:totalMemory:1",
+            "@type": "Property",
+            "comment": "Total available memory on the device in kilobytes. Ex. 256000 kilobytes.",
+            "displayName": {
+              "en": "Total memory"
+            },
+            "name": "totalMemory",
+            "displayUnit": {
+              "en": "kilobytes"
+            },
+            "schema": "long"
+          }
+        ]
+      }
+    },
+    {
+      "@id": "urn:SphereBME280Lab:RGBled:Interface:1",
+      "@type": "InterfaceInstance",
+      "displayName": {
+        "en": "MT3620RDB RGB led"
+      },
+      "name": "rgbLed",
+      "schema": {
+        "@id": "urn:SphereBME280Lab:RGBled:1",
+        "@type": "Interface",
+        "displayName": {
+          "en": "MT3620RDB RGB led"
+        },
+        "contents": [
+          {
+            "@id": "urn:SphereBME280Lab:RGBled:setColorMethod:1",
+            "@type": "Command",
+            "commandType": "synchronous",
+            "durable": false,
+            "request": {
+              "@id": "urn:SphereBME280Lab:RGBled:setColorMethod:request:1",
+              "@type": "SchemaField",
+              "comment": "Request to set LED color",
+              "description": {
+                "en": "Request to set LED color"
+              },
+              "displayName": {
+                "en": "SetColorMethod Request"
+              },
+              "name": "setColorMethodRequest",
+              "schema": {
+                "@id" : "urn:SphereBME280Lab:RGBled:setColorMethod:requestPayload:1",
+                "@type": "Object",
+                "displayName": {
+                  "en" : "setColorMethod request payload"
+                },
+                "fields" : [ 
+                  {
+                    "@id": "urn:SphereBME280Lab:RGBled:setColorMethod:requestPayload:color:1",
+                    "@type": "SchemaField",
+                    "displayName": {
+                      "en": "Color"
+                    },
+                    "name": "color",
+                    "schema": {
+                      "@id": "urn:SphereBME280Lab:colorEnum:1",
+                      "@type": "Enum",
+                      "displayName": {
+                        "en": "Enum"
+                      },
+                      "valueSchema": "string",
+                      "enumValues": [
+                        {
+                          "@id": "urn:SphereBME280Lab:colorEnum:off:1",
+                          "@type": "EnumValue",
+                          "displayName": {
+                            "en": "Off"
+                          },
+                          "enumValue": "off",
+                          "name": "off"
+                        },
+                        {
+                          "@id": "urn:SphereBME280Lab:colorEnum:red:1",
+                          "@type": "EnumValue",
+                          "displayName": {
+                            "en": "Red"
+                          },
+                          "enumValue": "red",
+                          "name": "red"
+                        },
+                        {
+                          "@id": "urn:SphereBME280Lab:colorEnum:blue:1",
+                          "@type": "EnumValue",
+                          "displayName": {
+                            "en": "Blue"
+                          },
+                          "enumValue": "blue",
+                          "name": "blue"
+                        },
+                        {
+                          "@id": "urn:SphereBME280Lab:colorEnum:green:1",
+                          "@type": "EnumValue",
+                          "displayName": {
+                            "en": "Green"
+                          },
+                          "enumValue": "green",
+                          "name": "green"
+                        },
+                        {
+                          "@id": "urn:SphereBME280Lab:colorEnum:yellow:1",
+                          "@type": "EnumValue",
+                          "displayName": {
+                            "en": "Yellow"
+                          },
+                          "enumValue": "yellow",
+                          "name": "yellow"
+                        },
+                        {
+                          "@id": "urn:SphereBME280Lab:colorEnum:magenta:1",
+                          "@type": "EnumValue",
+                          "displayName": {
+                            "en": "Magenta"
+                          },
+                          "enumValue": "magenta",
+                          "name": "magenta"
+                        },
+                        {
+                          "@id": "urn:SphereBME280Lab:colorEnum:cyan:1",
+                          "@type": "EnumValue",
+                          "displayName": {
+                            "en": "Cyan"
+                          },
+                          "enumValue": "cyan",
+                          "name": "cyan"
+                        },
+                        {
+                          "@id": "urn:SphereBME280Lab:colorEnum:white:1",
+                          "@type": "EnumValue",
+                          "displayName": {
+                            "en": "White"
+                          },
+                          "enumValue": "white",
+                          "name": "white"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "response": {
+              "@id": "urn:SphereBME280Lab:RGBled:setColorMethod:response:1",
+              "@type": "SchemaField",
+              "displayName": {
+                "en": "SetColorMethod response"
+              },
+              "name": "setColorMethodResponse",
+              "schema": {
+                "@id": "urn:SphereBME280Lab:RGBled:setColorMethod:responsePayload:1",
+                "@type": "Object",
+                "displayName": {
+                  "en": "setColorMethod response payload"
+                },
+                "fields": [
+                  {
+                    "@id": "urn:SphereBME280Lab:RGBled:setColorMethod:responsePayload:success:1",
+                    "@type": "SchemaField",
+                    "displayName": {
+                      "en": "Success"
+                    },
+                    "name": "success",
+                    "schema": "boolean"
+                  },
+                  {
+                    "@id": "urn:SphereBME280Lab:RGBled:setColorMethod:responsePayload:message:1",
+                    "@type": "SchemaField",
+                    "displayName": {
+                      "en": "Message"
+                    },
+                    "name": "message",
+                    "schema": "string"
+                  }
+                ]
+              }
+            },
+            "comment": "IoT Hub direct method to set the color of the RGB led",
+            "description": {
+              "en": "Select color from list"
+            },
+            "displayName": {
+              "en": "Set LED color"
+            },
+            "name": "setColorMethod"
+          },
+          {
+            "@id": "urn:SphereBME280Lab:RGBled:blinkRateProperty:1",
+            "@type": "Property",
+            "comment": "index to timer table",
+            "description": {
+              "en": "Set led blink rate 0..2 (fast..slow)"
+            },
+            "displayName": {
+              "en": "LED blink rate"
+            },
+            "name": "blinkRateProperty",
+            "writable": true,
+            "schema": "integer"
+          }
+        ]
+      }
+    },
+    {
+      "@id": "urn:SphereBME280Lab:buttons:interface:1",
+      "@type": "InterfaceInstance",
+      "displayName": {
+        "en": "MT3620RDB Buttons"
+      },
+      "name": "Buttons",
+      "schema": {
+        "@id": "urn:SphereBME280Lab:buttons:1",
+        "@type": "Interface",
+        "displayName": {
+          "en": "MT3620RDB Buttons"
+        },
+        "contents": [
+          {
+            "@id": "urn:SphereBME280Lab:buttons:buttonA:1",
+            "@type": [
+              "Telemetry",
+              "SemanticType/Event"
+            ],
+            "description": {
+              "en": "Button A pressed event"
+            },
+            "displayName": {
+              "en": "Button A"
+            },
+            "name": "buttonA",
+            "schema": "string"
+          },
+          {
+            "@id": "urn:SphereBME280Lab:buttons:buttonB:1",
+            "@type": [
+              "Telemetry",
+              "SemanticType/Event"
+            ],
+            "description": {
+              "en": "Button B pressed event"
+            },
+            "displayName": {
+              "en": "Button B"
+            },
+            "name": "buttonB",
+            "schema": "string"
+          }
+        ]
+      }
+    },
+    {
+      "@id": "urn:SphereBME280Lab:iot:interface:1",
+      "@type": "InterfaceInstance",
+      "displayName": {
+        "en": "IoT Client"
+      },
+      "name": "IoT",
+      "schema": {
+        "@id": "urn:SphereBME280Lab:iot:1",
+        "@type": "Interface",
+        "displayName": {
+          "en": "IoT Client"
+        },
+        "contents": [
+          {
+            "@id": "urn:SphereBME280Lab:iot:connect:1",
+            "@type": [
+              "Telemetry",
+              "SemanticType/Event"
+            ],
+            "description": {
+              "en": "Device connected to IoTHub event"
+            },
+            "displayName": {
+              "en": "Connect"
+            },
+            "name": "connect",
+            "schema": "string"
+          },
+          {
+            "@id": "urn:SphereBME280Lab:iot:resetMethod:1",
+            "@type": "Command",
+            "commandType": "synchronous",
+            "durable": false,
+            "request": {
+              "@id": "urn:SphereBME280Lab:iot:resetMethod:request:1",
+              "@type": "SchemaField",
+              "description": {
+                "en": "resetMethod request"
+              },
+              "displayName": {
+                "en": "ResetMethod request"
+              },
+              "name": "resetMethodRequest",
+              "schema" :{
+                "@id": "urn:SphereBME280Lab:iot:resetMethod:requestPayload:1",
+                "@type": "Object",
+                "displayName": {
+                  "en": "ResetMethod request payload"
+                },
+                "fields": [
+                  {
+                    "@id": "urn:SphereBME280Lab:iot:resetMethod:requestPayload:resetTimer:1",
+                    "@type": "SchemaField",
+                    "description": {
+                      "en": "Reset device after given amount of seconds (1..10)."
+                    },
+                    "displayName": {
+                      "en": "Reset timer (s)"
+                    },
+                    "name": "resetTimer",
+                    "schema": "integer" 
+                  }
+                ]
+              }
+            },
+            "response": {
+              "@id": "urn:SphereBME280Lab:iot:resetMethod:response:1",
+              "@type": "SchemaField",
+              "description": {
+                "en": "Device response to 'reset' command. "
+              },
+              "displayName": {
+                "en": "ResetMethod response"
+              },
+              "name": "resetMethodResponse",
+              "schema": {
+                "@id": "urn:SphereBME280Lab:iot:resetMethod:responsePayload:1",
+                "@type": "Object",
+                "displayName": {
+                  "en": "ResetMethod response payload"
+                },
+                "fields": [
+                  {
+                    "@id": "urn:SphereBME280Lab:IoT:resetMethod:responsePayload:success:1",
+                    "@type": "SchemaField",
+                    "displayName": {
+                      "en": "Success"
+                    },
+                    "name": "success",
+                    "schema": "boolean"
+                  },
+                  {
+                    "@id": "urn:SphereBME280Lab:IoT:resetMethod:responsePayload:message:1",
+                    "@type": "SchemaField",
+                    "displayName": {
+                      "en": "Message"
+                    },
+                    "name": "message",
+                    "schema": "string"
+                  }
+                ]
+              }
+            },
+            "description": {
+              "en": "Reset device after given amount of seconds"
+            },
+            "displayName": {
+              "en": "Reset Device"
+            },
+            "name": "resetMethod"
+          }
+        ]
+      }
+    },
+    {
+      "@id": "urn:SphereBME280Lab:BME280:interface:1",
+      "@type": "InterfaceInstance",
+      "displayName": {
+        "en": "BME280 Sensor"
+      },
+      "name": "BME280",
+      "schema": {
+        "@id": "urn:SphereBME280Lab:BME280:1",
+        "@type": "Interface",
+        "displayName": {
+          "en": "BME280 Sensor"
+        },
+        "contents": [
+          {
+            "@id": "urn:SphereBME280Lab:BME280:temperature:1",
+            "@type": [
+              "Telemetry",
+              "SemanticType/Temperature"
+            ],
+            "description": {
+              "en": "Temperature data point in °C."
+            },
+            "displayName": {
+              "en": "Temperature"
+            },
+            "name": "temperature",
+            "displayUnit": {
+              "en": "°C"
+            },
+            "schema": "double",
+            "unit": "Units/Temperature/celsius"
+          },
+          {
+            "@id": "urn:SphereBME280Lab:BME280:pressure:1",
+            "@type": [
+              "Telemetry",
+              "SemanticType/Pressure"
+            ],
+            "description": {
+              "en": "Pressure data point in hPa."
+            },
+            "displayName": {
+              "en": "Air Pressure"
+            },
+            "name": "pressure",
+            "displayUnit": {
+              "en": "(hPa)"
+            },
+            "schema": "double",
+            "unit": "Units/Pressure/kiloPascal"
+          },
+          {
+            "@id": "urn:SphereBME280Lab:BME280:humidity:1",
+            "@type": [
+              "Telemetry",
+              "SemanticType/Humidity"
+            ],
+            "description": {
+              "en": "Humidity in percent."
+            },
+            "displayName": {
+              "en": "Humidity"
+            },
+            "name": "humidity",
+            "displayUnit": {
+              "en": "(%)"
+            },
+            "schema": "double",
+            "unit": "Units/Humidity/percent"
+          }
+        ]
+      }
+    }
+  ],
+  "displayName": {
+    "en": "Azure Sphere with BME280 Lab "
+  },
+  "@context": [
+    "http://azureiot.com/v1/contexts/IoTModel.json"
+  ]
+}

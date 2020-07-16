@@ -334,3 +334,4 @@ ASALocalRun/
 out/
 
 /MCUtoMT3620toAzure/MCUSerialSketch/.vscode
+/SphereBME280/build/

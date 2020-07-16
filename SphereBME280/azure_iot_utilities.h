@@ -70,7 +70,7 @@ void AzureIoT_DestroyClient(void);
 ///<param name="pszProperties">Reported Properties in json string notation</param>
 ///<param name="nPropertiesSize">Size of properties string</param>
 ///<returns>IOTHUB_CLIENT_RESULT_OK if report successfully enqueued</returns>
-IOTHUB_CLIENT_RESULT AzureIoT_TwinReportState( char* pszProperties, size_t nPropertiesSize);
+IOTHUB_CLIENT_RESULT AzureIoT_TwinReportState( const char* pszProperties, size_t nPropertiesSize);
 
 /// <summary>
 ///     Creates and enqueues IoT Hub Device Twin reported properties. 

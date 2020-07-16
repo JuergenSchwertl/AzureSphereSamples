@@ -263,6 +263,8 @@ static JSON_Value* getJsonFromPayload(const unsigned char* pbPayload, size_t nPa
     memcpy(pszPayloadString, pbPayload, nPayloadSize);
     pszPayloadString[nPayloadSize] = '\0'; // Null terminated string.
 
+    Log_Debug("Payload received %s\n",pszPayloadString);
+
     JSON_Value* jsonRootValue = json_parse_string(pszPayloadString);
     free(pszPayloadString);
 
@@ -539,7 +541,7 @@ static void reportStatusCallback(int result, void *context)
 ///<param name="nPropertiesSize">Size of properties string</param>
 ///<returns>IOTHUB_CLIENT_RESULT_OK if report successfully enqueued</returns>
 IOTHUB_CLIENT_RESULT AzureIoT_TwinReportState(
-    char* pszProperties,
+    const char* pszProperties,
     size_t nPropertiesSize)
 {
     if (iothubClientHandle == NULL) {
@@ -743,7 +745,7 @@ static int directMethodCallback(const char *methodName, const unsigned char *pay
                 }
                 if (jsonResponse != NULL) {
                     setPayloadFromJson(jsonResponse, response, responseSize);
-                    Log_Debug(".......... %d '%s'\n", *responseSize, *response);
+                    LogMessage("Command Response HTTP: %d '%s' (%d bytes)\n", result, *response, *responseSize);
                     json_value_free(jsonResponse);
                 }
                 return result;
