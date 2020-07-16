@@ -176,45 +176,12 @@ static void hubConnectionStatusCallback(IOTHUB_CLIENT_CONNECTION_STATUS result,
                                         void *userContextCallback);
 
 /// <summary>
-///     Converts the IoT Hub connection status reason to a string.
-/// </summary>
-static const char *getReasonString(IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason)
-{
-    static char *reasonString = "unknown reason";
-    switch (reason) {
-    case IOTHUB_CLIENT_CONNECTION_EXPIRED_SAS_TOKEN:
-        reasonString = "IOTHUB_CLIENT_CONNECTION_EXPIRED_SAS_TOKEN";
-        break;
-    case IOTHUB_CLIENT_CONNECTION_DEVICE_DISABLED:
-        reasonString = "IOTHUB_CLIENT_CONNECTION_DEVICE_DISABLED";
-        break;
-    case IOTHUB_CLIENT_CONNECTION_BAD_CREDENTIAL:
-        reasonString = "IOTHUB_CLIENT_CONNECTION_BAD_CREDENTIAL";
-        break;
-    case IOTHUB_CLIENT_CONNECTION_RETRY_EXPIRED:
-        reasonString = "IOTHUB_CLIENT_CONNECTION_RETRY_EXPIRED";
-        break;
-    case IOTHUB_CLIENT_CONNECTION_NO_NETWORK:
-        reasonString = "IOTHUB_CLIENT_CONNECTION_NO_NETWORK";
-        break;
-    case IOTHUB_CLIENT_CONNECTION_COMMUNICATION_ERROR:
-        reasonString = "IOTHUB_CLIENT_CONNECTION_COMMUNICATION_ERROR";
-        break;
-    case IOTHUB_CLIENT_CONNECTION_OK:
-        reasonString = "IOTHUB_CLIENT_CONNECTION_OK";
-        break;
-    }
-    return reasonString;
-}
-
-/// <summary>
 ///     Log a message related to the Azure IoT Hub client with
 ///     prefix [Azure IoT]:"
 /// </summary>
-/// <param name="message">The format string containing the error to output along with
-/// placeholders</param>
+/// <param name="message">The format string containing the error to output along with placeholders</param>
 /// <param name="...">The list of arguments to populate the format string placeholders</param>
-void LogMessage(char *message, ...)
+void LogMessage(char* message, ...)
 {
     va_list args;
     va_start(args, message);
@@ -224,8 +191,34 @@ void LogMessage(char *message, ...)
 }
 
 /// <summary>
+///     Converts the IoT Hub connection status reason to a string.
+/// </summary>
+/// <param name="reason">connection change status reason</param>
+static const char *getReasonString(IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason)
+{
+    switch (reason) {
+        case IOTHUB_CLIENT_CONNECTION_EXPIRED_SAS_TOKEN:
+            return "IOTHUB_CLIENT_CONNECTION_EXPIRED_SAS_TOKEN";
+        case IOTHUB_CLIENT_CONNECTION_DEVICE_DISABLED:
+            return "IOTHUB_CLIENT_CONNECTION_DEVICE_DISABLED";
+        case IOTHUB_CLIENT_CONNECTION_BAD_CREDENTIAL:
+            return "IOTHUB_CLIENT_CONNECTION_BAD_CREDENTIAL";
+        case IOTHUB_CLIENT_CONNECTION_RETRY_EXPIRED:
+            return "IOTHUB_CLIENT_CONNECTION_RETRY_EXPIRED";
+        case IOTHUB_CLIENT_CONNECTION_NO_NETWORK:
+            return "IOTHUB_CLIENT_CONNECTION_NO_NETWORK";
+        case IOTHUB_CLIENT_CONNECTION_COMMUNICATION_ERROR:
+            return "IOTHUB_CLIENT_CONNECTION_COMMUNICATION_ERROR";
+        case IOTHUB_CLIENT_CONNECTION_OK:
+            return "IOTHUB_CLIENT_CONNECTION_OK";
+    }
+    return "unknown IOTHUB_CLIENT_CONNECTION_STATUS_REASON";
+}
+
+/// <summary>
 ///     Converts AZURE_SPHERE_PROV_RETURN_VALUE to a string.
 /// </summary>
+/// <param name="provisioningResult">result of provisioning phase</param>
 static char *getAzureSphereProvisioningResultString(
     AZURE_SPHERE_PROV_RETURN_VALUE provisioningResult)
 {
@@ -239,7 +232,51 @@ static char *getAzureSphereProvisioningResultString(
     case AZURE_SPHERE_PROV_RESULT_DEVICEAUTH_NOT_READY:
         return "AZURE_SPHERE_PROV_RESULT_DEVICEAUTH_NOT_READY";
     case AZURE_SPHERE_PROV_RESULT_PROV_DEVICE_ERROR:
+        switch (provisioningResult.prov_device_error) {
+            case PROV_DEVICE_RESULT_INVALID_ARG:
+                return "PROV_DEVICE_RESULT_INVALID_ARG";
+            case PROV_DEVICE_RESULT_SUCCESS:
+                return "PROV_DEVICE_RESULT_SUCCESS";
+            case PROV_DEVICE_RESULT_MEMORY:
+                return "PROV_DEVICE_RESULT_MEMORY";
+            case PROV_DEVICE_RESULT_PARSING:
+                return "PROV_DEVICE_RESULT_PARSING";
+            case PROV_DEVICE_RESULT_TRANSPORT:
+                return "PROV_DEVICE_RESULT_TRANSPORT";
+            case PROV_DEVICE_RESULT_INVALID_STATE:
+                return "PROV_DEVICE_RESULT_INVALID_STATE";
+            case PROV_DEVICE_RESULT_DEV_AUTH_ERROR:
+                return "PROV_DEVICE_RESULT_DEV_AUTH_ERROR";
+            case PROV_DEVICE_RESULT_TIMEOUT:
+                return "PROV_DEVICE_RESULT_TIMEOUT";
+            case PROV_DEVICE_RESULT_KEY_ERROR:
+                return "PROV_DEVICE_RESULT_KEY_ERROR";
+            case PROV_DEVICE_RESULT_ERROR:
+                return "PROV_DEVICE_RESULT_ERROR";
+            case PROV_DEVICE_RESULT_HUB_NOT_SPECIFIED:
+                return "PROV_DEVICE_RESULT_HUB_NOT_SPECIFIED";
+            case PROV_DEVICE_RESULT_UNAUTHORIZED:
+                return "PROV_DEVICE_RESULT_UNAUTHORIZED";
+            case PROV_DEVICE_RESULT_DISABLED:
+                return "PROV_DEVICE_RESULT_DISABLED";
+            case PROV_DEVICE_RESULT_OK:
+                break;
+        }
         return "AZURE_SPHERE_PROV_RESULT_PROV_DEVICE_ERROR";
+    case AZURE_SPHERE_PROV_RESULT_IOTHUB_CLIENT_ERROR:
+        switch (provisioningResult.iothub_client_error) {
+            case IOTHUB_CLIENT_INVALID_ARG:
+                return "IOTHUB_CLIENT_INVALID_ARG";
+            case IOTHUB_CLIENT_ERROR:
+                return "IOTHUB_CLIENT_ERROR";
+            case IOTHUB_CLIENT_INVALID_SIZE:
+                return "IOTHUB_CLIENT_INVALID_SIZE";
+            case IOTHUB_CLIENT_INDEFINITE_TIME:
+                return "IOTHUB_CLIENT_INDEFINITE_TIME";
+            case IOTHUB_CLIENT_OK:
+                break;
+            }
+        return "AZURE_SPHERE_PROV_RESULT_IOTHUB_CLIENT_ERROR";
     case AZURE_SPHERE_PROV_RESULT_GENERIC_ERROR:
         return "AZURE_SPHERE_PROV_RESULT_GENERIC_ERROR";
     default:
@@ -816,10 +853,10 @@ static void hubConnectionStatusCallback(IOTHUB_CLIENT_CONNECTION_STATUS result,
                                         void *userContextCallback)
 {
     iothubAuthenticated = (result == IOTHUB_CLIENT_CONNECTION_AUTHENTICATED);
+    const char* reasonString = getReasonString(reason);
     if (hubConnectionStatusCb) {
-        hubConnectionStatusCb(iothubAuthenticated);
+        hubConnectionStatusCb(iothubAuthenticated, reasonString);
     }
-    const char *reasonString = getReasonString(reason);
     if (!iothubAuthenticated) {
         LogMessage("INFO: IoT Hub connection is down (%s), retrying connection...\n", reasonString);
     } else {

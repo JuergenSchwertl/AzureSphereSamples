@@ -111,8 +111,9 @@ static const char cstrErrorOutOfMemory[] = "ERROR: Could not allocate buffer for
 static const char cstrEvtConnected[] = "connect";
 static const char cstrEvtButtonB[] = "buttonB";
 static const char cstrEvtButtonA[] = "buttonA";
-static const char cstrOccurred[] = "occurred";
-
+static const char cstrMsgOccurred[] = "occurred";
+static const char cstrMsgPressed[] = "pressed";
+static const char cstrMsgAppStart[] = "Application started";
 
 // IoT Hub/IoT Central direct method names
 static const char cstrSetColorMethod[] = "setColorMethod";
@@ -205,6 +206,10 @@ static EventData resetTimerEventData = { .eventHandler = &ResetTimerHandler };
 /// IoT hub client status
 /// </summary>
 static bool connectedToIoTHub = false;
+/// <summary>
+/// Reason for last disconnect
+/// </summary>
+static const char* pstrConnectionStatus = cstrMsgAppStart;
 
 /// <summary>
 /// desired property blinkRateProperty 
@@ -216,11 +221,9 @@ static size_t blinkIntervalIndex = 0;
 /// </summary>
 static unsigned int blinkIntervalVersion = 1;
 
-
-
-
-
-// Termination state
+/// <summary>
+/// Termination state
+/// </summary>
 static volatile sig_atomic_t terminationRequired = false;
 
 
@@ -302,44 +305,30 @@ static bool OpenGpioFdAsInput(GPIO_Id gpioId, int *outGpioFd)
 }
 
 /// <summary>
-///     Toggles the blink speed of the blink LED between 3 values, and updates the device twin.
+///     Toggles the blink speed of the blink LED between 3 values.
 /// </summary>
-/// <param name="rate">The blink rate</param>
-static void SetLedRate(const struct timespec *rate)
+/// <param name="rate">ptr to blink rate</param>
+static void SetLedRate(const struct timespec * pBlinkRate)
 {
-    if (SetTimerFdToPeriod(led1BlinkTimerFd, rate) != 0) {
+    if (SetTimerFdToPeriod(led1BlinkTimerFd, pBlinkRate) != 0) {
         Log_Debug("ERROR: could not set the period of the LED.\n");
         terminationRequired = true;
         return;
     }
-
-    if (connectedToIoTHub) {
-        // create property in standard notation { "blinkRateProperty" : 1 }
-        JSON_Value* jsonRoot = json_value_init_object();
-        json_object_set_number(json_object(jsonRoot), cstrLedBlinkRateProperty, (double)blinkIntervalIndex);
-
-        // REMARK: only IoT Central desired property is in { "blinkRateProperty" : { "value" : 1, "desiredVersion" : ##, "status" : "completed" } } 
-        //json_object_dotset_number(json_object(jsonRoot), cstrLedBlinkRateValuePath, (double) blinkIntervalIndex);
-
-        // Report the current state to the Device Twin on the IoT Hub.
-        AzureIoT_TwinReportStateJson(jsonRoot);
-
-        json_value_free(jsonRoot);
-    } else {
-        Log_Debug("WARNING: Cannot send reported property; not connected to the IoT Hub.\n");
-    }
 }
 
 /// <summary>
-///     Sends an event to Azure IoT Central
+/// Sends an event to Azure IoT Central
 /// </summary>
-static void SendEventMessage(const char * cstrEvent)
+/// <param name="cstrEvent">event name</param>
+/// <param name="pstrMessage">event message</param>
+static void SendEventMessage(const char * cstrEvent, const char * cstrMessage)
 {
 	if (connectedToIoTHub) {
-		Log_Debug("[Send] Event %s has occurred\r\n", cstrEvent);
+		Log_Debug("[Send] Event '%s' is '%s'\n", cstrEvent, cstrMessage);
 
         JSON_Value* jsonRoot = json_value_init_object();
-        json_object_set_string(json_object(jsonRoot), cstrEvent, cstrOccurred);
+        json_object_set_string(json_object(jsonRoot), cstrEvent, cstrMessage);
 
 		// Send a message
 		AzureIoT_SendJsonMessage(jsonRoot);
@@ -409,9 +398,10 @@ static void DeviceTwinUpdate(JSON_Object *desiredProperties)
 {
 	if (json_object_has_value_of_type(desiredProperties, cstrLedBlinkRateProperty, JSONObject))
 	{
+        unsigned int desiredVersion = (unsigned int)json_object_get_number(desiredProperties, cstrSysVersionProperty);
+
         JSON_Object * desiredBlinkRateProperty = json_object_get_object(desiredProperties, cstrLedBlinkRateProperty);
 		size_t desiredBlinkRate = (size_t)json_object_get_number(desiredBlinkRateProperty, cstrValueProperty);
-        unsigned int desiredVersion = (unsigned int)json_object_get_number(desiredBlinkRateProperty, cstrSysVersionProperty);
 
 		blinkIntervalIndex = desiredBlinkRate % blinkIntervalsCount; // Clamp value to [0..blinkIntervalsCount) .
         blinkIntervalVersion = desiredVersion;
@@ -423,17 +413,15 @@ static void DeviceTwinUpdate(JSON_Object *desiredProperties)
 		SetLedRate(&blinkIntervals[blinkIntervalIndex]);
 
         // REMARK: IoT Central desired property response needs to be { "blinkRateProperty" : { "value" : ##, "desiredVersion" : ##, "status" : "completed" } } 
+        JSON_Value* jsonRoot = json_value_init_object();
         JSON_Value* jsonProperty = json_value_init_object();
         JSON_Object* jsonObject = json_value_get_object(jsonProperty);
+
+        json_object_set_value(json_object(jsonRoot), cstrLedBlinkRateProperty, jsonProperty);
 
         json_object_set_number(jsonObject, cstrValueProperty, (double)blinkIntervalIndex);
         json_object_set_number(jsonObject, cstrDesiredVersionProperty, (double)blinkIntervalVersion);
         json_object_set_string(jsonObject, cstrStatusProperty, cstrCompleted);
-
-        JSON_Value* jsonRoot = json_value_init_object();
-        json_object_set_value(json_object(jsonRoot), cstrLedBlinkRateProperty, jsonProperty);
-
-        //json_object_dotset_number(json_object(jsonRoot), cstrLedBlinkRateValuePath, (double) blinkIntervalIndex);
 
         // Report the current state to the Device Twin on the IoT Hub.
         AzureIoT_TwinReportStateJson(jsonRoot);
@@ -511,7 +499,7 @@ HTTP_STATUS_CODE ResetMethod(JSON_Value* jsonParameters, JSON_Value** jsonRespon
     JSON_Value* jsonResponse = json_value_init_object();
     JSON_Object* jsonObject = json_value_get_object(jsonResponse);
 
-    // The payload should contain JSON such as: { "reset_timer": 5}
+    // The payload should contain JSON such as: { "resetTimer": 5}
     if (jsonParameters != NULL) {
         JSON_Object* jsonRootObject = json_value_get_object(jsonParameters);
         time_t tResetInterval = (time_t) json_object_get_number(jsonRootObject, cstrResetTimerProperty);
@@ -548,14 +536,17 @@ HTTP_STATUS_CODE ResetMethod(JSON_Value* jsonParameters, JSON_Value** jsonRespon
 ///     IoT Hub connection status callback function.
 /// </summary>
 /// <param name="connected">'true' when the connection to the IoT Hub is established.</param>
-static void IoTHubConnectionStatusChanged(bool connected)
+/// <param name="statusText">connect/disconnect reason</param>
+static void IoTHubConnectionStatusChanged(bool connected, const char *statusText)
 {
     connectedToIoTHub = connected;
 	if (connectedToIoTHub)
 	{
         Log_Debug("[IoTHubConnectionStatusChanged]: Connected.\n");
         // send a "connect" event telemetry message
-		SendEventMessage(cstrEvtConnected);
+		SendEventMessage(cstrEvtConnected, pstrConnectionStatus);
+        pstrConnectionStatus = cstrEvtConnected;
+
         // report initial Azure IoT PnP-compatible DeviceInformation
         AzureIoT_TwinReportState( cstrDeviceInformation, sizeof(cstrDeviceInformation));
 
@@ -565,6 +556,7 @@ static void IoTHubConnectionStatusChanged(bool connected)
     else {
         Log_Debug("[IoTHubConnectionStatusChanged]: Disconnected.\n");
         SetTimerFdToPeriod(telemetryTimerFd, &nullPeriod);
+        pstrConnectionStatus = statusText;
     }
 }
 
@@ -588,7 +580,7 @@ void Led1UpdateHandler(EventData *eventData)
 	}
     RgbLedUtility_SetLed(&ledNetwork, color);
 
-    // Trigger LED to blink as appropriate.
+    // Trigger LED1 to blink as appropriate.
     blinkingLedState = !blinkingLedState;
     color = (blinkingLedState ? ledBlinkColor : RgbLedUtility_Colors_Off);
     RgbLedUtility_SetLed(&led1, color);
@@ -647,23 +639,33 @@ void ButtonPollTimerHandler(EventData *eventData)
 		blinkIntervalIndex = (blinkIntervalIndex + 1) % blinkIntervalsCount;
         SetLedRate(&blinkIntervals[blinkIntervalIndex]);
 
-        // REMARK: IoT Central in short form desired property is { "blinkRateProperty" : { "value" : ## } } 
-        JSON_Value* jsonRoot = json_value_init_object();
-        json_object_dotset_number(json_object(jsonRoot), cstrLedBlinkRateValuePath, (double)blinkIntervalIndex++);
+        if (connectedToIoTHub) {
+            // REMARK: IoT Central in short form desired property is { "blinkRateProperty" : { "value" : ## } } 
+            JSON_Value* jsonRoot = json_value_init_object();
+            json_object_dotset_number(json_object(jsonRoot), cstrLedBlinkRateValuePath, (double)blinkIntervalIndex);
 
-        // Report the current state to the Device Twin on the IoT Hub.
-        AzureIoT_TwinReportStateJson(jsonRoot);
+            // Report the current state to the Device Twin on the IoT Hub.
+            AzureIoT_TwinReportStateJson(jsonRoot);
 
-        json_value_free(jsonRoot);
+            json_value_free(jsonRoot);
 
-		SendEventMessage(cstrEvtButtonA);
+            SendEventMessage(cstrEvtButtonA, cstrMsgPressed);
+        }
+        else {
+            Log_Debug("WARNING: Cannot send buttonA event: not connected to the IoT Hub.\n");
+        }
     }
 
     // If the button B is pressed, send a message to the IoT Hub.
     static GPIO_Value_Type messageButtonState;
     if (IsButtonPressed(sendMessageButtonGpioFd, &messageButtonState)) {
-		SendEventMessage(cstrEvtButtonB);
-		SendTelemetryMessage();
+        if (connectedToIoTHub) {
+		    SendEventMessage(cstrEvtButtonB, cstrMsgPressed);
+		    SendTelemetryMessage();
+        }
+        else {
+            Log_Debug("WARNING: Cannot send buttonB event: not connected to the IoT Hub.\n");
+        }
     }
 }
 

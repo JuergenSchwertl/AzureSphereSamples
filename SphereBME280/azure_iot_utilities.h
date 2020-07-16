@@ -195,7 +195,7 @@ void AzureIoT_RegisterDirectMethodHandlers(const MethodRegistration* methods);
 /// <summary>
 ///     Type of the function callback invoked when the IoT Hub connection status changes.
 /// </summary>
-typedef void (*ConnectionStatusFnType)(bool connected);
+typedef void (*ConnectionStatusFnType)(bool connected, const char *statusText);
 
 /// <summary>
 ///     Sets the function to be invoked whenever the connection status to thye IoT Hub changes.
