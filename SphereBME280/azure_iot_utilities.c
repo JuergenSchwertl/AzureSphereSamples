@@ -338,7 +338,7 @@ static IOTHUB_CLIENT_RESULT setPayloadFromJson(JSON_Value* jsonValue, unsigned c
         return IOTHUB_CLIENT_INVALID_ARG;
     }
 
-    *pnResponseSize = nPayloadSize;
+    *pnResponseSize = nPayloadSize-1;
     *ppbResponse = (unsigned char *)pszPayload;
     return IOTHUB_CLIENT_OK;
 }
