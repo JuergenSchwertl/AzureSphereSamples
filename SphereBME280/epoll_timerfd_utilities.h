@@ -40,22 +40,22 @@ int CreateEpollFd(void);
 ///     Registers an event with the epoll instance. If the event was previously added, that
 ///     registration will be modified to match the new mask.
 /// </summary>
-/// <param name="epollFd">Epoll file descriptor</param>
+/// <param name="fdEpoll">Epoll file descriptor</param>
 /// <param name="eventFd">File descriptor generating events for the epoll</param>
 /// <param name="persistentEventData">Persistent event data structure. This must stay in memory
 /// until the handler is removed from the epoll.</param>
 /// <param name="epollEventMask">Bit mask for the epoll event type</param>
 /// <returns>0 on success, or -1 on failure</returns>
-int RegisterEventHandlerToEpoll(int epollFd, int eventFd, EventData *persistentEventData,
+int RegisterEventHandlerToEpoll(int fdEpoll, int eventFd, EventData *persistentEventData,
                                 const uint32_t epollEventMask);
 
 /// <summary>
 ///     Unregisters an event with the epoll instance.
 /// </summary>
-/// <param name="epollFd">Epoll file descriptor</param>
+/// <param name="fdEpoll">Epoll file descriptor</param>
 /// <param name="eventFd">File descriptor generating events for the epoll</param>
 /// <returns>0 on success, or -1 on failure</returns>
-int UnregisterEventHandlerFromEpoll(int epollFd, int eventFd);
+int UnregisterEventHandlerFromEpoll(int fdEpoll, int eventFd);
 
 /// <summary>
 ///     Sets the period of a timer.
@@ -84,23 +84,23 @@ int ConsumeTimerFdEvent(int timerFd);
 /// <summary>
 ///     Creates a timerfd and adds it to an epoll instance.
 /// </summary>
-/// <param name="epollFd">Epoll file descriptor</param>
+/// <param name="fdEpoll">Epoll file descriptor</param>
 /// <param name="period">The timer period</param>
 /// <param name="persistentEventData">Persistent event data structure. This must stay in memory
 /// until the handler is removed from the epoll.</param>
 /// <param name="epollEventMask">Bit mask for the epoll event type</param>
 /// <returns>A valid timerfd file descriptor on success, or -1 on failure</returns>
-int CreateTimerFdAndAddToEpoll(int epollFd, const struct timespec *period,
+int CreateTimerFdAndAddToEpoll(int fdEpoll, const struct timespec *period,
                                EventData *persistentEventData, const uint32_t epollEventMask);
 
 /// <summary>
 ///     Waits for an event on an epoll instance and triggers the handler.
 /// </summary>
-/// <param name="epollFd">
+/// <param name="fdEpoll">
 ///     Epoll file descriptor which was created with <see cref="CreateEpollFd" />.
 /// </param>
 /// <returns>0 on success, or -1 on failure</returns>
-int WaitForEventAndCallHandler(int epollFd);
+int WaitForEventAndCallHandler(int fdEpoll);
 
 /// <summary>
 ///     Closes a file descriptor and prints an error on failure.

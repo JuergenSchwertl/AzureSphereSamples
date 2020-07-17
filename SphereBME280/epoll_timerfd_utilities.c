@@ -7,30 +7,30 @@
 
 int CreateEpollFd(void)
 {
-    int epollFd = -1;
+    int fdEpoll = -1;
 
-    epollFd = epoll_create1(0);
-    if (epollFd == -1) {
+    fdEpoll = epoll_create1(0);
+    if (fdEpoll == -1) {
         Log_Debug("ERROR: Could not create epoll instance: %s (%d).\n", strerror(errno), errno);
         return -1;
     }
 
-    return epollFd;
+    return fdEpoll;
 }
 
-int RegisterEventHandlerToEpoll(int epollFd, int eventFd, EventData *persistentEventData,
+int RegisterEventHandlerToEpoll(int fdEpoll, int eventFd, EventData *persistentEventData,
                                 const uint32_t epollEventMask)
 {
     persistentEventData->fd = eventFd;
     struct epoll_event eventToAddOrModify = {.data.ptr = persistentEventData,
                                              .events = epollEventMask};
 
-    // Register the eventFd on the epoll instance referred by epollFd
+    // Register the eventFd on the epoll instance referred by fdEpoll
     // and register the eventHandler handler for events in epollEventMask.
-    if (epoll_ctl(epollFd, EPOLL_CTL_ADD, eventFd, &eventToAddOrModify) == -1) {
+    if (epoll_ctl(fdEpoll, EPOLL_CTL_ADD, eventFd, &eventToAddOrModify) == -1) {
         // If the Add fails, retry with the Modify as the file descriptor has already been
         // added to the epoll set after it was removed by the kernel upon its closure.
-        if (epoll_ctl(epollFd, EPOLL_CTL_MOD, eventFd, &eventToAddOrModify) == -1) {
+        if (epoll_ctl(fdEpoll, EPOLL_CTL_MOD, eventFd, &eventToAddOrModify) == -1) {
             Log_Debug("ERROR: Could not register event to epoll instance: %s (%d).\n",
                       strerror(errno), errno);
             return -1;
@@ -40,11 +40,11 @@ int RegisterEventHandlerToEpoll(int epollFd, int eventFd, EventData *persistentE
     return 0;
 }
 
-int UnregisterEventHandlerFromEpoll(int epollFd, int eventFd)
+int UnregisterEventHandlerFromEpoll(int fdEpoll, int eventFd)
 {
     int res = 0;
-    // Unregister the eventFd on the epoll instance referred by epollFd.
-    if ((res = epoll_ctl(epollFd, EPOLL_CTL_DEL, eventFd, NULL)) == -1) {
+    // Unregister the eventFd on the epoll instance referred by fdEpoll.
+    if ((res = epoll_ctl(fdEpoll, EPOLL_CTL_DEL, eventFd, NULL)) == -1) {
         if (res == -1 && errno != EBADF) { // Ignore EBADF errors
             Log_Debug("ERROR: Could not remove event from epoll instance: %s (%d).\n",
                       strerror(errno), errno);
@@ -91,7 +91,7 @@ int ConsumeTimerFdEvent(int timerFd)
     return 0;
 }
 
-int CreateTimerFdAndAddToEpoll(int epollFd, const struct timespec *period,
+int CreateTimerFdAndAddToEpoll(int fdEpoll, const struct timespec *period,
                                EventData *persistentEventData, const uint32_t epollEventMask)
 {
     // Create the timerfd and arm it by setting the interval to period
@@ -109,17 +109,17 @@ int CreateTimerFdAndAddToEpoll(int epollFd, const struct timespec *period,
     }
 
     persistentEventData->fd = timerFd;
-    if (RegisterEventHandlerToEpoll(epollFd, timerFd, persistentEventData, epollEventMask) != 0) {
+    if (RegisterEventHandlerToEpoll(fdEpoll, timerFd, persistentEventData, epollEventMask) != 0) {
         return -1;
     }
 
     return timerFd;
 }
 
-int WaitForEventAndCallHandler(int epollFd)
+int WaitForEventAndCallHandler(int fdEpoll)
 {
     struct epoll_event event;
-    int numEventsOccurred = epoll_wait(epollFd, &event, 1, -1);
+    int numEventsOccurred = epoll_wait(fdEpoll, &event, 1, -1);
 
     if (numEventsOccurred == -1) {
         if (errno == EINTR) {
