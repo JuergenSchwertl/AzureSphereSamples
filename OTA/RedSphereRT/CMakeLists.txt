@@ -5,16 +5,18 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
 PROJECT(RedSphereRT C)
 message("Project ${PROJECT_NAME}")
 
+azsphere_configure_tools(TOOLS_REVISION "20.04")
+azsphere_configure_api(TARGET_API_SET "5+Beta2004")
+
+
 # Create executable
 ADD_EXECUTABLE(${PROJECT_NAME} main.c )
 INCLUDE_DIRECTORIES("${SharedAll_SOURCE_DIR}")
 
-SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES LINK_DEPENDS "${PROJECT_SOURCE_DIR}/linker.ld")
-#JSchwert TARGET_LINK_OPTIONS require CMake v3.13 (Visual Studio 2017 only has CMake 3.12)
-#TARGET_LINK_OPTIONS(${PROJECT_NAME}  PRIVATE  -T "${PROJECT_SOURCE_DIR}/linker.ld" )
-SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES LINK_FLAGS "-T \"${PROJECT_SOURCE_DIR}/linker.ld\"")
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} SharedAll SharedRT)
 
+set_target_properties(${PROJECT_NAME} PROPERTIES LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/linker.ld)
+
 # Add MakeImage post-build command
-INCLUDE("${AZURE_SPHERE_MAKE_IMAGE_FILE}")
+azsphere_target_add_image_package(${PROJECT_NAME})
  

@@ -10,6 +10,6 @@ message("CMake generating environment for multiple Azure Sphere RT apps...")
 ADD_SUBDIRECTORY("Shared.All") 
 ADD_SUBDIRECTORY("Shared.RT")
 ADD_SUBDIRECTORY("RedSphereRT")
-ADD_SUBDIRECTORY("GreenSphereRT")
-ADD_SUBDIRECTORY("BlueSphereRT")
+#ADD_SUBDIRECTORY("GreenSphereRT")
+#ADD_SUBDIRECTORY("BlueSphereRT")
  

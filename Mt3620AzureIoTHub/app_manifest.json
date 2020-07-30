@@ -4,9 +4,9 @@
   "ComponentId": "D7CC01E3-6166-4654-BAB7-12EF26D15311",
   "ApplicationType": "Default",
   "EntryPoint": "/bin/app",
-  "CmdArgs": [ "--- YOUR IOT CENTRAL DPS SCOPE ID ---" ],
+  "CmdArgs": [ "0ne0002304B" ],
   "Capabilities": {
-    "AllowedConnections": [ "global.azure-devices-provisioning.net", "--- YOUR IOT CENTRAL IOTHUB DNS NAME ---" ],
+    "AllowedConnections": [ "global.azure-devices-provisioning.net", "JS-MS-Iot-Hub.azure-devices.net" ],
     "AllowedTcpServerPorts": [],
     "AllowedUdpServerPorts": [],
     "Gpio": [
@@ -28,6 +28,6 @@
     "WifiConfig": true,
     "NetworkConfig": false,
     "SystemTime": false,
-    "DeviceAuthentication": "--- YOUR AZURE SPHERE TENANT ID--- "
+    "DeviceAuthentication": "c0b88764-9273-46ab-bab2-effecf13f91c"
   }
 }
