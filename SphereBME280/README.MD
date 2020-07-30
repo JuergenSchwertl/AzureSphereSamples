@@ -28,7 +28,7 @@ services such as Azure IoT Hub, Azure IoT Device Provisioning Service amongst ot
 but hides the individual building blocks under the hood.
 
 With Azure Sphere this raises a specific question: **Where do you get the actual IoT Hub DNS-name and the DPS Scope ID to add as 
-capability settings in the *appmanifest.json* and provision the ?**
+capability settings in the *appmanifest.json* and provision the app_manifest.json ?**
 
 Fortunately the Azure Sphere product group has a tool available that unveils all that information for you. Please check the 
 [Azure IoT Sample github repo](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/AzureIoT) .
@@ -36,22 +36,26 @@ In the [Tools directory](https://github.com/Azure/azure-sphere-samples/tree/mast
 `ShowIoTCentralConfig.exe` that nicely extracts all that information from IoT Central similar to the following:
 
 <p style="background-color:black;color:white;left-indent:20px">
-C:\Repos\azure-sphere-samples\Samples\AzureIoT\Tools>ShowIoTCentralConfig.exe<br />
+<b>ShowIoTCentralConfig.exe</b><br />
 Tool to show Azure IoT Central configuration for Azure Sphere applications<br /><br />
-Are you using a Work/School account to sign into your IoT Central Application (Y/N) ?Y<br />
-Getting your IoT Central applications<br />
-IoT Central applications:<br />
-1: My Azure Sphere IoT Central App<br />
-2: IoT in Action App<br />
-Select (1-2) >1<br />
-Getting the Device Provisioning Service (DPS) information.<br />
-Getting a list of IoT Central devices.<br /><br />
-Find and modify the following lines in your app_manifest.json:<br />
-<span style="background-color:blue;">"CmdArgs": [ "0ne0003E5B3" ],<br />
-"AllowedConnections": [ "global.azure-devices-provisioning.net", "iotc-fa52149d-5584-4424-8189-f36d910f5902.azure-devices.net" ],<br />
-"DeviceAuthentication": "--- YOUR AZURE SPHERE TENANT ID--- ",</span><br /><br />
-Obtain your Azure Sphere Tenant Id by opening an Azure Sphere Developer Command Prompt and typing the following command:
-'Azsphere tenant show-selected'
+Are you using a legacy (2018) IoT Central application (Y/N)<br />
+> <b>N</b><br />
+Enter the IoT Central App URL (e.g. https://myapp.azureiotcentral.com)<br />
+> <b>https://**YOUR_IOTCENTRAL_APP**.azureiotcentral.com/</b><br />
+You need to generate an Azure IoT Central application API Token (Adminstration | API tokens), this requires Application administrator rights
+Enter your Azure IoT Central application API Token<br />
+> <b>**Your API token from Administration -> API tokens ***</b><br />
+Enter the ID Scope from the IoT Central App (Administration | Device connection)<br />
+> <b>**Your DPS scope ID from Administration -> Device Connection ***</b><br /><br />
+Find and modify the CmdArgs, AllowedConnections and DeviceAuthentication lines in your app_manifest.json so each includes the content from the below:<br />
+<span style="background:blue">"CmdArgs": [ "--ConnectionType DPS", "--ScopeID 0ne000A5318" ],<br />
+"Capabilities": {<br />
+    "AllowedConnections": [ "global.azure-devices-provisioning.net", <br />
+    "<b>iotc-d51104e7-3071-4dbe-b068-48fbd28598ad.azure-devices.net</b>"],<br />
+    "DeviceAuthentication": "--- YOUR AZURE SPHERE TENANT ID---",<br />
+}</span><br /><br />
+Obtain your Azure Sphere Tenant ID by opening an Azure Sphere Developer Command Prompt/Terminal and typing the following command:<br />
+'azsphere tenant show-selected'<br />
 </p>
 
 ## Seting up Azure IoT Central
@@ -63,8 +67,14 @@ Azure Sphere Documentation has an extensive description on how to set it up unde
 Apart from creating the IoT Central application itself, the remaining steps will look fairly familiar: 
 Setting up the certificate chain for DPS inside Azure IoT Central.
 
-There is also an extensive documentation on how to configure the IoT Central application on
-the expected telemetry, event etc. available on [Run the sample with Azure IoT Central](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/AzureIoT/IoTCentral.md).
+To setup the telemetry, commands and properties you can import a device template from the provided json here: 
+[*Azure Sphere with BME280 Lab.json*](./Azure%20Sphere%20with%20BME280%20Lab.json).
+
+To do this, in your IoT Central application, under *App settings* go to *Device Templates* -> *+New* and under 
+*Create a custom device template* select "IoT Device" and press [Next:Review], give it a name and hit [Create] .
+
+On the device template page you can now *Import capabililty model* and import the [*Azure Sphere with BME280 Lab.json*](./Azure%20Sphere%20with%20BME280%20Lab.json) .
+
 
 To stretch your brain a bit, look at the source code of [*main.c*](./main.c) to see what telemetry
 it implements, what events, and what properties it supports (pls. note the different
