@@ -89,31 +89,27 @@ In the [Tools directory](https://github.com/Azure/azure-sphere-samples/tree/mast
 `ShowIoTCentralConfig.exe` that nicely extracts all that information from IoT Central similar to the following:
 
 <pre><code>
-<b>ShowIoTCentralConfig.exe</b>
+C:\&gt;<b>ShowIoTCentralConfig.exe</b>
 Tool to show Azure IoT Central configuration for Azure Sphere applications
 Are you using a legacy (2018) IoT Central application (Y/N)
-> <b>N</b></code></pre>
-
-<pre><code>
-<b>ShowIoTCentralConfig.exe</b><br />
-Tool to show Azure IoT Central configuration for Azure Sphere applications<br /><br />
-Are you using a legacy (2018) IoT Central application (Y/N)<br />
-> <b>N</b><br />
-Enter the IoT Central App URL (e.g. https://myapp.azureiotcentral.com)<br />
-> <b>https://**YOUR_IOTCENTRAL_APP**.azureiotcentral.com/</b><br />
+> <b>N</b>
+Enter the IoT Central App URL (e.g. https://myapp.azureiotcentral.com)
+> <b>https://**YOUR_IOTCENTRAL_APP**.azureiotcentral.com/</b>
 You need to generate an Azure IoT Central application API Token (Adminstration | API tokens), this requires Application administrator rights
-Enter your Azure IoT Central application API Token<br />
-> <b>**Your API token from Administration -> API tokens ***</b><br />
-Enter the ID Scope from the IoT Central App (Administration | Device connection)<br />
-> <b>**Your DPS scope ID from Administration -> Device Connection ***</b><br /><br />
-Find and modify the CmdArgs, AllowedConnections and DeviceAuthentication lines in your app_manifest.json so each includes the content from the below:<br />
-<span style="background:blue">"CmdArgs": [ "--ConnectionType DPS", "--ScopeID 0ne000A5318" ],<br />
-"Capabilities": {<br />
-    "AllowedConnections": [ "global.azure-devices-provisioning.net", <br />
-    "<b>iotc-d51104e7-3071-4dbe-b068-48fbd28598ad.azure-devices.net</b>"],<br />
-    "DeviceAuthentication": "--- YOUR AZURE SPHERE TENANT ID---",<br />
-}</span><br /><br />
-Obtain your Azure Sphere Tenant ID by opening an Azure Sphere Developer Command Prompt/Terminal and typing the following command:<br />
+Enter your Azure IoT Central application API Token
+> <b>**Your API token from Administration -> API tokens ***</b>
+Enter the ID Scope from the IoT Central App (Administration | Device connection)
+> <b>**Your DPS scope ID from Administration -> Device Connection ***</b><br />
+Find and modify the CmdArgs, AllowedConnections and DeviceAuthentication lines in your app_manifest.json so each includes the 
+content from the below:
+<b>"CmdArgs": [ "--ConnectionType DPS", "--ScopeID 0ne000A5318" ],
+"Capabilities": {
+    "AllowedConnections": [ "global.azure-devices-provisioning.net",
+    "<b>iotc-d51104e7-3071-4dbe-b068-48fbd28598ad.azure-devices.net</b>"],
+    "DeviceAuthentication": "--- YOUR AZURE SPHERE TENANT ID---",
+}</b>
+
+Obtain your Azure Sphere Tenant ID by opening an Azure Sphere Developer Command Prompt/Terminal and typing the following command:
 'azsphere tenant show-selected'<br /></code></pre>
 
 ## Reviewing the code
