@@ -184,7 +184,7 @@ static void hubConnectionStatusCallback(IOTHUB_CLIENT_CONNECTION_STATUS result,
 /// </summary>
 /// <param name="message">The format string containing the error to output along with placeholders</param>
 /// <param name="...">The list of arguments to populate the format string placeholders</param>
-void LogMessage(char* message, ...)
+void LogMessage(const char* message, ...)
 {
     va_list args;
     va_start(args, message);
@@ -214,6 +214,8 @@ static const char *getReasonString(IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason
             return "IOTHUB_CLIENT_CONNECTION_COMMUNICATION_ERROR";
         case IOTHUB_CLIENT_CONNECTION_OK:
             return "IOTHUB_CLIENT_CONNECTION_OK";
+        case IOTHUB_CLIENT_CONNECTION_NO_PING_RESPONSE:
+            return "IOTHUB_CLIENT_CONNECTION_NO_PING_RESPONSE";
     }
     return "unknown IOTHUB_CLIENT_CONNECTION_STATUS_REASON";
 }
@@ -318,7 +320,7 @@ static JSON_Value* getJsonFromPayload(const unsigned char* pbPayload, size_t nPa
 /// <param name="ppbPayload">OUT parameter: address of message payload buffer pointer</param>
 /// <param name="pnResponseSize">OUT parameter: address of size variable</param>
 /// <returns>IOTHUB_CLIENT_OK on successful serialisation</returns>
-static IOTHUB_CLIENT_RESULT setPayloadFromJson(JSON_Value* jsonValue, unsigned char** ppbResponse, size_t* pnResponseSize)
+static IOTHUB_CLIENT_RESULT setPayloadFromJson(JSON_Value* jsonValue, char** ppbResponse, size_t* pnResponseSize)
 {
     if ((ppbResponse == NULL) || (pnResponseSize == NULL)){
         return IOTHUB_CLIENT_INVALID_ARG;
@@ -793,7 +795,7 @@ static int directMethodCallback(const char *methodName, const unsigned char *pay
                     json_value_free(jsonParameters);
                 }
                 if (jsonResponse != NULL) {
-                    setPayloadFromJson(jsonResponse, response, responseSize);
+                    setPayloadFromJson(jsonResponse, (char **)response, responseSize);
                     LogMessage("Command Response HTTP: %d '%s' (%d bytes)\n", result, *response, *responseSize);
                     json_value_free(jsonResponse);
                 }
