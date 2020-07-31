@@ -22,50 +22,8 @@ but essentially they all have the necessary power supply V(in) & GND and the I2C
 
 ![MT3620 with connected DHT11 sensor](./Images/Lab_BME280.png)
 
-In contrast to Azure IoT Hub (being a *Platform as a Service*/PaaS), Azure IoT Central is a complete
-*Software as a Service*/SaaS solution. However, it is obviously built using existing PaaS 
-services such as Azure IoT Hub, Azure IoT Device Provisioning Service amongst others 
-but hides the individual building blocks under the hood.
-
-## Setup IoT Central
-To ease setup you can either 
-
-
-With Azure Sphere this raises a specific question: **Where do you get the actual IoT Hub DNS-name and the DPS Scope ID to add as 
-capability settings in the *appmanifest.json* and provision the app_manifest.json ?**
-
-Fortunately the Azure Sphere product group has a tool available that unveils all that information for you. Please check the 
-[Azure IoT Sample github repo](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/AzureIoT) .
-In the [Tools directory](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/AzureIoT/Tools) You will find a tool called
-`ShowIoTCentralConfig.exe` that nicely extracts all that information from IoT Central similar to the following:
-
-<p style="background-color:black;color:white;left-indent:20px">
-<b>ShowIoTCentralConfig.exe</b><br />
-Tool to show Azure IoT Central configuration for Azure Sphere applications<br /><br />
-Are you using a legacy (2018) IoT Central application (Y/N)<br />
-> <b>N</b><br />
-Enter the IoT Central App URL (e.g. https://myapp.azureiotcentral.com)<br />
-> <b>https://**YOUR_IOTCENTRAL_APP**.azureiotcentral.com/</b><br />
-You need to generate an Azure IoT Central application API Token (Adminstration | API tokens), this requires Application administrator rights
-Enter your Azure IoT Central application API Token<br />
-> <b>**Your API token from Administration -> API tokens ***</b><br />
-Enter the ID Scope from the IoT Central App (Administration | Device connection)<br />
-> <b>**Your DPS scope ID from Administration -> Device Connection ***</b><br /><br />
-Find and modify the CmdArgs, AllowedConnections and DeviceAuthentication lines in your app_manifest.json so each includes the content from the below:<br />
-<span style="background:blue">"CmdArgs": [ "--ConnectionType DPS", "--ScopeID 0ne000A5318" ],<br />
-"Capabilities": {<br />
-    "AllowedConnections": [ "global.azure-devices-provisioning.net", <br />
-    "<b>iotc-d51104e7-3071-4dbe-b068-48fbd28598ad.azure-devices.net</b>"],<br />
-    "DeviceAuthentication": "--- YOUR AZURE SPHERE TENANT ID---",<br />
-}</span><br /><br />
-Obtain your Azure Sphere Tenant ID by opening an Azure Sphere Developer Command Prompt/Terminal and typing the following command:<br />
-'azsphere tenant show-selected'<br />
-</p>
 
 ## Seting up Azure IoT Central
-
-Before we get there, we first need to add an application to Azure oT Central. 
-
 If you want to get rolling within minutes, follow the steps to [Import IoT Central Application Template](#Import-IoT-Central-Application-Template) , if you want to setup your 
 dashboard manually, follow the steps layed out in [Manual IoT Central setup](#Manual-IoT-Central-setup).
 
@@ -116,6 +74,47 @@ azsphere dev show-attached | tr '[:upper:]' '[:lower:]'
 It should then look like:
 ![IoT Central: Create Device](./Images/IoTC_AddDevice.png)
 
+### app_manifest.json settings
+In contrast to Azure IoT Hub (being a *Platform as a Service*/PaaS), Azure IoT Central is a complete
+*Software as a Service*/SaaS solution. However, it is obviously built using existing PaaS 
+services such as Azure IoT Hub, Azure IoT Device Provisioning Service amongst others 
+but hides the individual building blocks under the hood.
+
+With Azure Sphere this raises a specific question: **Where do you get the actual IoT Hub DNS-name and the DPS Scope ID to add as 
+capability settings in the *appmanifest.json* and provision the app_manifest.json ?**
+
+Fortunately the Azure Sphere product group has a tool available that unveils all that information for you. Please check the 
+[Azure IoT Sample github repo](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/AzureIoT) .
+In the [Tools directory](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/AzureIoT/Tools) You will find a tool called
+`ShowIoTCentralConfig.exe` that nicely extracts all that information from IoT Central similar to the following:
+
+<pre><code>
+<b>ShowIoTCentralConfig.exe</b>
+Tool to show Azure IoT Central configuration for Azure Sphere applications
+Are you using a legacy (2018) IoT Central application (Y/N)
+> <b>N</b></code></pre>
+
+<pre><code>
+<b>ShowIoTCentralConfig.exe</b><br />
+Tool to show Azure IoT Central configuration for Azure Sphere applications<br /><br />
+Are you using a legacy (2018) IoT Central application (Y/N)<br />
+> <b>N</b><br />
+Enter the IoT Central App URL (e.g. https://myapp.azureiotcentral.com)<br />
+> <b>https://**YOUR_IOTCENTRAL_APP**.azureiotcentral.com/</b><br />
+You need to generate an Azure IoT Central application API Token (Adminstration | API tokens), this requires Application administrator rights
+Enter your Azure IoT Central application API Token<br />
+> <b>**Your API token from Administration -> API tokens ***</b><br />
+Enter the ID Scope from the IoT Central App (Administration | Device connection)<br />
+> <b>**Your DPS scope ID from Administration -> Device Connection ***</b><br /><br />
+Find and modify the CmdArgs, AllowedConnections and DeviceAuthentication lines in your app_manifest.json so each includes the content from the below:<br />
+<span style="background:blue">"CmdArgs": [ "--ConnectionType DPS", "--ScopeID 0ne000A5318" ],<br />
+"Capabilities": {<br />
+    "AllowedConnections": [ "global.azure-devices-provisioning.net", <br />
+    "<b>iotc-d51104e7-3071-4dbe-b068-48fbd28598ad.azure-devices.net</b>"],<br />
+    "DeviceAuthentication": "--- YOUR AZURE SPHERE TENANT ID---",<br />
+}</span><br /><br />
+Obtain your Azure Sphere Tenant ID by opening an Azure Sphere Developer Command Prompt/Terminal and typing the following command:<br />
+'azsphere tenant show-selected'<br /></code></pre>
 
 ## Reviewing the code
 
