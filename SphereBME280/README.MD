@@ -27,6 +27,10 @@ In contrast to Azure IoT Hub (being a *Platform as a Service*/PaaS), Azure IoT C
 services such as Azure IoT Hub, Azure IoT Device Provisioning Service amongst others 
 but hides the individual building blocks under the hood.
 
+## Setup IoT Central
+To ease setup you can either 
+
+
 With Azure Sphere this raises a specific question: **Where do you get the actual IoT Hub DNS-name and the DPS Scope ID to add as 
 capability settings in the *appmanifest.json* and provision the app_manifest.json ?**
 
@@ -59,80 +63,102 @@ Obtain your Azure Sphere Tenant ID by opening an Azure Sphere Developer Command 
 </p>
 
 ## Seting up Azure IoT Central
-Before we get there, we first need to add an application to Azure oT Central. The 
-Azure Sphere Documentation has an extensive description on how to set it up under 
+
+Before we get there, we first need to add an application to Azure oT Central. 
+
+If you want to get rolling within minutes, follow the steps to [Import IoT Central Application Template](#Import-IoT-Central-Application-Template) , if you want to setup your 
+dashboard manually, follow the steps layed out in [Manual IoT Central setup](#Manual-IoT-Central-setup).
+
+#### Import IoT Central Application Template
+Just click here to [import Azure Sphere with BME 280 Template](https://apps.azureiotcentral.com/build/new/94a93fe6-cd6e-4518-8c91-a30375cd7d3b),
+and then select the type of IoT Central application you like. There is a free version available that allows to test your application for 7 days.
+
+Since IoT Central uses Azure IoT Hub and Azure IoT Hub Device Provisioning Service under the hood, you need to setup the certificate chain 
+of your Azure Sphere Tenant with IoT Central application following the the steps starting with  
+[Set up Azure IoT Central to work with Azure Sphere, Step #2](https://docs.microsoft.com/en-us/azure-sphere/app-development/setup-iot-central#step-2-download-the-tenant-authentication-ca-certificate
+).
+
+Now you can continue with [Create a device](#Create-a-device).
+
+#### Manual IoT Central Setup
+The Azure Sphere Documentation has an extensive description on how to get started under 
 [Set up Azure IoT Central to work with Azure Sphere](https://docs.microsoft.com/en-us/azure-sphere/app-development/setup-iot-central
 ).
 
 Apart from creating the IoT Central application itself, the remaining steps will look fairly familiar: 
-Setting up the certificate chain for DPS inside Azure IoT Central.
+Setting up the certificate chain for Azure IoT Hub DPS inside Azure IoT Central.
 
-To setup the telemetry, commands and properties you can import a device template from the provided json here: 
+To setup the telemetry, commands and properties for this sample you can import an Azure IoT PnP device template from the provided json here: 
 [*Azure Sphere with BME280 Lab.json*](./Azure%20Sphere%20with%20BME280%20Lab.json).
 
-To do this, in your IoT Central application, under *App settings* go to *Device Templates* -> *+New* and under 
+To do this, open your IoT Central application and under *App settings* go to *Device Templates* -> *+New* and under 
 *Create a custom device template* select "IoT Device" and press [Next:Review], give it a name and hit [Create] .
 
 On the device template page you can now *Import capabililty model* and import the [*Azure Sphere with BME280 Lab.json*](./Azure%20Sphere%20with%20BME280%20Lab.json) .
+
+### Create a Device
+You could just start this lab and fire up the SphereBME280 application. If you have everything setup correctly with IoT Central, it would autmatically 
+connect and create a device therein. The only caveat with that is that the device name would be your Azure Sphere Device Id.
+
+To have devices enlisted with a more human readable names you can do a pre-setup of the device entry. Navigate to
+<svg width="16" height="16" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M4.409 9.223l-.694-.536 3.76-2.855.536.694L4.41 9.223z" fill="var(--color-main-nav-foreground-primary)"></path><path d="M4.593 8.687h-.878v5.658h.878V8.687z" fill="var(--color-main-nav-foreground-primary)"></path><path d="M8.768 6.939a1.511 1.511 0 100-3.023 1.511 1.511 0 000 3.023z" stroke="var(--color-main-nav-foreground-primary)" stroke-miterlimit="10"></path><path fill-rule="evenodd" clip-rule="evenodd" d="M15.158 6.613l.843.465-4.45 3.26-.677-.659 4.284-3.066z" fill="var(--color-main-nav-foreground-primary)"></path><path d="M9.847 12.799a1.511 1.511 0 100-3.023 1.511 1.511 0 000 3.023z" stroke="var(--color-main-nav-foreground-primary)" stroke-miterlimit="10"></path><path d="M15.5 8a7.5 7.5 0 11-15 0 7.5 7.5 0 0115 0z" stroke="var(--color-main-nav-foreground-primary)"></path></svg> 
+*Devices* and press the *"+"* button to open the add device dialog and add your Azure Sphere device id **in lower case characters**. 
+To get the device id in lower case, you can start Powershell in the Azure Sphere Developer Command Prompt and run
+```powershell
+ (azsphere dev show-attached)[0].Split(":")[1].Trim().ToLower()
+```
+or in a Bash shell
+```bash
+azsphere dev show-attached | tr '[:upper:]' '[:lower:]'
+```
+
+
+It should then look like:
+![IoT Central: Create Device](./Images/IoTC_AddDevice.png)
+
+
+## Reviewing the code
 
 
 To stretch your brain a bit, look at the source code of [*main.c*](./main.c) to see what telemetry
 it implements, what events, and what properties it supports (pls. note the different
 format of the Device Twin desired property). A couple hints:
 
-Looking at [*main.c* Line 100](./main.c#L100) 
-```C
-static const char cstrJsonTelemetry[] = "{\"temperature\":%0.2f,\"pressure\":%0.2f,\"humidity\":%0.2f}";
-static const char cstrJsonEvent[] = "{\"%s\":\"occurred\"}";
-...
-static const char cstrEvtConnected[] = "connect";
-static const char cstrEvtButtonB[] = "buttonB";
-static const char cstrEvtButtonA[] = "buttonA";
-```
-you can likely deduct the schema for the telemetry data looking like: 
+Looking at [*main.c* Line 347](./main.c#L347) you can likely deduct the schema for the telemetry data looking like: 
 ```json
 {
-	"temperature" : 36.34,
-	"pressure" : 1096.35,
-	"humidity" : 45.25
+ "temperature" : 36.34,
+ "pressure" : 1096.35,
+ "humidity" : 45.25
 }
 ```
-and the three events being called `connect`, `buttonA` and `buttonB`.
 
-To raise an event with Azure IoT Central, you need to send a device-to-cloud message with 
+and looking around the `ButtonPollTimerHandler()` [*main.c* Line 625](./main.c#L625)
+you see how we raise events with Azure IoT Central: you need to send a device-to-cloud message with 
 the event-name as property-name and provide some arbitrary value; i.e. to raise 
 the `buttonA`-event the json needs to look like: 
 ```json
-{ "buttonA" : "occurred" }
+{ "buttonA" : "pressed" }
 ```
 and to raise the `buttonB`-event, the json would be
 ```json
-{ "buttonB" : "occurred" }
+{ "buttonB" : "pressed" }
 ```
 
-Azure IoT Central also supports properties, that are actually based on Device Twin Desired Properties. 
-In the previous examples we've used the short json notation (e.g. `{ "LedBlinkRateProperty" : 1 }` ).  
-Azure IoT Central already partially implements Azure IoT Plug&Play. The schema therefore changes to *LedBlinkRateProperty.value*:
+Azure IoT Central also supports properties, that are actually based on Azure IoT Hub Device Twin. 
+In the previous examples we've used the short json notation (e.g. `{ "LedBlinkRateProperty" : 1 }` ) and you'll see that 
+the device information follows the same schema on *reported properties*. For *desired properties* Azure IoT Central already implements Azure IoT Plug&Play. The schema therefore changes to *LedBlinkRateProperty.value*:
 ```json
 {
-	"LedBlinkRateProperty" : {	
-		"value" : 1
-	}
+ "LedBlinkRateProperty" : {	
+  "value" : 1
+ }
 }
 ```  
-which is reflected in the json-path in [*main.c* Line 270](./main.c#L270) 
+which is reflected in the json-path in [*main.c* Line 399](./main.c#L399) 
 ```C
-/// <summary>
-///     Device Twin update callback function, called when an update is received from the Azure IoT
-///     Hub.
-/// </summary>
-/// <param name="desiredProperties">The JSON root object containing the desired Device Twin
-/// properties received from the Azure IoT Hub.</param>
-static void DeviceTwinUpdate(JSON_Object *desiredProperties)
-{
-	static const char cstrValuePath[] = "LedBlinkRateProperty.value";
-	if (json_object_dothas_value_of_type(desiredProperties, cstrValuePath, JSONNumber))
-
+JSON_Object * desiredBlinkRateProperty = json_object_get_object(desiredProperties, cstrLedBlinkRateProperty);
+size_t desiredBlinkRate = (size_t)json_object_get_number(desiredBlinkRateProperty, cstrValueProperty);
 ```
 
 
@@ -142,7 +168,7 @@ Step 1. Create a new Azure IoT Central application
 
 Step 2. Configure the Azure Sphere certificate chain in Azure IoT Central
 
-Step 3. Configure your Azure IoT Central App for Telemetry, Events and Properties
+Step 3. Create a new device
 
 Step 4. Run the  [`ShowIoTCentralConfig.exe`](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/AzureIoT/Tools) 
 and copy&paste the settings into your *app_manifest.json*
