@@ -13,12 +13,12 @@ This sensor is e.g. available as [Seeed Groove BME280 sensor board](http://wiki.
 There are multiple sensor boards for the BME280 available (the Seeed Grove BME280 mentioned above looks slightly different but offers to use a Grove connector cable)
 but essentially they all have the necessary power supply V(in) & GND and the I2C Pins *SDA* for data and *SCL* for clock called out on the printout.
 
-| Purpose  | MT3620           |  BME280  | Pictured wire below |
-|----------|------------------|:--------:|:-------------------:|
-|Ground    | Header 3, pin 2  | Gnd      | green               |
-|3.3 volts | Header 3, pin 3  | Vin/Vcc  | red                 |
-|Data      | Header 4, pin 6  | SDA      | purple              |
-|Clock     | Header 4, pin 12 | SCL      | blue                |
+| Purpose  | MT3620          |  BME280  | Pictured wire below |
+|----------|-----------------|:--------:|:-------------------:|
+|3.3 volts | Header 3, pin 3 | Vin/Vcc  | red                 |
+|Ground    | Header 3, pin 2 | Gnd      | green               |
+|Data      | Header 3, pin 7 | SCL      | purple              |
+|Clock     | Header 3, pin 9 | SDA      | blue                |
 
 ![MT3620 with connected DHT11 sensor](./Images/Lab_BME280.png)
 
@@ -174,6 +174,9 @@ Step 4. Run the  [`ShowIoTCentralConfig.exe`](https://github.com/Azure/azure-sph
 and copy&paste the settings into your *app_manifest.json*
 
 Step 5. Run the application and see telemetry visualized in the dashboard.
+
+![IoT Central: Device Dashboard](./Images/IoTC_Dashboard_Page.png)
+
 
 ---
 [Back to root](../README.MD#connecting-an-i2c-sensor-bosch-bme280-and-send-telemetry-to-azure-iot-central)
