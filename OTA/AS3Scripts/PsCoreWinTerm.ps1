@@ -9,7 +9,7 @@ if( -not $Env:Path.Contains( $SdkPath ) )
     Write-Host "Adding Azure Sphere SDK path"
     $Env:Path = $SdkPath + ";" + $Env:Path
 }
-if( -not $Env:Path.Contains( $SdkPath ) )
+if( -not $Env:Path.Contains( $SdkToolsPath ) )
 {
     Write-Host "Adding Azure Sphere SDK tools path"
     $Env:Path = $SdkToolsPath + ";" + $Env:Path
