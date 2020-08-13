@@ -9,7 +9,7 @@ if( -not $Env:Path.Contains( $SdkPath ) )
     Write-Host "Adding Azure Sphere SDK path"
     $Env:Path = $SdkPath + ";" + $Env:Path
 }
-if( -not $Env:Path.Contains( $SdkPath ) )
+if( -not $Env:Path.Contains( $SdkToolsPath ) )
 {
     Write-Host "Adding Azure Sphere SDK tools path"
     $Env:Path = $SdkToolsPath + ";" + $Env:Path
@@ -19,11 +19,6 @@ if( -not $Env:Path.Contains( $gccPath ) )
     Write-Host "Adding latest GNU gcc tools path"
     $Env:Path = $gccPath + ";" + $Env:Path
 }
-Write-Host "Azure Sphere Tenants" -ForegroundColor Green
-azsphere tenant list
-
-Write-Host (&azsphere tenant show-selected)  -ForegroundColor Yellow
-
 
 $Help = @(( "dev, device"    , "Manage devices."                                                            ), `
 ( "dg, device-group"         , "Manage device groups in your Azure Sphere tenant."                          ), `
@@ -40,15 +35,14 @@ $Help = @(( "dev, device"    , "Manage devices."                                
 ( "show-version"             , "Show the version of the Azure Sphere tools."                                ), `
 ( "tenant"                   , "Manage Azure Sphere tenants."                                               ))
 
-Write-Host "AzSphere -?" -ForegroundColor Green
+Write-Host "azsphere -?" -ForegroundColor Green
 
 ForEach($ln in $Help){ 
     Write-Host $ln[0] ( " " * (24-$ln[0].Length)) -ForegroundColor Yellow -NoNewline
     Write-Host "- " $ln[1] -ForegroundColor Green
 }
 
+Write-Host "`nazsphere tenant list" -ForegroundColor Green
+azsphere tenant list
 
-
-
-
-
+Write-Host (&azsphere tenant show-selected)  -ForegroundColor Green
