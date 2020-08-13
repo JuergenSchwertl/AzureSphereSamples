@@ -399,7 +399,7 @@ function Get-AS3Product(
         )
     }
         
-    if( $product -eq $null )
+    if( $null -eq $product )
     {
         if( $PSCmdlet.ParameterSetName -eq "ByName")
         {
@@ -669,13 +669,13 @@ function Get-AS3DeviceGroup(
     if( $LASTEXITCODE -eq 0 )
     {
         [DeviceGroup] $dg = [DeviceGroup]::new(
-            $result[2].Split(":'").Item(2),
-            $result[3].Split(":'").Item(2),
-            $result[4].Split(":'").Item(2)
+            $result[2].Split("'").Item(1),
+            $result[3].Split("'").Item(1),
+            $result[4].Split("'").Item(1)
             )
         Write-Verbose "[Get-AS3DeviceGroup] Name: '$($dg.Name)'"
 
-        $dg.OsFeed = [OsFeedType]::Parse( [OsFeedType], $result[5].Split(":'").Item(2));
+        $dg.OsFeed = [OsFeedType]::Parse( [OsFeedType], $result[5].Split("'").Item(1));
         if( $result[6].Split(":").Item(1).Contains("Accept all updates") )
         {
             $dg.ApplicationUpdate = [ApplicationUpdatePolicy]::On
@@ -684,7 +684,8 @@ function Get-AS3DeviceGroup(
         }
         if( -not $result[7].Contains("None") )
         {
-            [string] $strCurrentDeployment = $result[8].Split(":'").Item(2)
+            [string] $strCurrentDeployment = $result[8].Split("'").Item(1)
+            Write-Verbose "[Get-AS3DeviceGroup] Current Deployment Id $strCurrentDeployment"
             [Deployment[]] $lstDeps = Get-AS3DeploymentList -i $DeviceGroupId.ToString()
             [HashTable] $tblDeps = [HashTable]::new( $lstDeps.Length ) #@{}
             $lstDeps.ForEach( {
@@ -706,7 +707,6 @@ function Get-AS3DeviceGroup(
 		Write-Error $result[0] -ErrorAction Stop
 	}
 }
-
 
 <#
 .SYNOPSIS
@@ -831,7 +831,8 @@ param()
 
 }
 
-
-Check-Prerequisites -Verbose
+$env:Path = "C:\Program Files (x86)\Microsoft Azure Sphere SDK\Tools" + ";" + $Env:Path
+#Check-Prerequisites -Verbose
+Get-AS3DeviceGroup -DeviceGroupId 6218460f-143e-4467-a5c7-ba2b026cee62 -Verbose
 
 

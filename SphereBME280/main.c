@@ -136,25 +136,33 @@ static const char cstrTemperatureProperty[] = "temperature";
 static const char cstrPressureProperty[] = "pressure";
 static const char cstrHumidityProperty[] = "humidity";
 static const char cstrLedBlinkRateProperty[] = "blinkRateProperty";
-static const char cstrLedBlinkRateValuePath[] = "blinkRateProperty.value";
+//static const char cstrLedBlinkRateValuePath[] = "blinkRateProperty.value";
 static const char cstrValueProperty[] = "value";
+static const char cstrVersionProperty[] = "av";
+static const char cstrStatusProperty[] = "ac";
+static const char cstrStatusDescriptionProperty[] = "ad";
 static const char cstrSysVersionProperty[] = "$version";
-static const char cstrStatusProperty[] = "status";
 static const char cstrDesiredVersionProperty[] = "desiredVersion";
 static const char cstrCompleted[] = "completed";
 
 ///<summary>Azure IoT PnP compatible DeviceInformation</summary>  
-static const char cstrDeviceInformation[] = 
-"{"
-"\"manufacturer\":\"Seeed\","
-"\"model\":\"MT3620 Developer Kit\","
-"\"swVersion\":\"SphereBME280Lab v20.04.0717\","
-"\"osName\":\"Azure Sphere IoT OS\","
-"\"processorArchitecture\":\"ARM Core A7,M4\","
-"\"processorManufacturer\":\"MediaTek\","
-"\"totalStorage\":16384,"
-"\"totalMemory\":4096"
-"}";
+static const char cstrDevInfoManufacturerProperty[] = "manufacturer";
+static const char cstrDevInfoModelProperty[] = "model";
+static const char cstrDevInfoSWVersionProperty[] = "swVersion";
+static const char cstrDevInfoOSNameProperty[] = "osName";
+static const char cstrDevInfoProcArchProperty[] = "processorArchitecture";
+static const char cstrDevInfoProcMfgrProperty[] = "processorManufacturer";
+static const char cstrDevInfoStorageProperty[] = "totalStorage";
+static const char cstrDevInfoMemoryProperty[] = "totalMemory";
+
+static const char cstrDevInfoManufacturerValue[] = "Seeed";
+static const char cstrDevInfoModelValue[] = "MT3620 Developer Kit";
+static const char cstrDevInfoSWVersionValue[] = "SphereBME280Lab v20.07.0508";
+static const char cstrDevInfoOSNameValue[] = "Azure Sphere IoT OS";
+static const char cstrDevInfoProcArchValue[] = "ARM Core A7,M4";
+static const char cstrDevInfoProcMfgrValue[] = "MediaTek";
+static const int ciDevInfoStorageValue = 16384;
+static const int ciDevInfoMemoryValue = 4096;
 
 // method response messages
 static const char cstrColorResponseMsg[] = "LED color set to %s";
@@ -198,6 +206,10 @@ static EventData evtdataResetTimer = { .eventHandler = &ResetTimerHandler };
 // forward declarations for close handlers
 void ClosePeripheralsAndHandlers(void);
 
+/// <summary>
+/// network connectivety status. Frequently updated in ButtonPollTimerHandler
+/// </summary>
+static bool bNetworkReady = false;
 /// <summary>
 /// IoT hub client status
 /// </summary>
@@ -311,6 +323,19 @@ static void SetLedRate(const struct timespec * pBlinkRate)
         terminationRequired = true;
         return;
     }
+
+    // report changed blink rate as property to IoT Central
+    if (connectedToIoTHub) {
+        // REMARK: Since August 2020, IoT Central desired property schema is { "blinkRateProperty" : ## } 
+        // <seealso href="https://docs.microsoft.com/en-us/azure/iot-central/core/concepts-telemetry-properties-commands#properties" />
+        JSON_Value* jsonRoot = json_value_init_object();
+        json_object_set_number(json_object(jsonRoot), cstrLedBlinkRateProperty, (double)blinkIntervalIndex);
+
+        // Report the current state to the Device Twin on the IoT Hub.
+        AzureIoT_TwinReportStateJson(jsonRoot);
+
+        json_value_free(jsonRoot);
+    }
 }
 
 /// <summary>
@@ -392,12 +417,12 @@ static void MessageReceived(const char *payload)
 /// properties received from the Azure IoT Hub.</param>
 static void DeviceTwinUpdate(JSON_Object *desiredProperties)
 {
-	if (json_object_has_value_of_type(desiredProperties, cstrLedBlinkRateProperty, JSONObject))
+	if (json_object_has_value_of_type(desiredProperties, cstrLedBlinkRateProperty, JSONNumber))
 	{
         unsigned int desiredVersion = (unsigned int)json_object_get_number(desiredProperties, cstrSysVersionProperty);
 
-        JSON_Object * desiredBlinkRateProperty = json_object_get_object(desiredProperties, cstrLedBlinkRateProperty);
-		size_t desiredBlinkRate = (size_t)json_object_get_number(desiredBlinkRateProperty, cstrValueProperty);
+        // REMARK IoTC since August 2020 now sends twin as { "blinkRateProperty" : ## , "$version" : ## }  
+		size_t desiredBlinkRate = (size_t)json_object_get_number(desiredProperties, cstrLedBlinkRateProperty);
 
 		blinkIntervalIndex = desiredBlinkRate % nBlinkingIntervalsCount; // Clamp value to [0..nBlinkingIntervalsCount) .
         blinkIntervalVersion = desiredVersion;
@@ -408,19 +433,21 @@ static void DeviceTwinUpdate(JSON_Object *desiredProperties)
 		tsBlinkingLedInterval = atsBlinkingIntervals[blinkIntervalIndex];
 		SetLedRate(&atsBlinkingIntervals[blinkIntervalIndex]);
 
-        // REMARK: IoT Central desired property response needs to be { "blinkRateProperty" : { "value" : ##, "desiredVersion" : ##, "status" : "completed" } } 
+        // REMARK: IoT Central desired property response since August 2020 needs to be message as 
+        //"{ "blinkRateProperty" : { "value" : ##, "desiredVersion" : ##, "status" : "completed" } }" 
         JSON_Value* jsonRoot = json_value_init_object();
-        JSON_Value* jsonProperty = json_value_init_object();
-        JSON_Object* jsonObject = json_value_get_object(jsonProperty);
+        
+        JSON_Value* jsonPropertyValue = json_value_init_object();
+        JSON_Object* jsonPropertyValueObject = json_value_get_object(jsonPropertyValue);
+        json_object_set_number(jsonPropertyValueObject, cstrValueProperty, (double)blinkIntervalIndex);
+        json_object_set_number(jsonPropertyValueObject, cstrVersionProperty, (double)blinkIntervalVersion);
+        json_object_set_number(jsonPropertyValueObject, cstrStatusProperty, 200);
+        json_object_set_string(jsonPropertyValueObject, cstrStatusDescriptionProperty, cstrCompleted);
 
-        json_object_set_value(json_object(jsonRoot), cstrLedBlinkRateProperty, jsonProperty);
+        json_object_set_value(json_object(jsonRoot), cstrLedBlinkRateProperty, jsonPropertyValue);
 
-        json_object_set_number(jsonObject, cstrValueProperty, (double)blinkIntervalIndex);
-        json_object_set_number(jsonObject, cstrDesiredVersionProperty, (double)blinkIntervalVersion);
-        json_object_set_string(jsonObject, cstrStatusProperty, cstrCompleted);
-
-        // Report the current state to the Device Twin on the IoT Hub.
-        AzureIoT_TwinReportStateJson(jsonRoot);
+        // Report accepted device twin change back to IoT Central as message
+        AzureIoT_SendJsonMessage(jsonRoot);
 
         json_value_free(jsonRoot);
 
@@ -526,7 +553,26 @@ HTTP_STATUS_CODE ResetMethod(JSON_Value* jsonParameters, JSON_Value** jsonRespon
     return result;
 }
 
+static void ReportAllProperties(void)
+{
+    JSON_Value* jsonRoot = json_value_init_object();
+    JSON_Object *jsonObj = json_value_get_object(jsonRoot);
 
+    json_object_set_string(jsonObj, cstrDevInfoManufacturerProperty, cstrDevInfoManufacturerValue);
+    json_object_set_string(jsonObj, cstrDevInfoModelProperty, cstrDevInfoModelValue);
+    json_object_set_string(jsonObj, cstrDevInfoSWVersionProperty, cstrDevInfoSWVersionValue);
+    json_object_set_string(jsonObj, cstrDevInfoOSNameProperty, cstrDevInfoOSNameValue);
+    json_object_set_string(jsonObj, cstrDevInfoProcArchProperty, cstrDevInfoProcArchValue);
+    json_object_set_string(jsonObj, cstrDevInfoProcMfgrProperty, cstrDevInfoProcMfgrValue);
+    json_object_set_number(jsonObj, cstrDevInfoStorageProperty, (double) ciDevInfoStorageValue);
+    json_object_set_number(jsonObj, cstrDevInfoMemoryProperty, (double) ciDevInfoMemoryValue);
+
+    json_object_set_number(jsonObj, cstrLedBlinkRateProperty, (double) blinkIntervalIndex);
+
+    AzureIoT_TwinReportStateJson(jsonRoot);
+
+    json_value_free(jsonRoot);
+}
 
 /// <summary>
 ///     IoT Hub connection status callback function.
@@ -539,19 +585,21 @@ static void IoTHubConnectionStatusChanged(bool connected, const char *statusText
 	if (connectedToIoTHub)
 	{
         Log_Debug("[IoTHubConnectionStatusChanged]: Connected.\n");
-        // send a "connect" event telemetry message
+        // send a "connect" event telemetry message with the previous disconnect reason
 		SendEventMessage(cstrEvtConnected, pstrConnectionStatus);
         pstrConnectionStatus = cstrEvtConnected;
 
-        // report initial Azure IoT PnP-compatible DeviceInformation
-        AzureIoT_TwinReportState( cstrDeviceInformation, sizeof(cstrDeviceInformation));
+        // report initial Azure IoT PnP-compatible DeviceInformation & BlinkRate
+        ReportAllProperties();
 
         // and at last start the telemetry timer
         SetTimerFdToPeriod(fdTelemetryTimer, &tsTelemetryInterval);
     }
     else {
         Log_Debug("[IoTHubConnectionStatusChanged]: Disconnected.\n");
+        // switch off telemetry timer as we are disconnected
         SetTimerFdToPeriod(fdTelemetryTimer, &tsNullInterval);
+        // save reason for disconnect event
         pstrConnectionStatus = statusText;
     }
 }
@@ -566,19 +614,9 @@ void Led1UpdateHandler(EventData *eventData)
         return;
     }
 
-    // Set network status with LED3 color.
-	RgbLedUtility_Colors color = RgbLedUtility_Colors_Red;
-	bool bNetworkReady = false;
-	Networking_IsNetworkingReady(&bNetworkReady);
-	if (bNetworkReady)
-	{
-		color = (connectedToIoTHub ? RgbLedUtility_Colors_Blue : RgbLedUtility_Colors_Green);
-	}
-    RgbLedUtility_SetLed(&rgbNetworkLed, color);
-
     // Trigger LED1 to blink as appropriate.
     bBlinkingLedState = !bBlinkingLedState;
-    color = (bBlinkingLedState ? colBlinkingLedColor : RgbLedUtility_Colors_Off);
+    RgbLedUtility_Colors color = (bBlinkingLedState ? colBlinkingLedColor : RgbLedUtility_Colors_Off);
     RgbLedUtility_SetLed(&rgbLed1, color);
 }
 
@@ -619,6 +657,26 @@ static bool IsButtonPressed(int fd, GPIO_Value_Type *oldState)
     return isButtonPressed;
 }
 
+
+/// <summary>
+/// Show network/IoT connectivety status:
+///   red   : no network
+///   green : conected to WiFi
+///   blue : connected to IoT Hub
+/// </summary>
+void NetworkLedUpdateHandler(void)
+{
+    // Set network status with LED3 color.
+    RgbLedUtility_Colors color = RgbLedUtility_Colors_Red;
+    Networking_IsNetworkingReady(&bNetworkReady);
+    if (bNetworkReady)
+    {
+        color = (connectedToIoTHub ? RgbLedUtility_Colors_Blue : RgbLedUtility_Colors_Green);
+    }
+    RgbLedUtility_SetLed(&rgbNetworkLed, color);
+}
+
+
 /// <summary>
 ///     Handle button timer event: if the button is pressed, change the LED blink rate.
 /// </summary>
@@ -629,22 +687,15 @@ void ButtonPollTimerHandler(EventData *eventData)
         return;
     }
 
-    // If the button A is pressed, change the LED blink interval, and update the Twin Device.
+    NetworkLedUpdateHandler();
+
+    // If the button A is pressed, change the LED blink interval, update the Device Twin and send a buttonA event message.
     static GPIO_Value_Type blinkButtonState;
     if (IsButtonPressed(fdBlinkRateButtonGpio, &blinkButtonState)) {
 		blinkIntervalIndex = (blinkIntervalIndex + 1) % nBlinkingIntervalsCount;
         SetLedRate(&atsBlinkingIntervals[blinkIntervalIndex]);
 
         if (connectedToIoTHub) {
-            // REMARK: IoT Central in short form desired property is { "blinkRateProperty" : { "value" : ## } } 
-            JSON_Value* jsonRoot = json_value_init_object();
-            json_object_dotset_number(json_object(jsonRoot), cstrLedBlinkRateValuePath, (double)blinkIntervalIndex);
-
-            // Report the current state to the Device Twin on the IoT Hub.
-            AzureIoT_TwinReportStateJson(jsonRoot);
-
-            json_value_free(jsonRoot);
-
             SendEventMessage(cstrEvtButtonA, cstrMsgPressed);
         }
         else {
@@ -652,7 +703,7 @@ void ButtonPollTimerHandler(EventData *eventData)
         }
     }
 
-    // If the button B is pressed, send a message to the IoT Hub.
+    // If the button B is pressed, send a buttonB event message to the IoT Hub.
     static GPIO_Value_Type messageButtonState;
     if (IsButtonPressed(fdSendMessageButtonGpio, &messageButtonState)) {
         if (connectedToIoTHub) {
@@ -672,6 +723,15 @@ void AzureIoTDoWorkHandler(EventData *eventData)
 {
     if (ConsumeTimerFdEvent(fdAzureIoTWorkerTimer) != 0) {
         terminationRequired = true;
+        return;
+    }
+
+    // if no network available check again after default Polling time
+    if (!bNetworkReady)
+    {
+        azureIoTPollPeriodSeconds = AzureIoTDefaultPollPeriodSeconds;
+        struct timespec azureTelemetryPeriod = { azureIoTPollPeriodSeconds, 0 };
+        SetTimerFdToPeriod(fdAzureIoTWorkerTimer, &azureTelemetryPeriod);
         return;
     }
 
