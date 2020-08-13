@@ -1,13 +1,22 @@
-# AzureSphereSamples for 20.01 Azure Sphere SDK Version
+# AzureSphereSamples for 20.07 Azure Sphere SDK Version
+**Please be aware that the Samples.20XX branch is a working branch and not all samples may be fully functional on 20.07 yet.**
+
 This repo contains sources and links for Azure Sphere Bootcamp labs, amongst other Azure Sphere Samples for 
 connected MCUs, sensors and other peripherals.
 
 Prerequisites:
-Please make sure to have a Windows 10 laptop capable of running Visual Studio 2019 (or Visual Studio Code) with the Azure Sphere SDK 
-already installed and a free USB port available. Although you may be able to follow the labs also using Visual Studio Code running on 
-Windows 10 or Linux, your milage may vary.
-* Visual Studio 2019 Download: https://visualstudio.microsoft.com/vs/
-* Azure Sphere SDK: https://aka.ms/azurespheresdkdownload
+Please make sure to have a Windows 10 laptop capable of running Visual Studio 2019 or Visual Studio Code with the Azure Sphere SDK 
+already installed and a free USB port available. 
+* Visual Studio 2019 Download: https://visualstudio.microsoft.com/vs/ <br>
+In Visual Studio please go to *Extensions* -> *Manage Extensions* and download the **Azure Sphere** Extension for Visual Studio. 
+* alternatively Visual Studio Code Download: https://code.visualstudio.com/ <br>
+In Visual Studio Code, please also download the **Azure Sphere** extension (which will also download the **C/C++** and **CMake Tools** Extensions). 
+Please also follow the instructions on the Extension page to configure your settings.json!
+* Azure Sphere SDK: https://aka.ms/azurespheresdkdownload/Windows <br>
+This download package installs the AzSphere.Exe command line tool as well as the network & FTDI drivers 
+
+Although you may be able to follow the labs also using Visual Studio Code running on Linux, your milage may vary (i.e. I have only tested the 
+lab projects on Windows).
 
 Although the SDK package is ~150MB, during the installation it may download up to 1GB of Visual Studio 
 Components, so we strongly recommend to have the SDK preinstalled.
@@ -42,12 +51,14 @@ using the Certificate Authority (CA) provided by your Azure Sphere tenant.
 
 ### Lab #2: Azure IoT Hub connected Azure Sphere Application
 **Pls note**
-> Previous versions of the Azure Sphere SDK contained the "Azure IoT Hub Sample for Mt3620 RDB (Azure Sphere)" application template. Since this 
+> Some older versions of the Azure Sphere SDK contained the "Azure IoT Hub Sample for Mt3620 RDB (Azure Sphere)" application template. Since this 
 > application template is no longer available in more recent versions of the SDK I've thus included it here as a starting point.
 > For this lab you'll therefore need [this repo](https://github.com/JuergenSchwertl/AzureSphereSamples) cloned.
 
-This lab covers typical IoT scenarios from device-to-could messaging, the use of Azure IoT Hub Device Twins to report device properties 
-as well as remotely set desired property states and command & control scenarios using Azure IoT Hub Direct Methods.
+This lab covers typical IoT scenarios: 
+* device-to-could messaging
+* Azure IoT Hub Device Twins to report device properties and receive desired property states
+* command & control scenarios using Azure IoT Hub Direct Methods
 
 Please follow the steps outlined in [Mt3620AzureIoTHub](./Mt3620AzureIoTHub/README.MD) to connect Azure Sphere to Azure IoT Hub.
 
@@ -56,13 +67,23 @@ Please follow the steps as outlined in [Mt3620DirectDHT](./Mt3620DirectDHT/READM
 to connect the DHT sensor and send telemetry data. It also contains hints to extend the ePoll event_data_t structure to enable event 
 context handling and shows some of the intricacies of running time-sensitive bit-banging protocols in a high-level (POSIX) app.
 
-### Lab #4: Connecting another MCU through UART
+### Lab #4: Connecting an I2C sensor (Bosch BME280) and send telemetry to Azure IoT Central
+In this example we will connect an I2C based sensor and send telemetry data to **Azure IoT Central**. In this example it is the 
+Bosch BME280 temperature/humidity/pressure sensor. For this sensor, Bosch provides a platform independent library on the
+[Bosch Sensortec GitHub](https://github.com/BoschSensortec/BME280_driver) .
+This sensor offer I2C as well as SPI connectivety options and depending on your module it may or may not offer both of them. As all modules I 
+have at hand offer I2C and this has some cost saving advantages over SPI (i.e. less wiring, multiple sensors on I2C bus) this examples is using I2C.
+
+Please follow the steps as outlined in [SphereBME280](./SphereBME280/README.MD) to run this example.
+
+
+### Lab #5: Connecting another MCU through UART
 In this lab we'll connect a NodeMCU sending telemetry data through UART to Azure Sphere acting as a secure cloud connectivety option,
-often also referred to as Guardian Module scenario.
+often also referred to as Guardian Device scenario.
 
 Please follow the steps as outlined in [MCUtoMt3620ToAzure](./MCUtoMT3620toAzure/README.MD) to run this lab.
 
-### Lab #5: Multi-Core app and OTA deployment lab
+### Lab #6: Multi-Core app and OTA deployment lab
 This lab is split into several parts as it covers a variety of topics in an end-to-end scenario.
 
 It starts with the development of multi-core applications with a high-level (POSIX) connectivety app that is acompanied by 
@@ -76,7 +97,7 @@ and allow to build a fully automated CI/CD pipeline.
 
 Please follow the steps as outlined in [OTA](./OTA/README.MD) to run this lab.
 
-### Lab #6: Bluetooth provisioning of WiFi Credentials
+### Lab #7: Bluetooth provisioning of WiFi Credentials
 This lab covers WiFi provisioning as well as a command & control scenario via Bluetooth, in this example using 
 the [Nordic Semiconductor nRF52 Series](https://www.nordicsemi.com/-/media/Software-and-other-downloads/Product-Briefs/nRF52-Series-SoC-product-brief.pdf?la=en&hash=03B936AFAD39A624150FC9C5C17C6A3823DFE3F8) Bluetooth SoC.
 Together with a Windows or Smart Phone App it allows to provision the WiFi settings for Azure Sphere as well as showcases 
@@ -88,8 +109,8 @@ available and the  Azure Sphere Product Team [Azure Sphere Samples repo](https:/
 Please follow the steps as outlined in [WifiSetupAndDeviceControlViaBle](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/WifiSetupAndDeviceControlViaBle) 
 to connect the [Nordic Semiconductor nRF52 Development Kit](https://www.nordicsemi.com/Software-and-Tools/Development-Kits/nRF52-DK)
 
-### Lab #7: Updating an external MCU Firmware
-As Lab #6 already involves the Nordic Semiconductor nRF 52 Development Kit, this lab re-uses it to showcase how to update the firmware of another Micro Controller.
+### Lab #8: Updating an external MCU Firmware
+As Lab #7 already involves the Nordic Semiconductor nRF 52 Development Kit, this lab re-uses it to showcase how to update the firmware of another Micro Controller.
 This covers scenarios, where Azure Sphere is retro-fit as a Guardian Module to an existing MCU-based controller board.
  
 For this lab you'll need the Azure Sphere Product Team [Azure Sphere Samples repo](https://github.com/Azure/azure-sphere-samples/) cloned
@@ -105,21 +126,13 @@ In customer workshops we're typically looking at specific customer scenarios and
 commercial peripherals. Where in the labs I on purpose used a cheap sensor with one-wire protocol to show how to port software from other platforms
 as well as the intricacies of bit-banging in a (non-realtime) POSIX app, here is a selection of examples on how to connect other peripherals:
  
-### Connecting an I2C sensor (Bosch BME280) and send telemetry to Azure IoT Central
-In this example we will connect an I2C based sensor and send telemetry data to **Azure IoT Central**. In this example it is the 
-Bosch BME280 temperature/humidity/pressure sensor. For this sensor, Bosch provides a platform independent library on the
-[Bosch Sensortec GitHub](https://github.com/BoschSensortec/BME280_driver) .
-This sensor offer I2C as well as SPI connectivety options and depending on your module it may or may not offer both of them. As all modules I 
-have at hand offer I2C and this has some cost saving advantages over SPI (i.e. less wiring, multiple sensors on I2C bus) this examples is using I2C.
-
-Please follow the steps as outlined in [SphereBME280](./SphereBME280/README.MD) to run this example.
 
 
 ### Using an OLED Display with Azure Sphere
 Although a micro-controller is typically a headless device and the MT3620 misses graphics capabilities, in many cases you'd at least want to
 show some kind of textual or numeric information. Typically these are small displays that come with their own driver chip and in this  
-example we will connect an I2C connected OLED display based on the [Solomon Systech SSD130x](http://www.solomon-systech.com/en/product/...ic/oled-driver-controller/ssd1308/).
-One example is the [Grove - OLED Display 0.96 Inch](http://wiki.seeedstudio.com/Grove-OLED_Display_0.96inch/) 
+example we will connect an OLED display based on the [Solomon Systech SSD130x](http://www.solomon-systech.com/en/product/...ic/oled-driver-controller/ssd1308/) 
+through I2C. One example is the [Grove - OLED Display 0.96 Inch](http://wiki.seeedstudio.com/Grove-OLED_Display_0.96inch/) 
 available through SeeedStudio.
 
 Please follow the steps as outlined in [SphereOLED](./SphereOLED/README.MD) to run this example.
