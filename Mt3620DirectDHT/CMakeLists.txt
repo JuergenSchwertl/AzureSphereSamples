@@ -1,12 +1,12 @@
 #  Copyright (c) Microsoft Corporation. All rights reserved.
 #  Licensed under the MIT License.
 
-CMAKE_MINIMUM_REQUIRED(VERSION 3.11)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
 PROJECT( Mt3620DirectDHT C)
 message("Project ${PROJECT_NAME}")
 
-azsphere_configure_tools(TOOLS_REVISION "20.04")
-azsphere_configure_api(TARGET_API_SET "5")
+azsphere_configure_tools(TOOLS_REVISION "20.07")
+azsphere_configure_api(TARGET_API_SET "6")
 
 #Add library for DHT11 sensor
 ADD_SUBDIRECTORY(DHT11)

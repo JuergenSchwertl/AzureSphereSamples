@@ -4,9 +4,43 @@
 /// included in the Azure IoT Device SDK for C.
 #pragma once
 
-#include <azureiot/iothubtransportmqtt.h>
-#include <applibs/networking.h>
+#include <stdbool.h>
+#include <azureiot/iothub_client_core_common.h>
+//#include <applibs/networking.h>
 #include "parson.h"
+
+typedef enum  {
+    HTTP_OK = 200,
+    HTTP_CREATED,
+    HTTP_ACCEPTED,
+    HTTP_NON_AUTHORATIVE_INFORMATION,
+    HTTP_NO_CONTENT,
+    HTTP_RESET_CONTENT,
+    HTTP_PARTIAL_CONTENT,
+    HTTP_MULTI_STATUS,
+    HTTP_BAD_REQUEST = 400,
+    HTTP_UNAUTHORIZED,
+    HTTP_PAYMENT_REQUIRED,
+    HTTP_FORBIDDEN,
+    HTTP_NOT_FOUND,
+    HTTP_METHOD_NOT_ALLOWED,
+    HTTP_NOT_ACCEPTABLE,
+    HTTP_PROXY_AUTHORIZATION_REQUIRED,
+    HTTP_REQUEST_TIMEOUT,
+    HTTP_CONFLICT,
+    HTTP_GONE,
+    HTTP_LENGTH_REQUIRED,
+    HTTP_PRECONDITION_FAILED,
+    HTTP_PAYLOAD_TOO_LARGE,
+    HTTP_REQUEST_URI_TOO_LONG,
+    HTTP_UNSUPPORTED_MEDIA_TYPE,
+    HTTP_INTERNAL_SERVER_ERROR = 500,
+    HTTP_NOT_IMPLEMENTED,
+    HTTP_BAD_GATEWAY,
+    HTTP_SERVICE_UNAVAILABLE,
+    HTTP_GATEWAY_TIMEOUT
+} HTTP_STATUS_CODE ;
+
 
 /// <summary>
 ///     Sets up the client in order to establish the communication channel to Azure IoT Hub.
@@ -24,41 +58,49 @@
 bool AzureIoT_SetupClient(void);
 
 /// <summary>
-///     Sets the DPS Scope ID.
-/// </summary>
-/// <param name="cstrID">The Scope ID string (typically from command line)</param>
-void AzureIoT_SetDPSScopeID(const char * cstrID);
-
-/// <summary>
 ///     Destroys the Azure IoT Hub client.
 /// </summary>
 void AzureIoT_DestroyClient(void);
-
-/// <summary>
-///     Creates and enqueues a report containing the name and value pair of a Device Twin reported
-///     property.
-///     The report is not actually sent immediately, but it is sent on the next invocation of
-///     AzureIoT_DoPeriodicTasks().
-/// </summary>
-/// <param name="propertyName">The name of the property to report.</param>
-/// <param name="propertyValue">The value of the property.</param>
-void AzureIoT_TwinReportState(const char *propertyName, size_t propertyValue);
 
 /// <summary>
 ///     Creates and enqueues reported properties state using a prepared json string.
 ///     The report is not actually sent immediately, but it is sent on the next 
 ///     invocation of AzureIoT_DoPeriodicTasks().
 /// </summary>
-void AzureIoT_TwinReportStateJson(
-	char *reportedPropertiesString,
-	size_t reportedPropertiesSize);
+///<param name="pszProperties">Reported Properties in json string notation</param>
+///<param name="nPropertiesSize">Size of properties string</param>
+///<returns>IOTHUB_CLIENT_RESULT_OK if report successfully enqueued</returns>
+IOTHUB_CLIENT_RESULT AzureIoT_TwinReportState( const char* pszProperties, size_t nPropertiesSize);
 
 /// <summary>
-///     Creates and enqueues a message to be delivered the IoT Hub. The message is not actually sent
-///     immediately, but it is sent on the next invocation of AzureIoT_DoPeriodicTasks().
+///     Creates and enqueues IoT Hub Device Twin reported properties. 
+///     The report is not actually sent immediately, but it is sent on the
+///     next invocation of AzureIoT_DoPeriodicTasks().
+/// </summary>
+///<param name="jsonState">Reported Properties as JSON_Value</param>
+///<returns>IOTHUB_CLIENT_RESULT_OK if report successfully enqueued</returns>
+IOTHUB_CLIENT_RESULT AzureIoT_TwinReportStateJson(const JSON_Value* jsonState);
+
+/// <summary>
+///     Creates and enqueues a plain text message to be delivered to the IoT Hub. The message is not actually
+///     sent immediately, but it is sent on the next invocation of AzureIoT_DoPeriodicTasks().
 /// </summary>
 /// <param name="messagePayload">The payload of the message to send.</param>
-void AzureIoT_SendMessage(const char *messagePayload);
+void AzureIoT_SendMessageWithContentType(const char* messagePayload, const char* contentType, const char* encoding);
+
+/// <summary>
+///     Creates and enqueues a plain text message to be delivered to the IoT Hub. The message is not actually
+///     sent immediately, but it is sent on the next invocation of AzureIoT_DoPeriodicTasks().
+/// </summary>
+/// <param name="messagePayload">The payload of the message to send.</param>
+void AzureIoT_SendTextMessage(const char* messagePayload);
+
+/// <summary>
+///     Creates and enqueues a json message to be delivered the IoT Hub. The message is not actually
+///     sent immediately, but it is sent on the next invocation of AzureIoT_DoPeriodicTasks().
+/// </summary>
+/// <param name="jsonPayload">The json payload of the message to send.</param>
+void AzureIoT_SendJsonMessage(JSON_Value* jsonPayload);
 
 /// <summary>
 ///     Keeps IoT Hub Client alive by exchanging data with the Azure IoT Hub.
@@ -85,8 +127,14 @@ void AzureIoT_SetMessageReceivedCallback(MessageReceivedFnType callback);
 ///     Type of the function callback invoked whenever a Device Twin update from the IoT Hub is
 ///     received.
 /// </summary>
-/// <param name="handle">The JSON object containing the Device Twin desired properties.</handle>
+/// <param name="handle">The JSON object containing the Device Twin desired properties.</param>
 typedef void (*TwinUpdateFnType)(JSON_Object *desiredProperties);
+
+/// <summary>
+///     Sets the DPS Scope ID.
+/// </summary>
+/// <param name="cstrID">The Scope ID string (typically from command line)</param>
+void AzureIoT_SetDPSScopeID(const char* cstrID);
 
 /// <summary>
 ///     Sets the function callback invoked whenever a Device Twin update from the IoT Hub is
@@ -108,9 +156,9 @@ void AzureIoT_SetDeviceTwinUpdateCallback(TwinUpdateFnType callback);
 /// <param name="responsePayloadSize">The size of the response payload provided by the
 /// callee.</param>
 /// <returns>The HTTP status code. e.g. 404 for method not found.</returns>
-typedef int (*DirectMethodCallFnType)(const char *directMethodName, const char *payload,
-                                      size_t payloadSize, char **responsePayload,
-                                      size_t *responsePayloadSize);
+typedef int (*DirectMethodCallFnType)(const char *directMethodName, 
+                                      const unsigned char *payload, size_t payloadSize, 
+                                      unsigned char **responsePayload, size_t *responsePayloadSize);
 
 /// <summary>
 ///     Sets the function to be invoked whenever a Direct Method call from the IoT Hub is received.
@@ -119,10 +167,35 @@ typedef int (*DirectMethodCallFnType)(const char *directMethodName, const char *
 /// received</param>
 void AzureIoT_SetDirectMethodCallback(DirectMethodCallFnType callback);
 
+
+/// <summary>
+///     Type of the direct method callback invoked.
+/// </summary>
+/// <param name="jsonParameters">The name of the direct method to invoke</param>
+/// <param name="jsonResponseAddress">OUT parameter. Address of method handler jsonResponse</param>
+/// <returns>The HTTP status code. e.g. 404 for method not found.</returns>
+typedef HTTP_STATUS_CODE(*MethodFnType)(JSON_Value* jsonParameters, JSON_Value** jsonResponseAddress);
+
+
+/// <summary>
+///     Type of the direct method registration with MethodName and MethodHandler.
+/// </summary>
+typedef struct MethodRegistrationTag {
+    const char* MethodName;
+    MethodFnType MethodHandler;
+} MethodRegistration;
+
+/// <summary>
+///     Registers an array of Direct Method handlers. Superseded by <seealso cref="AzureIoT_SetDirectMethodCallback">AzureIoT_SetDirectMethodCallback</seealso>
+/// </summary>
+/// <param name="methods">list of MethodRegistration entries (ended by NULL,NULL)</param>
+void AzureIoT_RegisterDirectMethodHandlers(const MethodRegistration* methods);
+
+
 /// <summary>
 ///     Type of the function callback invoked when the IoT Hub connection status changes.
 /// </summary>
-typedef void (*ConnectionStatusFnType)(bool connected);
+typedef void (*ConnectionStatusFnType)(bool connected, const char *statusText);
 
 /// <summary>
 ///     Sets the function to be invoked whenever the connection status to thye IoT Hub changes.
