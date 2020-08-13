@@ -51,7 +51,7 @@
 //
 // Device Twin related notes:
 // - Setting blinkRateProperty in the Device Twin to a value from 0 to 2 causes the sample to
-//   update the blink rate of LED 1 accordingly, e.g '{"blinkRateProperty": { "value" : 2 }}';
+//   update the blink rate of LED 1 accordingly, e.g '{"blinkRateProperty": 2 }';
 // - Upon receipt of the blinkRateProperty desired value from the IoT hub, the sample updates
 //   the device twin on the IoT hub with the new value for blinkRateProperty.
 // - Pressing button A causes the sample to report the blink rate to the device
@@ -136,13 +136,11 @@ static const char cstrTemperatureProperty[] = "temperature";
 static const char cstrPressureProperty[] = "pressure";
 static const char cstrHumidityProperty[] = "humidity";
 static const char cstrLedBlinkRateProperty[] = "blinkRateProperty";
-//static const char cstrLedBlinkRateValuePath[] = "blinkRateProperty.value";
 static const char cstrValueProperty[] = "value";
 static const char cstrVersionProperty[] = "av";
 static const char cstrStatusProperty[] = "ac";
 static const char cstrStatusDescriptionProperty[] = "ad";
 static const char cstrSysVersionProperty[] = "$version";
-static const char cstrDesiredVersionProperty[] = "desiredVersion";
 static const char cstrCompleted[] = "completed";
 
 ///<summary>Azure IoT PnP compatible DeviceInformation</summary>  
@@ -326,7 +324,7 @@ static void SetLedRate(const struct timespec * pBlinkRate)
 
     // report changed blink rate as property to IoT Central
     if (connectedToIoTHub) {
-        // REMARK: Since August 2020, IoT Central desired property schema is { "blinkRateProperty" : ## } 
+        // REMARK: Since August 2020, IoT Central reported property schema is { "blinkRateProperty" : ## } 
         // <seealso href="https://docs.microsoft.com/en-us/azure/iot-central/core/concepts-telemetry-properties-commands#properties" />
         JSON_Value* jsonRoot = json_value_init_object();
         json_object_set_number(json_object(jsonRoot), cstrLedBlinkRateProperty, (double)blinkIntervalIndex);

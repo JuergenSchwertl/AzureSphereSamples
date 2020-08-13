@@ -112,6 +112,11 @@ content from the below:
 Obtain your Azure Sphere Tenant ID by opening an Azure Sphere Developer Command Prompt/Terminal and typing the following command:
 'azsphere tenant show-selected'<br /></code></pre>
 
+>**Important:** My samples are using a slightly different command line syntax, so just copy it in the form
+<pre><code>"CmdArgs": [ <b>"0ne000A5318"</b> ],</code></pre>
+
+
+
 ## Reviewing the code
 
 
@@ -141,20 +146,33 @@ and to raise the `buttonB`-event, the json would be
 ```
 
 Azure IoT Central also supports properties, that are actually based on Azure IoT Hub Device Twin. 
-In the previous examples we've used the short json notation (e.g. `{ "LedBlinkRateProperty" : 1 }` ) and you'll see that 
-the device information follows the same schema on *reported properties*. For *desired properties* Azure IoT Central already implements Azure IoT Plug&Play. The schema therefore changes to *LedBlinkRateProperty.value*:
-```json
-{
- "LedBlinkRateProperty" : {	
-  "value" : 1
- }
-}
-```  
-which is reflected in the json-path in [*main.c* Line 399](./main.c#L399) 
-```C
-JSON_Object * desiredBlinkRateProperty = json_object_get_object(desiredProperties, cstrLedBlinkRateProperty);
-size_t desiredBlinkRate = (size_t)json_object_get_number(desiredBlinkRateProperty, cstrValueProperty);
-```
+
+>**Note:** Azure IoT Central implements Azure IoT Plug&Play and for some time had the schema changed to *blinkRateProperty.value* alike:
+>```json
+>{
+>   "blinkRateProperty" : {	
+>     "value" : 1
+>   }
+>}
+>```
+>and required the property to be mirrored as reported property with additional metadata.
+>
+>As of end of July 2020 the schema was reverted back to use the shortform notation  `{ "propertyname" : 1, "$version" : 7 }` . 
+>See [IoT Central Properties](https://docs.microsoft.com/en-us/azure/iot-central/core/concepts-telemetry-properties-commands#properties) for more
+>info on the schema for *reported properties*.
+>
+>For a *desired property*, you need to indicate the successful receipt to Azure Iot Central in the form of of a telemetry message:
+>```json
+>{ 
+>  "blinkRateProperty" : {
+>      "value": 1,
+>      "ac": 200,
+>      "ad": "completed",
+>      "av": 7
+>    }
+>}
+>```
+>See [Azure IoT Central: Writeable property types](https://docs.microsoft.com/en-us/azure/iot-central/core/concepts-telemetry-properties-commands#writeable-property-types) 
 
 
 Now it's time to get cracking:
