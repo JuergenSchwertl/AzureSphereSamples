@@ -12,14 +12,25 @@ In Visual Studio please go to *Extensions* -> *Manage Extensions* and download t
 * alternatively Visual Studio Code Download: https://code.visualstudio.com/ <br>
 In Visual Studio Code, please also download the **Azure Sphere** extension (which will also download the **C/C++** and **CMake Tools** Extensions). 
 Please also follow the instructions on the Extension page to configure your settings.json!
-* Azure Sphere SDK: https://aka.ms/azurespheresdkdownload/Windows <br>
+>**Note**: If you run Visual Studio 2019 and Visual Studio Code side by side, you actually don't need to install the CMake tools and Ninja seperately 
+>but can refer to the VS2019 versions in settings.json alike:
+>```json
+>    "AzureSphere.SdkPath": "C:\\Program Files (x86)\\Microsoft Azure Sphere SDK\\",
+>    "AzureSphere.ArmGnuPath": "C:\\Program Files (x86)\\Microsoft Azure Sphere SDK\\Sysroots\\6\\tools\\gcc",
+>    "cmake.cmakePath": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe",
+>    "cmake.configureSettings": {
+>        "CMAKE_MAKE_PROGRAM" : "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\Ninja\\ninja.exe"
+>    }
+>```
+
+* Azure Sphere SDK (for Windows): https://aka.ms/azurespheresdkdownload/Windows <br>
 This download package installs the AzSphere.Exe command line tool as well as the network & FTDI drivers 
 
 Although you may be able to follow the labs also using Visual Studio Code running on Linux, your milage may vary (i.e. I have only tested the 
 lab projects on Windows).
 
 Although the SDK package is ~150MB, during the installation it may download up to 1GB of Visual Studio 
-Components, so we strongly recommend to have the SDK preinstalled.
+Components, so I strongly recommend to have the SDK preinstalled.
 
 You will also need an active Azure subscription and a user account with sufficient rights to create Azure Resources such as 
 * Azure Resource Groups 
@@ -29,7 +40,7 @@ amongst others potentially.
 
 To follow the code samples please clone the following GitHub repositories:
 * [This AzureSphereSamples repo](https://github.com/JuergenSchwertl/AzureSphereSamples)
-* The Azure Product Team [Azure Sphere Samples Repo](https://github.com/Azure/azure-sphere-samples/)
+* The Azure Sphere Product Team [Azure Sphere Samples Repo](https://github.com/Azure/azure-sphere-samples/)
 
 ## Azure Sphere Bootcamp labs
 
