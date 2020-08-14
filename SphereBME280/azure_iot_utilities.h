@@ -42,6 +42,53 @@ typedef enum  {
 } HTTP_STATUS_CODE ;
 
 
+typedef const struct content_type_s {
+    const char * Application_OctetStream;
+    const char * Application_PDF;
+    const char * Application_XHTML_XML;
+    const char * Application_JSON;
+    const char * Application_LD_JSON;
+    const char * Application_XML;
+    // const char * Application_ZIP;
+    // const char * Application_UrlEncoded;
+
+    // const char * Image_GIF;
+    // const char * Image_JPEG;
+    // const char * Image_PNG;
+    // const char * Image_TIFF;
+
+    // const char * Multipart_Mixed;
+    // const char * Multipart_Alternative;
+    const char * Multipart_FormData;
+ 
+    const char * Text_CSS;
+    const char * Text_CSV;
+    const char * Text_HTML;
+    const char * Text_Plain;
+    const char * Text_XML;
+} content_type_t;
+
+/// <summary>
+/// Content-Type system property values for messages (URL encoded, "/" is "%2F")
+/// </summary>
+extern content_type_t ContentType;
+
+
+typedef const struct content_encoding_s {
+  const char * UTF_8;
+  const char * UTF_16;
+//   const char * ASCII;
+//   const char * UTF_7;
+//   const char * UTF_16BE;
+//   const char * UTF_32;
+//   const char * Unicode;
+} content_encoding_t;
+
+/// <summary>
+/// Content encoding system property values for messages (URL encoded, "/" is "%2F")
+/// </summary>
+extern content_encoding_t ContentEncoding;
+
 /// <summary>
 ///     Sets up the client in order to establish the communication channel to Azure IoT Hub.
 ///
