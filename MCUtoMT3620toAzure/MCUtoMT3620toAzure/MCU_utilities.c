@@ -118,7 +118,7 @@ void checkAndSendTelemetry( void )
 		fHumidityLastReported = fHumidity;
 
 		Log_Debug("[MCU] Sending telemetry %s\n", pjsonBuffer);
-		AzureIoT_SendMessage(pjsonBuffer);
+		AzureIoT_SendMessageWithContentType(pjsonBuffer, ContentType.Application_JSON, ContentEncoding.UTF_8);
 
 		free(pjsonBuffer);
 	}
@@ -158,7 +158,7 @@ void checkAndUpdateDeviceTwin(void)
 								   minmaxTemperature.Mininum, minmaxTemperature.Maximum);
 
 		Log_Debug("[MCU] Updating device twin: %s\n", pjsonBuffer);
-		AzureIoT_TwinReportStateJson(pjsonBuffer, (size_t) nJsonLength);
+		AzureIoT_TwinReportState(pjsonBuffer, (size_t) nJsonLength);
 
 		free(pjsonBuffer);
 	}

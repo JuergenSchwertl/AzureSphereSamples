@@ -110,7 +110,7 @@ void updateConnectionStatusLed(void)
 }
 
 
-void ConnectionToIoTHubChanged(bool bConnected)
+void ConnectionToIoTHubChanged(bool bConnected, const char *pstrReason)
 {
 	bConnectedToIoTHub = bConnected;
 	updateConnectionStatusLed();
