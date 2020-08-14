@@ -60,11 +60,6 @@
 // 256 byte buffer size for json data
 #define JSON_BUFFER_SIZE 256
 
-// Content-Type and Content-Encoding values defined in azure_iot_utilities.c
-extern const char cstrJsonContentType[];
-extern const char cstrUtf8Encoding[];
-
-
 // An array defining the RGB GPIOs for each used LED on the device
 static const GPIO_Id ledsPins[5][3] = {
 	{MT3620_RDB_LED1_RED, MT3620_RDB_LED1_GREEN, MT3620_RDB_LED1_BLUE},
@@ -279,7 +274,7 @@ static void SendEventMessage(const char* cstrEvent, const char* cstrMessage)
 		Log_Debug("[Send] %s\r\n", strJsonData);
 
 		// Send a message
-		AzureIoT_SendMessageWithContentType(strJsonData, cstrJsonContentType, cstrUtf8Encoding);
+		AzureIoT_SendMessageWithContentType(strJsonData, ContentType.Application_JSON, ContentEncoding.UTF_8);
 
 		// Set the send/receive LED2 to blink once immediately to indicate 
 		// the message has been queued.
@@ -302,7 +297,7 @@ static void SendMessage(void)
 		if (GetSensorDataJson(jsonBuffer, JSON_BUFFER_SIZE, cstrJsonSuccessAndData)) {
 
 			// Send a message
-			AzureIoT_SendMessageWithContentType(jsonBuffer, cstrJsonContentType, cstrUtf8Encoding);
+			AzureIoT_SendMessageWithContentType(jsonBuffer, ContentType.Application_JSON, ContentEncoding.UTF_8);
 			Log_Debug("[SendMessageToIoTHub] %s\n", jsonBuffer);
 			// Set the send/receive LED to blink once immediately to indicate the message has been queued
 			BlinkLedOnce(&ledSendMessage, fdSendMessageLedTimer, RgbLedUtility_Colors_Green);

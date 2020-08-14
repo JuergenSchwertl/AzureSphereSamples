@@ -79,15 +79,47 @@ static int iKeepalivePeriodSeconds = 20;
 /// </summary>
 static unsigned int uMessageId = 0;
 
-/// <summary>
-///     Content-Type and Content-Encoding system property values
-/// </summary>
-const char cstrJsonContentType[] = "application%2Fjson";
-const char cstrPlainTextContentType[] = "text%2Fplain";
-const char cstrUtf8Encoding[] = "utf-8";
 
 const char cstrErrorOutOfMemory[] = "ERROR: out of memory.\n";
 const char cstrWarnNotInitialized[] = "WARNING: IoT Hub client not initialized\n";
+
+
+content_encoding_t ContentEncoding = { 
+    .UTF_8          = "utf-8",
+    .UTF_16         = "utf-16", // == utf-16le, unicodefeff
+    // .ASCII          = "ascii",
+    // .UTF_7          = "utf-7",
+    // .UTF_16BE       = "utf-16be", // unicodefffe
+    // .UTF_32         = "utf-32",
+    // .Unicode        = "unicode"
+};
+
+
+content_type_t ContentType = { 
+    .Application_OctetStream    = "application%2Foctet-stream",
+    .Application_PDF            = "application%2Fpdf",
+    .Application_XHTML_XML      = "application%2Fxhtml+xml",
+    .Application_JSON           = "application%2Fjson",
+    .Application_LD_JSON        = "application%2Fld+json",
+    .Application_XML            = "application%2Fxml",
+    // .Application_ZIP            = "application%2Fzip",
+    // .Application_UrlEncoded     = "application%2Fx-www-form-urlencoded",
+
+    // .Image_GIF                  = "image%2Fgif",
+    // .Image_JPEG                 = "image%2Fjpeg",
+    // .Image_PNG                  = "image%2Fpng",
+    // .Image_TIFF                 = "image%2Ftiff",
+
+    // .Multipart_Mixed            = "multipart%2Fmixed",
+    // .Multipart_Alternative      = "multipart%2Falternative",
+    .Multipart_FormData         = "multipart%2Fform-data",
+
+    .Text_CSS                    = "text%2Fcss", 
+    .Text_CSV                    = "text%2Fcsv", 
+    .Text_HTML                   = "text%2Fhtml", 
+    .Text_Plain                  = "text%2Fplain", 
+    .Text_XML                    = "text%2Fxml"
+};
 
 /// <summary>
 ///     Set of bundle of root certificate authorities.
@@ -538,7 +570,7 @@ void AzureIoT_SendMessageWithContentType(const char* messagePayload, const char 
 /// <param name="messagePayload">The payload of the message to send.</param>
 void AzureIoT_SendTextMessage(const char *messagePayload)
 {
-    AzureIoT_SendMessageWithContentType(messagePayload, cstrPlainTextContentType, cstrUtf8Encoding);
+    AzureIoT_SendMessageWithContentType(messagePayload, ContentType.Text_Plain, ContentEncoding.UTF_8);
 }
 
 
@@ -554,7 +586,7 @@ void AzureIoT_SendJsonMessage(JSON_Value* jsonPayload)
 
     if (setPayloadFromJson(jsonPayload, &pszMessagePayload, &nMessageSize) == IOTHUB_CLIENT_OK) {
         if (pszMessagePayload != NULL) {
-            AzureIoT_SendMessageWithContentType(pszMessagePayload, cstrJsonContentType, cstrUtf8Encoding);
+            AzureIoT_SendMessageWithContentType(pszMessagePayload, ContentType.Application_JSON, ContentEncoding.UTF_8);
             free(pszMessagePayload);
         }
     }
