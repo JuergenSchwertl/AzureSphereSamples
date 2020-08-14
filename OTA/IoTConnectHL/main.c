@@ -54,11 +54,6 @@
 #include "intercore_utilities.h"
 #include "azure_iot_utilities.h"
 
-#ifndef AZURE_IOT_HUB_CONFIGURED
-#error \
-    "WARNING: Please follow the instructions to configure your IoT Hub and DPS server in the README.MD."
-#endif
-
 #define IOTCONNECT_COMPONENTID		"33e04e8f-a020-4af8-80d0-8064343e0616"
 #define RED_SPHERE_COMPONENTID		"F4E25978-6152-447B-A2A1-64577582F327"
 #define GREEN_SPHERE_COMPONENTID	"7E5FAB32-801C-4EDF-A1AA-9263652AA6BD"
@@ -226,22 +221,22 @@ static void MessageReceived(const char *payload)
 /// properties received from the Azure IoT Hub.</param>
 static void DeviceTwinUpdate(JSON_Object *desiredProperties)
 {
-    JSON_Value *blinkRateJson = json_object_get_value(desiredProperties, "LedBlinkRateProperty");
+    JSON_Value *blinkRateJson = json_object_get_value(desiredProperties, "blinkRateProperty");
 
     // If the attribute is missing or its type is not a number.
     if (blinkRateJson == NULL) {
         Log_Debug(
             "INFO: A device twin update was received that did not contain the property "
-            "\"LedBlinkRateProperty\".\n");
+            "\"blinkRateProperty\".\n");
     } else if (json_value_get_type(blinkRateJson) != JSONNumber) {
         Log_Debug(
-            "INFO: Device twin desired property \"LedBlinkRateProperty\" was received with "
+            "INFO: Device twin desired property \"blinkRateProperty\" was received with "
             "incorrect type; it must be an integer.\n");
     } else {
         // Get the value of the LedBlinkRateProperty and print it.
         size_t desiredBlinkRate = (size_t)json_value_get_number(blinkRateJson);
 
-        Log_Debug("INFO: Received desired value %zu for LedBlinkRateProperty.\n", desiredBlinkRate);
+        Log_Debug("INFO: Received desired value %zu for blinkRateProperty.\n", desiredBlinkRate);
 
 		SetLedRate(desiredBlinkRate);
     }
@@ -276,8 +271,8 @@ static void *SetupHeapMessage(const char *messageFormat, size_t maxLength, ...)
 /// string, 'free' will be called on this buffer by the Azure IoT Hub SDK.</param>
 /// <param name="responsePayloadSize">The size of the response payload content.</param>
 /// <returns>404 HTTP status code: no methods supported in this sample.</returns>
-static int DirectMethodCall(const char *methodName, const char *payload, size_t payloadSize,
-                            char **responsePayload, size_t *responsePayloadSize)
+static int DirectMethodCall(const char *methodName, const unsigned char *payload, size_t payloadSize,
+                            unsigned char **responsePayload, size_t *responsePayloadSize)
 {
 	Log_Debug("INFO: DirectMethod called: '%s'.\n", methodName);
 
@@ -298,7 +293,7 @@ static int DirectMethodCall(const char *methodName, const char *payload, size_t 
 ///     IoT Hub connection status callback function.
 /// </summary>
 /// <param name="connected">'true' when the connection to the IoT Hub is established.</param>
-static void IoTHubConnectionStatusChanged(bool connected)
+static void IoTHubConnectionStatusChanged(bool connected, const char * pstrReason)
 {
 	Log_Debug("INFO: IoT Hub Connection Status Changed to %d.\n", (int)connected);
 	connectedToIoTHub = connected;
