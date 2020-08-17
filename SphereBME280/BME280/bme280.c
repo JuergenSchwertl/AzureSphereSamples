@@ -380,7 +380,8 @@ int8_t bme280_init(struct bme280_dev *dev)
             }
 
             /* Wait for 1 ms */
-            dev->delay_ms(1);
+            /* JSCHWERT make it 10ms*/
+            dev->delay_ms(10);
             --try_count;
         }
 
@@ -644,7 +645,8 @@ int8_t bme280_soft_reset(const struct bme280_dev *dev)
             do
             {
                 /* As per data sheet - Table 1, startup time is 2 ms. */
-                dev->delay_ms(2);
+                /* JSCHWERT: wait 20ms */
+                dev->delay_ms(20);
                 rslt = bme280_get_regs(BME280_STATUS_REG_ADDR, &status_reg, 1, dev);
             } while ((rslt == BME280_OK) && (try_run--) && (status_reg & BME280_STATUS_IM_UPDATE));
 

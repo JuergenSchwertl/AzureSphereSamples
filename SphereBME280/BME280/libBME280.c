@@ -9,13 +9,13 @@
 #include "bme280_defs.h"
 #include "bme280.h"
 
-#define VERBOSE 1
+//#define VERBOSE 1
 
 ///<summary>
 /// This is an Azure Sphere wrapper library for the Bosch BME280 
 /// temperature-, humidity- and pressure-sensor
 /// <see href="https://github.com/BoschSensortec/BME280_driver" />
-/// connected to Azure Sphere via I2Cbis (i.e. the Seeed Groove BME280 sensor board)
+/// connected to Azure Sphere via I2C (i.e. the Seeed Groove BME280 sensor board)
 /// <see href="http://wiki.seeedstudio.com/Grove-Barometer_Sensor-BME280/" />
 ///</summary>
 
@@ -110,12 +110,14 @@ int8_t user_i2c_write(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len)
 
 void print_sensor_data(struct bme280_data *comp_data)
 {
+#ifdef DEBUG
 #ifdef BME280_FLOAT_ENABLE
 	Log_Debug("[BME280] Temperature: %0.2f °C, Pressure: %0.2f Pa, Humidity: %0.2f %%\n", 
 		comp_data->temperature, comp_data->pressure, comp_data->humidity);
 #else
 	Log_Debug("[BME280] Temperature: %ld [°C * 100], Pressure: %ld [Pa], Humidity: %ld [%% * 100]\n", 
 		comp_data->temperature, comp_data->pressure, comp_data->humidity);
+#endif
 #endif
 }
 

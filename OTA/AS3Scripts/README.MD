@@ -136,8 +136,8 @@ together with one of the real-time capable applications.
 
 If you would attempt to create the deployments e.g. using 
 ```sh
-azsphere dg dep create -pn "RedSphere Product" -dgn "Production" -p ".\out\ARM-Debug-3+Beta1909\RedSphereRT\RedSphereRT.imagepackage" -f
-azsphere dg dep create -pn "RedSphere Product" -dgn "Production OS Evaluation" -p ".\out\ARM-Debug-3+Beta1909\RedSphereRT\RedSphereRT.imagepackage" -f
+azsphere dg dep create -pn "RedSphere Product" -dgn "Production" -p ".\RedSphereRT\out\ARM-Debug\RedSphereRT.imagepackage" -f
+azsphere dg dep create -pn "RedSphere Product" -dgn "Production OS Evaluation" -p ".\RedSphereRT\out\ARM-Debug\RedSphereRT.imagepackage" -f
 ```
 you will though receive an error message on the 2nd command, complaining that "*An image with the same ID ('f1c5d8dd-16e6-499b-9a6d-b7fd828ee48e') already exists.*"
 since the 1st command implicitly already uploaded the image-package for the RedSphereRT application. 
@@ -146,17 +146,17 @@ a rather common scenario, we need to take a slightly different route and first u
 then create the deployments referencing the uploaded image packages by their ImageId.
 
 ```sh
-azsphere img add -f ".\out\ARM-Debug-4+Beta2001\RedSphereRT\RedSphereRT.imagepackage" --force
-azsphere img add -f ".\out\ARM-Debug-4+Beta2001\GreenSphereRT\GreenSphereRT.imagepackage" --force
-azsphere img add -f ".\out\ARM-Debug-4+Beta2001\BlueSphereRT\BlueSphereRT.imagepackage" --force
-azsphere img add -f ".\IoTConnectHL\out\ARM-Debug-4+Beta2001\IoTConnectHL.imagepackage" --force
+azsphere img add -f ".\RedSphereRT\out\ARM-Debug\RedSphereRT.imagepackage" --force
+azsphere img add -f ".\GreenSphereRT\out\ARM-Debug\GreenSphereRT.imagepackage" --force
+azsphere img add -f ".\BlueSphereRT\out\ARM-Debug\BlueSphereRT.imagepackage" --force
+azsphere img add -f ".\IoTConnectHL\out\ARM-Debug\IoTConnectHL.imagepackage" --force
 ```
 
 you should see an output like:
 ```
-C:\Repos\AzureSphereSamples\OTA>azsphere img add -f ".\out\ARM-Debug-4+Beta2001\RedSphereRT\RedSphereRT.imagepackage" --force
+C:\Repos\AzureSphereSamples\OTA>azsphere img add -f ".\RedSphereRT\out\ARM-Debug\RedSphereRT.imagepackage" --force
 warn: '.\out\ARM-Debug-4+Beta2001\RedSphereRT\RedSphereRT.imagepackage' targets Beta APIs that may change or be removed in future.
-Uploading image from file '.\out\ARM-Debug-4+Beta2001\RedSphereRT\RedSphereRT.imagepackage':
+Uploading image from file '.\RedSphereRT\out\ARM-Debug\RedSphereRT.imagepackage':
  --> Image ID:       8e224bb1-9440-423d-9b8e-e2d05f1902a7
  --> Component ID:   f4e25978-6152-447b-a2a1-64577582f327
  --> Component name: 'RedSphereRT'
@@ -166,12 +166,11 @@ Successfully uploaded image with ID '8e224bb1-9440-423d-9b8e-e2d05f1902a7' and n
 
 To proceed further you need to note down the individual ImageID´s to create the deployments along the lines of  
 
-```sh
-azsphere dg dep create -pn "RedSphere Product" -dgn "Production" -ii [RedSphereRT-ImageID] -f
-azsphere dg dep create -pn "RedSphere Product" -dgn "Production OS Evaluation" -ii [RedSphereRT-ImageID] -f
-azsphere dg dep create -pn "RedSphere Product" -dgn "Field Test" -ii [RedSphereRT-ImageID],[IoTConnectHL-ImageID] -f
-azsphere dg dep create -pn "RedSphere Product" -dgn "Field Test OS Evaluation" -ii [RedSphereRT-ImageID],[IoTConnectHL-ImageID] -f
-```
+<pre><code>azsphere dg dep create -pn "RedSphere Product" -dgn "Production" -ii <i>[RedSphereRT-ImageID]</i> -f
+azsphere dg dep create -pn "RedSphere Product" -dgn "Production OS Evaluation" -ii <i>[RedSphereRT-ImageID]</i> -f
+azsphere dg dep create -pn "RedSphere Product" -dgn "Field Test" -ii <i>[RedSphereRT-ImageID],[IoTConnectHL-ImageID]</i> -f
+azsphere dg dep create -pn "RedSphere Product" -dgn "Field Test OS Evaluation" -ii <i>[RedSphereRT-ImageID],[IoTConnectHL-ImageID]</i> -f
+</code></pre>
 I leave it up to you to do the same for the other products.
 
 

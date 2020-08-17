@@ -1,9 +1,9 @@
 
 # relative paths of imagepackages to the OTA sample (under the proviso being built for Debug)
-$strIoTConnectHLPath = ".\\IoTConnectHL\\out\\ARM-Debug-4+Beta2001\\IoTConnectHL.imagepackage"
-$strRedSphereRTPath = ".\\out\\ARM-Debug-4+Beta2001\\RedSphereRT\\RedSphereRT.imagepackage"
-$strGreenSphereRTPath = ".\\out\\ARM-Debug-4+Beta2001\\GreenSphereRT\\GreenSphereRT.imagepackage"
-$strBlueSphereRTPath = ".\\out\\ARM-Debug-4+Beta2001\\BlueSphereRT\\BlueSphereRT.imagepackage"
+$strIoTConnectHLPath = ".\\IoTConnectHL\\out\\ARM-Debug\\IoTConnectHL.imagepackage"
+$strRedSphereRTPath = ".\\RedSphereRT\\out\\ARM-Debug\\RedSphereRT.imagepackage"
+$strGreenSphereRTPath = ".\\GreenSphereRT\\out\\ARM-Debug\\GreenSphereRT.imagepackage"
+$strBlueSphereRTPath = ".\\BlueSphereRT\\out\\ARM-Debug\\BlueSphereRT.imagepackage"
 
 $strRedSphereProduct = "RedSphere Product"
 $strGreenSphereProduct = "GreenSphere Product"
@@ -218,16 +218,16 @@ given imagepackage file.
 .PARAMETER Path
 Specifies the path to the .imagepackage file
 .INPUTS
-None. You cannot pipe objects to ExtractFrom-Image.
+None. You cannot pipe objects to Get-ImagePackageFile.
 .OUTPUTS
 ImagePackage structure containing Name, ComponentID, ImageID, FilePath 
 .EXAMPLE
-PS> ExtractFrom-ImagePackage -path "./RedSphereRT.imagepackage"
+PS> Get-ImagePackageFile -path "./RedSphereRT.imagepackage"
 Name ComponentID                          ImageID                              FilePath                  
 ---- -----------                          -------                              --------                  
 Test f4e25978-6152-447b-a2a1-64577582f327 1b45e9b9-d339-4905-89c1-2a0ecf16f665 .\RedSphereRT.imagepackage
 #>
-function ExtractFrom-ImagePackage( 
+function Get-ImagePackageFile( 
     [cmdletbinding()]
 	[Parameter(Mandatory=$true, Position=0)] [Alias("f")]  [string] $Path)
 {
@@ -399,7 +399,7 @@ function Get-AS3Product(
         )
     }
         
-    if( $product -eq $null )
+    if( $null -eq $product )
     {
         if( $PSCmdlet.ParameterSetName -eq "ByName")
         {
@@ -669,13 +669,13 @@ function Get-AS3DeviceGroup(
     if( $LASTEXITCODE -eq 0 )
     {
         [DeviceGroup] $dg = [DeviceGroup]::new(
-            $result[2].Split(":'").Item(2),
-            $result[3].Split(":'").Item(2),
-            $result[4].Split(":'").Item(2)
+            $result[2].Split("'").Item(1),
+            $result[3].Split("'").Item(1),
+            $result[4].Split("'").Item(1)
             )
         Write-Verbose "[Get-AS3DeviceGroup] Name: '$($dg.Name)'"
 
-        $dg.OsFeed = [OsFeedType]::Parse( [OsFeedType], $result[5].Split(":'").Item(2));
+        $dg.OsFeed = [OsFeedType]::Parse( [OsFeedType], $result[5].Split("'").Item(1));
         if( $result[6].Split(":").Item(1).Contains("Accept all updates") )
         {
             $dg.ApplicationUpdate = [ApplicationUpdatePolicy]::On
@@ -684,7 +684,8 @@ function Get-AS3DeviceGroup(
         }
         if( -not $result[7].Contains("None") )
         {
-            [string] $strCurrentDeployment = $result[8].Split(":'").Item(2)
+            [string] $strCurrentDeployment = $result[8].Split("'").Item(1)
+            Write-Verbose "[Get-AS3DeviceGroup] Current Deployment Id $strCurrentDeployment"
             [Deployment[]] $lstDeps = Get-AS3DeploymentList -i $DeviceGroupId.ToString()
             [HashTable] $tblDeps = [HashTable]::new( $lstDeps.Length ) #@{}
             $lstDeps.ForEach( {
@@ -706,7 +707,6 @@ function Get-AS3DeviceGroup(
 		Write-Error $result[0] -ErrorAction Stop
 	}
 }
-
 
 <#
 .SYNOPSIS
@@ -753,24 +753,68 @@ function Add-AS3Image(
 	}
 }
 
+<#
+.SYNOPSIS
+Set-SdkPaths queries the Windows registry for the Azure Sphere SDK entries and sets the paths accordingly.
+.DESCRIPTION
+Set-SdkPaths queries the Windows registry for the Azure Sphere SDK entries and sets the path to the azsphere.exe tool
+.INPUTS
+None. You cannot pipe objects to Initialize-Prerequisites.
+.OUTPUTS
+Nothing 
+.EXAMPLE
+PS> Initialize-Prerequisites
 
+#>
+function Set-SdkPaths()
+{
+    [cmdletbinding()]
+    param()
+    
+
+    $SdkPath = (Get-ItemProperty -Path "HKLM:SOFTWARE\WOW6432Node\Microsoft\Azure Sphere").InstallDir
+    $SdkToolsPath = Join-Path -Path $SdkPath -ChildPath "Tools"
+    $Latest = (Get-ChildItem "HKLM:SOFTWARE\WOW6432Node\Microsoft\Azure Sphere\Sysroots")[-1].GetValue("InstallDir")
+    $gccPath = Join-Path -Path $Latest -ChildPath "tools\gcc"
+    if( -not $Env:Path.Contains( $SdkPath ) )
+    {
+        Write-Host "Adding Azure Sphere SDK path"
+        Write-Verbose "[Set-Location] SDK path is $SdkPath"
+        $Env:Path = $SdkPath + ";" + $Env:Path
+    }
+    if( -not $Env:Path.Contains( $SdkToolsPath ) )
+    {
+        Write-Host "Adding Azure Sphere SDK tools path"
+        Write-Verbose "[Set-Location] SDK tools path is $SdkToolsPath"
+        $Env:Path = $SdkToolsPath + ";" + $Env:Path
+    }
+    if( -not $Env:Path.Contains( $gccPath ) )
+    {
+        Write-Host "Adding latest GNU gcc tools path"
+        Write-Verbose "[Set-Location] GNU gcc path is $gccPath"
+        $Env:Path = $gccPath + ";" + $Env:Path
+    }
+    if( (Get-Location).Path.Contains("AS3Scripts") )
+    {
+        Write-Verbose "[Set-Location] adjusting current directory to root of OTA sample"
+        Set-Location ..
+    }
+}
 
 <#
 .SYNOPSIS
-Checks prerequisites.
+Initializes prerequisites.
 .DESCRIPTION
-Creates CustomPSObject of type ImagePackage with Name, ComponentID, ImageID & FilePath properties from 
-given imagepackage file.
+Initializes the global variables needed for the OTA sample in the Azure Sphere Train-the-trainer Bootcamp
 .INPUTS
-None. You cannot pipe objects to ExtractFrom-Image.
+None. You cannot pipe objects to Initialize-Prerequisites.
 .OUTPUTS
-ImagePackage structure containing Name, ComponentID, ImageID, FilePath 
+Nothing 
 .EXAMPLE
-PS> Check-Prerequisites
-
+PS> Initialize-Prerequisites
 
 #>
-function Check-Prerequisites()
+function Initialize-Prerequisites()
 {
 [cmdletbinding()]
 param()
@@ -779,22 +823,22 @@ param()
 	if( -not (Test-Path -Path $strIoTConnectHLPath) )	{
         Write-Warning "Cannot find $strIoTConnectHLPath.`nPlease check that you have built IoTConnectHL as ""ARM-Debug"" version." -WarningAction Stop
 	} else {
-		$Global:IoTConnectHL = ExtractFrom-ImagePackage -Path $strIoTConnectHLPath
+		$Global:IoTConnectHL = Get-ImagePackageFile -Path $strIoTConnectHLPath
 	}
 	if( -not (Test-Path -Path $strRedSphereRTPath) )	{
         Write-Warning "Cannot find $strRedSphereRTPath.`nPlease check that you have built RedSphereRT as ""ARM-Debug"" version." -WarningAction Stop
 	} else {
-		$Global:RedSphereRT = ExtractFrom-ImagePackage -Path $strRedSphereRTPath
+		$Global:RedSphereRT = Get-ImagePackageFile -Path $strRedSphereRTPath
 	}
 	if( -not (Test-Path -Path $strGreenSphereRTPath) )	{
         Write-Warning "Cannot find $strGreenSphereRTPath.`nPlease check that you have built GreenSphereRT as ""ARM-Debug"" version." -WarningAction Stop
 	} else {
-		$Global:GreenSphereRT = ExtractFrom-ImagePackage -Path $strGreenSphereRTPath
+		$Global:GreenSphereRT = Get-ImagePackageFile -Path $strGreenSphereRTPath
 	}
 	if( -not (Test-Path -Path $strBlueSphereRTPath) )	{
         Write-Warning "Cannot find $strBlueSphereRTPath.`nPlease check that you have built BlueSphereRT as ""ARM-Debug"" version." -WarningAction Stop
 	} else {
-		$Global:BlueSphereRT = ExtractFrom-ImagePackage -Path $strBlueSphereRTPath
+		$Global:BlueSphereRT = Get-ImagePackageFile -Path $strBlueSphereRTPath
 	}
 
 
@@ -831,7 +875,10 @@ param()
 
 }
 
+Set-SdkPaths
 
-Check-Prerequisites -Verbose
+#$env:Path = "C:\Program Files (x86)\Microsoft Azure Sphere SDK\Tools" + ";" + $Env:Path
+#Initialize-Prerequisites -Verbose
+#Get-AS3DeviceGroup -DeviceGroupId 6218460f-143e-4467-a5c7-ba2b026cee62 -Verbose
 
 

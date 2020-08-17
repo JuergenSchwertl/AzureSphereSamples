@@ -8,6 +8,7 @@
 *.user
 *.userosscache
 *.sln.docstates
+*.private
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -333,3 +334,4 @@ ASALocalRun/
 out/
 
 /MCUtoMT3620toAzure/MCUSerialSketch/.vscode
+/SphereBME280/build/

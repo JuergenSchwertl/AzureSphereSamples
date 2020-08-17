@@ -1,0 +1,23 @@
+{
+  "SchemaVersion": 1,
+  "Name" : "SphereOLED",
+  "ComponentId" : "93cbd116-e812-40a3-aa00-c9e36ad96bc5",
+  "EntryPoint": "/bin/app",
+  "CmdArgs": [],
+  "Capabilities": {
+    "AllowedConnections": [],
+    "AllowedTcpServerPorts": [],
+    "AllowedUdpServerPorts": [],
+    "Gpio": [
+      "$MT3620_RDB_BUTTON_A",
+      "$MT3620_RDB_BUTTON_B"
+    ],
+    "Uart": [],
+    "I2cMaster": [ "$MT3620_ISU3_I2C" ],
+    "SpiMaster": [],
+    "WifiConfig": false,
+    "NetworkConfig": false,
+    "SystemTime": true
+  },
+  "ApplicationType": "Default"
+}

@@ -18,14 +18,16 @@
 */
 
 // CONSTANTS 
-
+//#define DEBUG 1
 #define MAX_TRANSITIONS		84				// (5bytes=40bits=80 transitions + 2 initial transitions+2 buffer)
-#define THRESHOLD_COUNT		16
+#define THRESHOLD_COUNT		15
 #define TIMEOUT_COUNT		50
 #define READING_DELAY_TIME	{ 2, 0 }		// DHT11 needs minimum of 2 seconds to recover in between reads
 #define START_DELAY_TIME	{ 0, 18000000 } // 18ms = 18.000.000nsec
 
-
+#if DEBUG
+unsigned static char aCounts[50];
+#endif
 
 
 // GLOBAL VARIABLES
@@ -128,6 +130,9 @@ DHT_SensorData * DHT_ReadData(GPIO_Id gpioPin)
 			*pDataByte = (uint8_t) (*pDataByte << 1); // == <<1
 			if (uSampleCnt > THRESHOLD_COUNT)
 				*pDataByte |= 1;
+#if DEBUG
+			aCounts[uBitCount] = uSampleCnt;
+#endif
 			uBitCount++;
 		}
 		uSampleCnt = 0;
@@ -165,6 +170,13 @@ DHT_SensorData * DHT_ReadData(GPIO_Id gpioPin)
 	else {
 		Log_Debug("[DHT] ERROR: Data not good: %d %d %d %d checksum %d!=%d, skip\n", data[0], data[1], data[2], data[3], data[0] + data[1] + data[2] + data[3], data[4]);
 		dhtLastReading.Humidity = dhtLastReading.TemperatureCelsius = dhtLastReading.TemperatureFahrenheit = -1;
+#if DEBUG
+		for (int i = 0; i < uBitCount; i++)
+		{
+			Log_Debug("%2d ",aCounts[i]);
+		}
+		Log_Debug("\n");
+#endif
 		return NULL; // NOK
 	}
 }

@@ -1,20 +1,25 @@
 #  Copyright (c) Microsoft Corporation. All rights reserved.
 #  Licensed under the MIT License.
 
-CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 PROJECT(RedSphereRT C)
-message("Project ${PROJECT_NAME}")
+message("[JSchwert] Project ${PROJECT_NAME}")
+
+azsphere_configure_tools(TOOLS_REVISION "20.07")
+
+ADD_SUBDIRECTORY("../Shared.ALL" "${CMAKE_CURRENT_BINARY_DIR}/Shared.All")
+INCLUDE_DIRECTORIES("${SharedAll_SOURCE_DIR}")
+
+ADD_SUBDIRECTORY("../Shared.RT" "${CMAKE_CURRENT_BINARY_DIR}/Shared.RT")
+INCLUDE_DIRECTORIES("${SharedRT_SOURCE_DIR}")
+
 
 # Create executable
 ADD_EXECUTABLE(${PROJECT_NAME} main.c )
-INCLUDE_DIRECTORIES("${SharedAll_SOURCE_DIR}")
-
-SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES LINK_DEPENDS "${PROJECT_SOURCE_DIR}/linker.ld")
-#JSchwert TARGET_LINK_OPTIONS require CMake v3.13 (Visual Studio 2017 only has CMake 3.12)
-#TARGET_LINK_OPTIONS(${PROJECT_NAME}  PRIVATE  -T "${PROJECT_SOURCE_DIR}/linker.ld" )
-SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES LINK_FLAGS "-T \"${PROJECT_SOURCE_DIR}/linker.ld\"")
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} SharedAll SharedRT)
 
+set_target_properties(${PROJECT_NAME} PROPERTIES LINK_DEPENDS ${CMAKE_SOURCE_DIR}/linker.ld)
+
 # Add MakeImage post-build command
-INCLUDE("${AZURE_SPHERE_MAKE_IMAGE_FILE}")
+azsphere_target_add_image_package(${PROJECT_NAME})
  

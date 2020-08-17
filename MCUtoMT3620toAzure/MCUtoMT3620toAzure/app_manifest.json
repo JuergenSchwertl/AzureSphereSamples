@@ -2,8 +2,8 @@
   "SchemaVersion": 1,
   "Name": "MCUtoMT3620toAzure",
   "ComponentId": "B3A4C1C2-0AA9-41AD-A8A7-4DE822FE84D3",
+  "ApplicationType": "Default",
   "EntryPoint": "/bin/app",
-  "TargetApplicationRuntimeVersion": 3,
   "CmdArgs": [ "**your DPS Scope ID**" ],
   "Capabilities": {
     "AllowedConnections": [ "global.azure-devices-provisioning.net", "**your Azure IoT Hub**.azure-devices.net" ],

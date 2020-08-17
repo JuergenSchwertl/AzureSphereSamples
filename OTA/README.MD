@@ -54,21 +54,34 @@ The output locations of the real-time capable Azure Sphere applications appears 
 
 >**Note**
 >To enable multiple debugging targets, I've applied some amendments to the default *lauch.vs.json* file:
->```json
->      "name": "RedSphereRT (RTCore GDB)",
->      "workingDirectory": "${workspaceRoot}\\RedSphereRT",
->      "applicationPath": "${cmake.buildRoot}\\RedSphereRT\\RedSphereRT.out",
->      "imagePath": "${cmake.buildRoot}\\RedSphereRT\\RedSphereRT.imagepackage",
->      "partnerComponents": [ "33e04e8f-a020-4af8-80d0-8064343e0616" ]
->```
+
+<pre><code>{
+  "type": "azurespheredbg",
+  "name": "RedSphereRT (RTCore GDB)",
+  "project": "<b>RedSphereRT/CMakeLists.txt</b>",
+  "inheritEnvironments": [
+    "AzureSphere"
+  ],
+  "customLauncher": "AzureSphereLaunchOptions",
+  "workingDirectory": "<b>${workspaceRoot}\\RedSphereRT</b>",
+  "applicationPath": "${debugInfo.target}",
+  "imagePath": "${debugInfo.targetImage}",
+  "targetCore": "<b>RTCore</b>",
+  <b>"partnerComponents": [ 
+    "33e04e8f-a020-4af8-80d0-8064343e0616", 
+    "7E5FAB32-801C-4EDF-A1AA-9263652AA6BD", 
+    "07562362-3FEC-46C8-B0AF-DB9507F32748" ]</b>
+},</code></pre>
+
 >For each real-time capable application I've added a seperate *configurations* list entry with
 >* **name** giving it a unique name that is going to be listed in the **Select Startup Menu**
+>* **project** points to the CMakeLists.tx of the individual app.
 >* **workingDirectory** points to the source directory of the individual app.
->* **applicationPath** points to the output file in the output tree derived from the *buildRoot* property defined in *CMakeSettings.json* (prefixed by *cmake.*).
->* **imagePath**: points to the imagepackage of the real-time capable application  to be deployed to the Azure Sphere device. The MakeImage post build command packages it in the same directory as above.
->* **partnerComponents**: lists the ComponentId of the high-level connectivety app ( IoTConnectHL  ). This setting is required for the debugger to not remove 
->the previously sideloaded high-level application (the one we have running in the other Visual Studio instance debugging session). 
+>* **partnerComponents**: lists the ComponentId of the high-level connectivety app ( IoTConnectHL, GreenSphereRT and BlueSphereRT  ). 
+>This setting is required for the debugger to not remove the previously sideloaded high-level application 
+>(the one we have running in the other Visual Studio instance debugging session). 
 
+>**Warning:** If you would use "targetCore": "<i>AnyCore</i>", VS would try to deploy all 4 apps together!
 
 Now change back to the Visual Studio instance running IoTConnectHL. The debug output window should show it 
 connecting to Azure IoT Hub and then show output alike
@@ -115,7 +128,7 @@ It should show both apps deployed and indicate debugging the high-level app
 ```
 Now manually deploy another application to get the second M4 core some work as well. 
 ```
-azsphere dev sideload deploy -p out\ARM-Debug-3Beta1909\GreenSphereRT\GreenSphereRT.imagepackage
+azsphere dev sideload deploy -p .\GreenSphereRT\out\ARM-Debug\GreenSphereRT.imagepackage
 azsphere dev app show-status
 ```
 It should show all three applications running side by side and have LED1 blinking red and LED2 blinking green
