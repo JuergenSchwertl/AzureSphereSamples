@@ -4,57 +4,57 @@
   "configurations": [
     {
       "type": "azurespheredbg",
-      "name": "GDB Debugger (All Cores)",
+      "name": "IoTConnectHL (POSIX)",
       "project": "IoTConnectHL/CMakeLists.txt",
       "inheritEnvironments": [
         "AzureSphere"
       ],
       "DebugBuildStepBuildAll": "true",
-      "workingDirectory": "${workspaceRoot}",
+      "workingDirectory": "${workspaceRoot}\\IoTConnectHL",
       "applicationPath": "${debugInfo.target}",
       "imagePath": "${debugInfo.targetImage}",
-      "targetCore": "AnyCore",
-      "partnerComponents": [ "33e04e8f-a020-4af8-80d0-8064343e0616", "7E5FAB32-801C-4EDF-A1AA-9263652AA6BD", "07562362-3FEC-46C8-B0AF-DB9507F32748" ]
+      "targetCore": "HLCore",
+      "partnerComponents": [ "f4e25978-6152-447b-a2a1-64577582f327", "7E5FAB32-801C-4EDF-A1AA-9263652AA6BD", "07562362-3FEC-46C8-B0AF-DB9507F32748" ]
     },
     {
       "type": "azurespheredbg",
       "name": "RedSphereRT (RTCore GDB)",
-      "project": "CMakeLists.txt",
+      "project": "RedSphereRT/CMakeLists.txt",
       "inheritEnvironments": [
         "AzureSphere"
       ],
       "customLauncher": "AzureSphereLaunchOptions",
       "workingDirectory": "${workspaceRoot}\\RedSphereRT",
-      "applicationPath": "${cmake.buildRoot}\\RedSphereRT\\RedSphereRT.out",
-      "imagePath": "${cmake.buildRoot}\\RedSphereRT\\RedSphereRT.imagepackage",
+      "applicationPath": "${debugInfo.target}",
+      "imagePath": "${debugInfo.targetImage}",
       "targetCore": "RTCore",
       "partnerComponents": [ "33e04e8f-a020-4af8-80d0-8064343e0616", "7E5FAB32-801C-4EDF-A1AA-9263652AA6BD", "07562362-3FEC-46C8-B0AF-DB9507F32748" ]
     },
     {
       "type": "azurespheredbg",
       "name": "GreenSphereRT (RTCore GDB)",
-      "project": "CMakeLists.txt",
+      "project": "GreenSphereRT/CMakeLists.txt",
       "inheritEnvironments": [
         "AzureSphere"
       ],
       "customLauncher": "AzureSphereLaunchOptions",
       "workingDirectory": "${workspaceRoot}\\GreenSphereRT",
-      "applicationPath": "${cmake.buildRoot}\\GreenSphereRT\\GreenSphereRT.out",
-      "imagePath": "${cmake.buildRoot}\\GreenSphereRT\\GreenSphereRT.imagepackage",
+      "applicationPath": "${debugInfo.target}",
+      "imagePath": "${debugInfo.targetImage}",
       "targetCore": "RTCore",
       "partnerComponents": [ "33e04e8f-a020-4af8-80d0-8064343e0616", "F4E25978-6152-447B-A2A1-64577582F327", "07562362-3FEC-46C8-B0AF-DB9507F32748" ]
     },
     {
       "type": "azurespheredbg",
       "name": "BlueSphereRT (RTCore GDB)",
-      "project": "CMakeLists.txt",
+      "project": "BlueSphereRT/CMakeLists.txt",
       "inheritEnvironments": [
         "AzureSphere"
       ],
       "customLauncher": "AzureSphereLaunchOptions",
       "workingDirectory": "${workspaceRoot}\\BlueSphereRT",
-      "applicationPath": "${cmake.buildRoot}\\BlueSphereRT\\BlueSphereRT.out",
-      "imagePath": "${cmake.buildRoot}\\BlueSphereRT\\BlueSphereRT.imagepackage",
+      "applicationPath": "${debugInfo.target}",
+      "imagePath": "${debugInfo.targetImage}",
       "targetCore": "RTCore",
       "partnerComponents": [ "33e04e8f-a020-4af8-80d0-8064343e0616", "F4E25978-6152-447B-A2A1-64577582F327", "7E5FAB32-801C-4EDF-A1AA-9263652AA6BD" ]
     }

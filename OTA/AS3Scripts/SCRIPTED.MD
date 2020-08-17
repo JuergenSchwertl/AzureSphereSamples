@@ -32,9 +32,15 @@ Alternatively, if you're running on Windows and want to peek at the source codes
 ```sh
 powershell_ise .\AS3Scripts\OTA.ps1
 ```
-Press **F5** to populate the cmdlets and run the script:
+Press **F5** to populate the cmdlets and run the script.
+>**Note:** If you loaded the script in Visual Studio or Visual STudio Code and ran it from there, you'll see that the script checks 
+>if the Azure Sphere SDK is in the path and add the path settings accordingly.
 
-In both cases you should see output like
+To set a few global variables that make life a bit easier, run 
+```PowerShell
+Initialize-Prerequisites
+```
+You should see output like:
 ```
 Checking for image-packages in directory tree....
 Found 'IoTConnectHL' with ImageId 29441244-b818-49d4-941d-62b8d41def92
@@ -63,7 +69,7 @@ IoTConnect-App (POSIX) 33e04e8f-a020-4af8-80d0-8064343e0616 e5a28a7d-5118-4e10-9
 ```
 
 >**Note** 
->If you happened to run the manual instructions, the three Products and their Devicegroups will already exist. You can then continue with [Create Deployments](#Create Deployments).  
+>If you happened to run the manual instructions, the three Products and their Devicegroups will already exist. You can then continue with [Upload Images](#Upload Images).  
 
 #### Create products
 ```PowerShell
@@ -80,9 +86,9 @@ can access them e.g. through  `$Global:RedSphereProduct.DeviceGroupList["Product
 The script has the relative paths to the image packages pre-defined and has extracted the ImageId of the ImagePackage already
 ```PowerShell
 Add-AS3Image -FilePath $IoTConnectHL.FilePath
-Add-AS3Image -FilePath $RedSphere.FilePath
+Add-AS3Image -FilePath $RedSphereRT.FilePath
 Add-AS3Image -FilePath $GreenSphereRT.FilePath
-Add-AS3Image -FilePath $BlueSphere.FilePath
+Add-AS3Image -FilePath $BlueSphereRT.FilePath
 ```
 
 #### Create Deployments
@@ -115,7 +121,7 @@ will now show that the device is targeted with the RedSphereRT application, that
 
 Now change it to another product and device group
 ```PowerShell
-azsphere dev upd -dgi $GreenSphereProduct.DeviceGroupList["Field Test"]
+azsphere dev update -dgi $GreenSphereProduct.DeviceGroupList["Field Test"]
 ```
 You would expect the green LED starting to blink but will realize that not much is going to change. 
 ```PowerShell
@@ -139,3 +145,25 @@ azsphere dev app show-status
 also reveals that we now have both targeted apps installed and running.
 
 ### Well done!
+
+
+[Go back to "Multi-Core app and OTA deployment lab"](../README.MD)
+---
+
+### Disclaimer
+
+#### Sample code - No Warranties
+THE SAMPLE CODE SOFTWARE IS PROVIDED "AS IS" AND WITHOUT WARRANTY.TO THE MAXIMUM EXTENT 
+PERMITTED BY LAW, MICROSOFT DISCLAIMS ANY AND ALL OTHER WARRANTIES, WHETHER EXPRESS OR 
+IMPLIED, INCLUDING, BUT NOT LIMITED TO, ANY IMPLIED WARRANTIES OF MERCHANTABILITY, 
+NON - INFRINGEMENT, OR FITNESS FOR A PARTICULAR PURPOSE, WHETHER ARISING BY A COURSE 
+OF DEALING, USAGE OR TRADE PRACTICE OR COURSE OF PERFORMANCE.
+In no event shall Microsoft, its licensors, the authors or copyright holders be liable 
+for any claim, damages or other liability, whether in an action of contract, tort or 
+otherwise, arising from, out of or in connection with the software or the use thereof.
+
+This code may contain errors and/or may not operate correctly. Microsoft undertakes no 
+duty to correct any errors or update the software. Your use of this code is optional and 
+subject to any license provided therewith or referenced therein, if any. Microsoft does 
+not provide you with any license or other rights to any Microsoft product or service 
+through the code provided to you.
