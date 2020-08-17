@@ -4,6 +4,20 @@
   "configurations": [
     {
       "type": "azurespheredbg",
+      "name": "GDB Debugger (All Cores)",
+      "project": "IoTConnectHL/CMakeLists.txt",
+      "inheritEnvironments": [
+        "AzureSphere"
+      ],
+      "DebugBuildStepBuildAll": "true",
+      "workingDirectory": "${workspaceRoot}",
+      "applicationPath": "${debugInfo.target}",
+      "imagePath": "${debugInfo.targetImage}",
+      "targetCore": "AnyCore",
+      "partnerComponents": [ "33e04e8f-a020-4af8-80d0-8064343e0616", "7E5FAB32-801C-4EDF-A1AA-9263652AA6BD", "07562362-3FEC-46C8-B0AF-DB9507F32748" ]
+    },
+    {
+      "type": "azurespheredbg",
       "name": "RedSphereRT (RTCore GDB)",
       "project": "CMakeLists.txt",
       "inheritEnvironments": [

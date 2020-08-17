@@ -3,14 +3,14 @@
   "Name": "IoTConnectHL",
   "ComponentId": "33e04e8f-a020-4af8-80d0-8064343e0616",
   "EntryPoint": "/bin/app",
-  "CmdArgs": [ "--- YOUR IOT CENTRAL DPS SCOPE ID ---" ],
+  "CmdArgs": [ "0ne0002304B" ],
   "Capabilities": {
-    "AllowedConnections": [ "global.azure-devices-provisioning.net", "--- YOUR IOT CENTRAL IOTHUB DNS NAME ---" ],
+    "AllowedConnections": [ "global.azure-devices-provisioning.net", "JS-MS-Iot-Hub.azure-devices.net" ],
     "AllowedApplicationConnections": [ "F4E25978-6152-447B-A2A1-64577582F327", "7E5FAB32-801C-4EDF-A1AA-9263652AA6BD", "07562362-3FEC-46C8-B0AF-DB9507F32748" ],
     "Gpio": [ "$MT3620_RDB_BUTTON_A" ],
     "Uart": [],
     "WifiConfig": false,
-    "DeviceAuthentication": "--- YOUR AZURE SPHERE TENANT ID--- "
+    "DeviceAuthentication": "c0b88764-9273-46ab-bab2-effecf13f91c"
   },
   "ApplicationType": "Default"
 }
