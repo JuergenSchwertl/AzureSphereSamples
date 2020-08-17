@@ -1,5 +1,4 @@
 # AzureSphereSamples for 20.07 Azure Sphere SDK Version
-**Please be aware that the Samples.20XX branch is a working branch and not all samples may be fully functional on 20.07 yet.**
 
 This repo contains sources and links for Azure Sphere Bootcamp labs, amongst other Azure Sphere Samples for 
 connected MCUs, sensors and other peripherals.
