@@ -88,14 +88,14 @@ Fortunately the Azure Sphere product group has a tool available that unveils all
 In the [Tools directory](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/AzureIoT/Tools) You will find a tool called
 `ShowIoTCentralConfig.exe` that nicely extracts all that information from IoT Central similar to the following:
 
-<div class="extended-markdown tip border rounded-1 mb-4 p-3 border-blue bg-blue-light f5">
+<DIV class="extended-markdown tip border rounded-1 mb-4 p-3 border-blue bg-blue-light f5">
 <p><b>Tip:</b> This is a special tip markdown</p>
-</div>
+</DIV>
 
 
-<div class="extended-markdown warning border rounded-1 mb-4 p-3 border-red bg-red-light f5">
+<DIV class="extended-markdown warning border rounded-1 mb-4 p-3 border-red bg-red-light f5">
 <p><b>Tip:</b> This is a special tip markdown</p>
-</div>
+</DIV>
 
 <pre><code>
 C:\&gt;<b>ShowIoTCentralConfig.exe</b>
