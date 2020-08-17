@@ -88,18 +88,19 @@ Fortunately the Azure Sphere product group has a tool available that unveils all
 In the [Tools directory](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/AzureIoT/Tools) You will find a tool called
 `ShowIoTCentralConfig.exe` that nicely extracts all that information from IoT Central similar to the following:
 
+<style>cmd{color:red}</style>
 <pre><code>
 C:\&gt;<b>ShowIoTCentralConfig.exe</b>
 Tool to show Azure IoT Central configuration for Azure Sphere applications
 Are you using a legacy (2018) IoT Central application (Y/N)
 > <b>N</b>
 Enter the IoT Central App URL (e.g. https://myapp.azureiotcentral.com)
-> <b>https://**YOUR_IOTCENTRAL_APP**.azureiotcentral.com/</b>
+> <b class="cmd">https://**YOUR_IOTCENTRAL_APP**.azureiotcentral.com/</b>
 You need to generate an Azure IoT Central application API Token (Adminstration | API tokens), this requires Application administrator rights
 Enter your Azure IoT Central application API Token
-> <b>**Your API token from Administration -> API tokens ***</b>
+> <b class="cmd">**Your API token from Administration -> API tokens ***</b>
 Enter the ID Scope from the IoT Central App (Administration | Device connection)
-> <b>**Your DPS scope ID from Administration -> Device Connection ***</b><br />
+> <b class="cmd">**Your DPS scope ID from Administration -> Device Connection ***</b><br />
 Find and modify the CmdArgs, AllowedConnections and DeviceAuthentication lines in your app_manifest.json so each includes the 
 content from the below:
 <b>"CmdArgs": [ "--ConnectionType DPS", "--ScopeID 0ne000A5318" ],
