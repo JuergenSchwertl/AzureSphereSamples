@@ -27,14 +27,14 @@ Class ImagePackage
 
 }
 
-<# ImagePackage structure for IoTConnectHL POSIX application #>
-[ImagePackage] $IoTConnectHL  = $null
-<# ImagePackage structure for RedSphereRT real-time application #>
-[ImagePackage] $RedSphereRT   = $null
-<# ImagePackage structure for GreenSphereRT real-time application #>
-[ImagePackage] $GreenSphereRT = $null
-<# ImagePackage structure for BlueSphereRT real-time application #>
-[ImagePackage] $BlueSphereRT  = $null
+# <# ImagePackage structure for IoTConnectHL POSIX application #>
+# [ImagePackage] $IoTConnectHL  = $null
+# <# ImagePackage structure for RedSphereRT real-time application #>
+# [ImagePackage] $RedSphereRT   = $null
+# <# ImagePackage structure for GreenSphereRT real-time application #>
+# [ImagePackage] $GreenSphereRT = $null
+# <# ImagePackage structure for BlueSphereRT real-time application #>
+# [ImagePackage] $BlueSphereRT  = $null
 
 
 
@@ -823,22 +823,26 @@ param()
 	if( -not (Test-Path -Path $strIoTConnectHLPath) )	{
         Write-Warning "Cannot find $strIoTConnectHLPath.`nPlease check that you have built IoTConnectHL as ""ARM-Debug"" version." -WarningAction Stop
 	} else {
-		$Global:IoTConnectHL = Get-ImagePackageFile -Path $strIoTConnectHLPath
+        $Global:IoTConnectHL = Get-ImagePackageFile -Path $strIoTConnectHLPath
+        Write-Verbose "'$strIoTConnectHLPath' has image id $($Global:IoTConnectHL.ImageId)"
 	}
 	if( -not (Test-Path -Path $strRedSphereRTPath) )	{
         Write-Warning "Cannot find $strRedSphereRTPath.`nPlease check that you have built RedSphereRT as ""ARM-Debug"" version." -WarningAction Stop
 	} else {
 		$Global:RedSphereRT = Get-ImagePackageFile -Path $strRedSphereRTPath
+        Write-Verbose "'$strRedSphereRTPath' has image id $($Global:RedSphereRT.ImageId)"
 	}
 	if( -not (Test-Path -Path $strGreenSphereRTPath) )	{
         Write-Warning "Cannot find $strGreenSphereRTPath.`nPlease check that you have built GreenSphereRT as ""ARM-Debug"" version." -WarningAction Stop
 	} else {
 		$Global:GreenSphereRT = Get-ImagePackageFile -Path $strGreenSphereRTPath
+        Write-Verbose "'$strGreenSphereRTPath' has image id $($Global:GreenSphereRT.ImageId)"
 	}
 	if( -not (Test-Path -Path $strBlueSphereRTPath) )	{
         Write-Warning "Cannot find $strBlueSphereRTPath.`nPlease check that you have built BlueSphereRT as ""ARM-Debug"" version." -WarningAction Stop
 	} else {
-		$Global:BlueSphereRT = Get-ImagePackageFile -Path $strBlueSphereRTPath
+        $Global:BlueSphereRT = Get-ImagePackageFile -Path $strBlueSphereRTPath
+        Write-Verbose "'$strBlueSphereRTPath' has image id $($Global:BlueSphereRT.ImageId)"
 	}
 
 

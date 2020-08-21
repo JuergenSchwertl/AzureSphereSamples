@@ -1,0 +1,47 @@
+{
+	"folders": [
+		{
+			"path": "RedSphereRT"
+		},
+		{
+			"path": "GreenSphereRT"
+		},
+		{
+			"path": "BlueSphereRT"
+		},
+		{
+			"path": "IoTConnectHL"
+		},
+		{
+			"path": "Shared.All"
+		},
+		{
+			"path": "Shared.RT"
+		},
+		{
+			"path": "AS3Scripts"
+		}
+	],
+	"settings": {},
+	"launch" : {
+        "configurations": [{
+            "name": "Launch for Azure Sphere Applications (gdb)",
+            "type": "azurespheredbg",
+            "request": "launch",
+            "args": [],
+            "stopAtEntry": false,
+            "environment": [],
+            "externalConsole": true,
+            "partnerComponents": [ "f4e25978-6152-447b-a2a1-64577582f327", "7E5FAB32-801C-4EDF-A1AA-9263652AA6BD", "07562362-3FEC-46C8-B0AF-DB9507F32748" ],
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }],
+		"compounds": []
+	}
+}

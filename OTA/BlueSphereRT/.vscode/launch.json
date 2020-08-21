@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch IoTConnectHL (gdb)",
+            "name": "Launch BlueSphereRT (gdb)",
             "type": "azurespheredbg",
             "request": "launch",
             "args": [],
@@ -13,8 +13,8 @@
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": true,
-            "targetCore": "HLCore",
-            "partnerComponents": [ "F4E25978-6152-447B-A2A1-64577582F327", "7E5FAB32-801C-4EDF-A1AA-9263652AA6BD", "07562362-3FEC-46C8-B0AF-DB9507F32748" ],
+            "targetCore": "RTCore",
+            "partnerComponents": [],
             "MIMode": "gdb",
             "setupCommands": [
                 {
