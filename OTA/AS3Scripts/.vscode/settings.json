@@ -1,0 +1,13 @@
+{
+    "files.defaultLanguage": "powershell",
+    "powershell.integratedConsole.focusConsoleOnExecute": false,
+    "powershell.integratedConsole.showOnStartup": false,
+    "[powershell]": {
+        "editor.renderWhitespace": "all",
+        "editor.renderControlCharacters": true,
+        "files.trimTrailingWhitespace": true,
+        "files.encoding": "utf8bom",
+        "files.autoGuessEncoding": true,
+        "editor.tabCompletion": "on"
+    }
+}
