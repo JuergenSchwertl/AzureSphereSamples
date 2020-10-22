@@ -38,13 +38,13 @@ GPIO blocks, timer IRQs and for inter-core communications.
     **Tip:** To easily get the path, Right-Click the root in the Solution Explorer window and click "Copy path" and paste it into the 
     Azure Sphere command shell after a CD command.
 
-#### Working with Visual Studio
-
 There are multiple ways to work with Visual Studio and multi-core applications. 
 You can either open the individual project sub-directories and follow the instructions there, i.e. [IoTConnectHL: High-level connectivety application (POSIX)](IoTConnectHL/README.MD) to build and deploy the first
 application and then open another instance of Visual Studion and follow the instructions in [RedSphereRT: real-time-capable application](RedSphereRT/README.MD) .
 
-Or you can continue here and start off the main directory:
+Or you can continue here and start off the main directory [Using Visual Studio][] or [Using Visual Studio Code][]:
+
+### Using Visual Studio
 
 **Build all apps and deploy the high-level application**
 
@@ -192,6 +192,53 @@ messages to both real-time capable applications:
     [InterCore]: Received 'recv' from F4E25978-6152-447B-A2A1-64577582F327
     [InterCore]: Received 'recv' from 7E5FAB32-801C-4EDF-A1AA-9263652AA6BD
 ```
+
+### Using Visual Studio Code
+
+**Build all apps and deploy the high-level application**
+1. Start a Visual Studio instance.
+1. From the **File** menu, select **Open Workspace...** and open the *./OTA/MultiCoreApp.code-workspace*.
+1. Open **View->Command Palette... (Ctrl-Shift-P)**  and enter "CMake: Clean Rebuild All Projects"
+1. RightClick the blue status bar and make sure that "CMake Tools (Extension)" is active. Click on the ![VSC folder](../Images/VSC_BuildFolder.png)-Icon and select "IoTConnectHL".<br>
+It should now look like: ![VSC Status Bar](../Images/VSC_StatusBar.png)
+1. Click on the Debug-Icon on the left NavBar (or press Ctrl-Shift-D) and select "Launch IoTConnectHL (gdb) (IoTConnectHL)" from the list.
+1. Press F5 to start debugging
+
+Once the Debug Console shows that it "Loaded 'target:/usr/lib/.... Symbols loaded." You can switch back to the "Output"
+
+```
+    Deploying image...
+    Starting application...
+    33e04e8f-a020-4af8-80d0-8064343e0616
+    App state   : debugging
+    GDB port    : 2345
+    Output port : 2342
+    Core        : High-level
+    Azure Sphere SDK Directory: C:\Program Files (x86)\Microsoft Azure Sphere SDK\
+    Azure Sphere SDK Directory: C:\Program Files (x86)\Microsoft Azure Sphere SDK\
+    Starting debugger....
+
+    Process /mnt/apps/33e04e8f-a020-4af8-80d0-8064343e0616/bin/app created; pid = 66
+    Listening on port 2345
+
+    Remote debugging from host 192.168.35.1, port 54990
+
+    INFO: Azure IoT application starting.
+    INFO: Opening MT3620_RDB_BUTTON_A.
+    [Azure IoT] Using HSM cert at /run/daa/c0b88764-9273-46ab-bab2-effecf13f91c
+    [Azure IoT] IoTHubDeviceClient_CreateWithAzureSphereDeviceAuthProvisioning returned 'AZURE_SPHERE_PROV_RESULT_OK'.
+    [Azure IoT] INFO: AzureIoT_DoPeriodicTasks calls in progress...
+    INFO: IoT Hub Connection Status Changed to 1.
+    [Azure IoT] INFO: connection to the IoT Hub has been established (IOTHUB_CLIENT_CONNECTION_OK).
+    [Azure IoT] INFO: AzureIoT_DoPeriodicTasks calls in progress...
+    [Azure IoT] INFO: AzureIoT_DoPeriodicTasks calls in progress...
+```
+
+>**Note:** Visual Studio Code doesn't support to debug multiple apps in one instance so you need to open another 
+>Visual Studio Code Instance to debug the RTCore app.
+
+
+
  ## Part2: OTA deployment
 
 Now it's time to look at how to [deploy the apps over the air (OTA)](./AS3Scripts/README.MD).

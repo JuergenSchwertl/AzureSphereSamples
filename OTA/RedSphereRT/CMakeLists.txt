@@ -6,13 +6,13 @@ PROJECT(RedSphereRT C)
 message("[JSchwert] Project ${PROJECT_NAME}")
 
 azsphere_configure_tools(TOOLS_REVISION "20.07")
-
+# real-time capable apps don't need the API-set
+   
 ADD_SUBDIRECTORY("../Shared.ALL" "${CMAKE_CURRENT_BINARY_DIR}/Shared.All")
 INCLUDE_DIRECTORIES("${SharedAll_SOURCE_DIR}")
 
 ADD_SUBDIRECTORY("../Shared.RT" "${CMAKE_CURRENT_BINARY_DIR}/Shared.RT")
 INCLUDE_DIRECTORIES("${SharedRT_SOURCE_DIR}")
-
 
 # Create executable
 ADD_EXECUTABLE(${PROJECT_NAME} main.c )

@@ -28,19 +28,8 @@ to the documentation in the [master directory](../README.MD).
 1. Close the window after the command completes because administrator privilege is no longer required.  
     **Note:** As a best practice, you should always use the lowest privilege that can accomplish a task.
 
-**Build and deploy the application**
-
-1. Start Visual Studio.
-1. From the **File** menu, select **Open > CMake...** and navigate to the *RedSphereRT*-folder.
-1. Select the file CMakeLists.txt and then click **Open**.
-1. From the **CMake** menu (if present), select **Build All**. If the menu is not present, open Solution Explorer, 
-right-click the CMakeLists.txt file, and select **Build**. This step automatically performs the manual packaging steps. 
-The output location of the Azure Sphere application appears in the Output window.
-1. From the **Select Startup Item** menu, on the tool bar, select **RedSphereRT (RTCore GDB)**.
-1. Press F5 to start the application with debugging. LED1 will blink red. Press button A to change the blink rate.
-
-**Note:** The *app_manifest.json* differs between the real-time capable applications obviously 
-on the *"Name"*, *"ComponentId"* properties and most notably in the used "Gpio".
+>The *app_manifest.json* differs between the real-time capable applications obviously 
+>on the *"Name"*, *"ComponentId"* properties and most notably in the used "Gpio".
 
 ```json
 {
@@ -57,6 +46,30 @@ on the *"Name"*, *"ComponentId"* properties and most notably in the used "Gpio".
 }
 ```
 
+Again you can chose [Using Visual Studio][] or [Using Visual Studio Code][]:
+
+### Using Visual Studio
+
+**Build and deploy the application**
+
+1. Start Visual Studio.
+1. From the **File** menu, select **Open > CMake...** and navigate to the *RedSphereRT*-folder.
+1. Select the file CMakeLists.txt and then click **Open**.
+1. From the **CMake** menu (if present), select **Build All**. If the menu is not present, open Solution Explorer, 
+right-click the CMakeLists.txt file, and select **Build**. This step automatically performs the manual packaging steps. 
+The output location of the Azure Sphere application appears in the Output window.
+1. From the **Select Startup Item** menu, on the tool bar, select **RedSphereRT (RTCore GDB)**.
+1. Press F5 to start the application with debugging. LED1 will blink red. Press button A to change the blink rate.
+
+
+### Using Visual Studio Code
+
+**Build and deploy the application**
+1. Start a new Instance of Visual Studio Code (e.g. Shift-Click the VSC-Icon in the Windows Taskbar )
+2. **File->Open Folder... (Ctrl-K Ctrl-O)** and open the *./OTA/RedSphereRT* folder.
+3. Hit F5 to run the application with debugging. LED1 will blink red. Press button A to change the blink rate.
+
+>**Note:** : There is no debugging output via GDB for real-time applications.
 
 ---
 [Go back to "Multi-Core app and OTA deployment lab"](../README.MD)

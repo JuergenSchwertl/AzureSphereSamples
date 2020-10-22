@@ -335,3 +335,4 @@ out/
 
 /MCUtoMT3620toAzure/MCUSerialSketch/.vscode
 /SphereBME280/build/
+/OTA/Shared.All/build
