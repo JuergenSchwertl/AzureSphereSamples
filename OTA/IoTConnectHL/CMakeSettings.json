@@ -1,7 +1,8 @@
 ﻿{
   "environments": [
     {
-      "environment": "AzureSphere"
+      "environment": "AzureSphere",
+      "BuildAllBuildsAllRoots": "true"
     }
   ],
   "configurations": [

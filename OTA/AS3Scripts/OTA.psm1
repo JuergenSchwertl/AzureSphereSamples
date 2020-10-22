@@ -41,7 +41,7 @@ Class ImagePackage
 class AS3EntityBase
 {
 <#
-.SYNOPSIS 
+.SYNOPSIS
 Entity base class with Id, Name, Description
 #>
 
@@ -51,10 +51,10 @@ Entity base class with Id, Name, Description
     [String] $Description
 
     # public empty constructor
-    AS3EntityBase(){} 
+    AS3EntityBase(){}
 
     # public full constructor
-    AS3EntityBase( 
+    AS3EntityBase(
         [String] $IdString,
         [String] $Name,
         [String] $Description
@@ -66,7 +66,7 @@ Entity base class with Id, Name, Description
     }
 
     # public constructor
-    AS3EntityBase( 
+    AS3EntityBase(
         [String] $IdString,
         [String] $Name
     )
@@ -96,9 +96,9 @@ Class Deployment
     [DateTime] $DeploymentDateUTC
     [Guid[]] $DeployedImages
 
-    Deployment(){} 
+    Deployment(){}
 
-    Deployment( 
+    Deployment(
         [String] $IdString,
         [String] $Timestamp
     )
@@ -107,7 +107,7 @@ Class Deployment
         $this.DeploymentDateUTC = [DateTime]::Parse($Timestamp)
 
     }
-    Deployment( 
+    Deployment(
         [String] $IdString,
         [String] $Timestamp,
         [String] $Images
@@ -115,7 +115,7 @@ Class Deployment
     {
         $this.Id = [Guid]::new( $IdString )
         $this.DeploymentDateUTC = [DateTime]::Parse($Timestamp)
-        $img = $Images.Substring(1,$Images.Length-2) #remove "[]" 
+        $img = $Images.Substring(1,$Images.Length-2) #remove "[]"
         $imgLst = $img.Replace(", ", ",").Split(",") #get rid of ", " spaces
         $this.DeployedImages = $imgLst.ForEach( {  return  [Guid]::new($_) } )
     }
@@ -129,7 +129,7 @@ Class Deployment
 Enum OsFeedType
 {
 <#
-.SYNOPSIS 
+.SYNOPSIS
 OsFeedType enumeration with Retail and RetailEval members
 #>
     Retail
@@ -139,7 +139,7 @@ OsFeedType enumeration with Retail and RetailEval members
 Enum ApplicationUpdatePolicy
 {
 <#
-.SYNOPSIS 
+.SYNOPSIS
 ApplicationUpdatePolicy enumeration with On (allows OTA application updates) and Off (allows only OS updates) members
 #>
     On
@@ -152,7 +152,7 @@ ApplicationUpdatePolicy enumeration with On (allows OTA application updates) and
 Class DeviceGroup : AS3EntityBase
 {
 <#
-.SYNOPSIS 
+.SYNOPSIS
 DeviceGroup class with Id, Name, Description, OS Feed Type and UpdatePolicy
 #>
 
@@ -163,16 +163,16 @@ DeviceGroup class with Id, Name, Description, OS Feed Type and UpdatePolicy
     [HashTable] $Deployments = $null
 
     # public constructor
-    DeviceGroup( 
+    DeviceGroup(
         [String] $IdString,
         [String] $Name
     ) : base($IdString, $Name){ }
 
     # public constructor
-    DeviceGroup( 
+    DeviceGroup(
         [String] $Id,
         [String] $Name,
-        [String] $Description 
+        [String] $Description
     ) : base($Id, $Name, $Description){ }
 
 }
@@ -183,7 +183,7 @@ DeviceGroup class with Id, Name, Description, OS Feed Type and UpdatePolicy
 Class Product  : AS3EntityBase
 {
 <#
-.SYNOPSIS 
+.SYNOPSIS
 Product class with Id, Name, Description properties; public constructors and ToString overrides
 #>
 
@@ -191,10 +191,10 @@ Product class with Id, Name, Description properties; public constructors and ToS
     [HashTable] $DeviceGroupList = $null
 
     # public empty constructor
-    Product() : base(){} 
+    Product() : base(){}
 
     # public full constructor
-    Product( 
+    Product(
         [String] $IdString,
         [String] $Name,
         [String] $Description
@@ -213,21 +213,21 @@ Product class with Id, Name, Description properties; public constructors and ToS
 .SYNOPSIS
 Extracts ComponentID, ImageID from given imagepackage file.
 .DESCRIPTION
-Creates CustomPSObject of type ImagePackage with Name, ComponentID, ImageID & FilePath properties from 
+Creates CustomPSObject of type ImagePackage with Name, ComponentID, ImageID & FilePath properties from
 given imagepackage file.
 .PARAMETER Path
 Specifies the path to the .imagepackage file
 .INPUTS
 None. You cannot pipe objects to Get-ImagePackageFile.
 .OUTPUTS
-ImagePackage structure containing Name, ComponentID, ImageID, FilePath 
+ImagePackage structure containing Name, ComponentID, ImageID, FilePath
 .EXAMPLE
 PS> Get-ImagePackageFile -path "./RedSphereRT.imagepackage"
-Name ComponentID                          ImageID                              FilePath                  
----- -----------                          -------                              --------                  
+Name ComponentID                          ImageID                              FilePath
+---- -----------                          -------                              --------
 Test f4e25978-6152-447b-a2a1-64577582f327 1b45e9b9-d339-4905-89c1-2a0ecf16f665 .\RedSphereRT.imagepackage
 #>
-function Get-ImagePackageFile( 
+function Get-ImagePackageFile(
     [cmdletbinding()]
 	[Parameter(Mandatory=$true, Position=0)] [Alias("f")]  [string] $Path)
 {
@@ -289,7 +289,7 @@ param()
         [System.Array]::Copy($result,3, $lst, 0, $result.Length-3)
 
         [HashTable] $tblProducts = [HashTable]::new( $lst.Length ) #@{}
-        $lst.ForEach( { 
+        $lst.ForEach( {
                 $tblProducts.Add( $_.Substring(37,$_.Length-37).Trim(), # Extract name from line
                                   [Guid]::new( $_.Substring(0,36) ) ) # extract Guid string from line and convert to [GUID]
         } )
@@ -331,7 +331,7 @@ function Get-AS3ProductDeviceGroups(
         [System.Array]::Copy($result,4, $lst, 0, $result.Length-4)
 
         [HashTable] $tblDGs = [HashTable]::new( $lst.Length ) #@{}
-        $lst.ForEach( { 
+        $lst.ForEach( {
                 $tblDGs.Add( $_.Substring(37,$_.Length-37).Trim(), # Extract name from line
                                   [Guid]::new( $_.Substring(0,36) ) ) # extract Guid string from line and convert to [GUID]
         } )
@@ -385,7 +385,7 @@ function Get-AS3Product(
     {
         Write-Verbose "[Get-AS3Product] Searching online for product name '$ProductName'."
         $result = & azsphere.exe product show -n $ProductName
-    } else 
+    } else
     {
         Write-Verbose "[Get-AS3Product] Searching online for product id '$ProductId'."
         $result = & azsphere.exe product show -i $ProductId
@@ -398,13 +398,13 @@ function Get-AS3Product(
             $result[4].Substring(17,$result[4].Length-18)
         )
     }
-        
+
     if( $null -eq $product )
     {
         if( $PSCmdlet.ParameterSetName -eq "ByName")
         {
 	        Write-Error "Product with Name '$ProductName' not found."
-        } else 
+        } else
         {
 	        Write-Error "Product with Id '$ProductId' not found."
         }
@@ -413,7 +413,7 @@ function Get-AS3Product(
 }
 
 
-<#dir 
+<#dir
 .SYNOPSIS
 Creates a new Product in Azure Sphere Security Service
 .DESCRIPTION
@@ -427,7 +427,7 @@ None. You cannot pipe objects to New-AS3Product.
 .EXAMPLE
 PS> New-AS3Product -Name "TestProduct" [-Description "What this product is about"]
 Guid
------------                          
+-----------
 f4e25978-6152-447b-a2a1-64577582f327
 #>
 function New-AS3Product(
@@ -441,7 +441,7 @@ function New-AS3Product(
     if( $LASTEXITCODE -eq 0 )
     {
         Write-Verbose "[New-AS3Product] $result[0]"
-        [Product] $prd = Get-AS3Product -ProductName "$Name" 
+        [Product] $prd = Get-AS3Product -ProductName "$Name"
         $prd.DeviceGroupList = Get-AS3ProductDeviceGroups -ProductId $prd.Id
 
         Write-Verbose "[New-AS3Product] product $Name has id $($prd.Id)"
@@ -459,7 +459,7 @@ function New-AS3Product(
 .SYNOPSIS
 Creates a new DeviceGroup in Azure Sphere Security Service
 .DESCRIPTION
-Creates a device group with the specified name for the specified product. The device group organizes devices 
+Creates a device group with the specified name for the specified product. The device group organizes devices
 that have the same product and receive the same applications from the cloud.
 .PRAMETER Name
 Specifies an alphanumeric name for the device group. If the name includes embedded spaces, enclose it in quotation marks. The device group name must be unique within the product, and is case insensitive.
@@ -480,7 +480,7 @@ None. You cannot pipe objects to New-AS3DeviceGroup.
 .EXAMPLE
 PS> New-AS3ProductDeviceGroup -Name "TestDeviceGroup"
 Guid
------------                          
+-----------
 f4e25978-6152-447b-a2a1-64577582f327
 #>
 function New-AS3ProductDeviceGroup()
@@ -548,15 +548,15 @@ Retrieves the deployments of the given device-group
 .DESCRIPTION
 Get-AS3DeploymentList retrieves the list of deployments for a specific device-group
 .PRAMETER DeviceGroupId
-[Guid] for the device group. 
+[Guid] for the device group.
 .INPUTS
 None. You cannot pipe objects to Get-AS3DeploymentList.
 .OUTPUTS
 [Deployment[]] array of deployments
 .EXAMPLE
 PS> Get-AS3DeploymentList -i "guid"
-Id                                   DeploymentDateUTC   DeployedImages                        
---                                   -----------------   --------------                        
+Id                                   DeploymentDateUTC   DeployedImages
+--                                   -----------------   --------------
 a12b86c9-eb1d-4e87-a3e8-e86b7e4f4818 03.01.2020 14:34:22 {f1c5d8dd-16e6-499b-9a6d-b7fd828ee48e}
 #>
 function Get-AS3DeploymentList(
@@ -575,11 +575,11 @@ function Get-AS3DeploymentList(
         [System.Array] $lst = [System.Array]::CreateInstance( [object], $result.Length-4 )
         [System.Array]::Copy($result,4, $lst, 0, $result.Length-4)
         [Deployment[]] $tblDeps = $lst.ForEach( {
-            [Deployment]::new( 
+            [Deployment]::new(
                 $_.Substring(0,36), # extract Guid from line
                 $_.Substring(37,19), # extract timestamp from line
                 $_.Substring(57).TrimEnd() # extract image list
-            ) 
+            )
         } )
         Write-Verbose "[Get-AS3DeploymentList] extracted $($tblDeps.Count) deployments: $($tblDeps -join ', ')"
         return $tblDeps
@@ -595,17 +595,17 @@ Creates a new Deployment for the given device-group
 .DESCRIPTION
 New-AS3Deployment creates a new deployment for a specific device-group
 .PRAMETER DeviceGroupId
-[Guid] for the device group. 
+[Guid] for the device group.
 .PRAMETER Images
-[Guid] or [Guid[]] one or more image ids. 
+[Guid] or [Guid[]] one or more image ids.
 .INPUTS
 None. You cannot pipe objects to New-AS3Deployment.
 .OUTPUTS
 [Deployment] the newly created deployment
 .EXAMPLE
 PS> New-AS3Deployment -i "guid" -ii (guid,guid)
-Id                                   DeploymentDateUTC   DeployedImages                                                              
---                                   -----------------   --------------                                                              
+Id                                   DeploymentDateUTC   DeployedImages
+--                                   -----------------   --------------
 b639cb10-63f1-4f6e-ad76-35a4533ff546 24.01.2020 13:44:58 {9337f63a-19de-4fd4-aaba-d754bdeb1cad, 3e434151-c30f-4b72-99cd-d3db77d80760}
 #>
 function New-AS3Deployment(
@@ -620,7 +620,7 @@ function New-AS3Deployment(
     Write-Verbose "[New-AS3Deployment] for device-group $($DeviceGroupId.ToString())"
 
     if( $Images -is [System.Array])
-    { 
+    {
         $imgIDs = [System.String]::Join(",", $Images)
 
     } else {
@@ -645,15 +645,15 @@ Get-AS3DeviceGroup retrieves the device-group data for the given devive-group id
 .DESCRIPTION
 Get-AS3DeviceGroup retrieves the device-group data for the given devive-group id
 .PRAMETER DeviceGroupId
-[Guid] for the device group. 
+[Guid] for the device group.
 .INPUTS
 None. You cannot pipe objects to Get-AS3DeviceGroup.
 .OUTPUTS
 [Deployment[]] array of deployments
 .EXAMPLE
 PS> Get-AS3DeploymentList -i "guid"
-Id                                   DeploymentDateUTC   DeployedImages                        
---                                   -----------------   --------------                        
+Id                                   DeploymentDateUTC   DeployedImages
+--                                   -----------------   --------------
 a12b86c9-eb1d-4e87-a3e8-e86b7e4f4818 03.01.2020 14:34:22 {f1c5d8dd-16e6-499b-9a6d-b7fd828ee48e}
 #>
 function Get-AS3DeviceGroup(
@@ -689,12 +689,12 @@ function Get-AS3DeviceGroup(
             [Deployment[]] $lstDeps = Get-AS3DeploymentList -i $DeviceGroupId.ToString()
             [HashTable] $tblDeps = [HashTable]::new( $lstDeps.Length ) #@{}
             $lstDeps.ForEach( {
-                $tblDeps.Add( 
+                $tblDeps.Add(
                     $_.Id.ToString(), # ImageId string as key
                     $_                # [Deployment] as value
-                ) 
+                )
             } )
-            [Deployment] $dep = $tblDeps[$strCurrentDeployment] 
+            [Deployment] $dep = $tblDeps[$strCurrentDeployment]
             $dg.CurrentDeployment = $dep
             Write-Verbose "[Get-AS3DeviceGroup] Current Deployment: $($dep.Id.ToString()) created $($dep.DeploymentDateUTC.ToLongDateString()) $($dep.DeploymentDateUTC.ToLongTimeString())"
 
@@ -722,7 +722,7 @@ None. You cannot pipe objects to Add-AS3Image.
 .EXAMPLE
 PS> Add-AS3Image -FilePath ./testfile.imagepackage
 Guid
------------                          
+-----------
 f4e25978-6152-447b-a2a1-64577582f327
 #>
 function Add-AS3Image(
@@ -761,7 +761,7 @@ Set-SdkPaths queries the Windows registry for the Azure Sphere SDK entries and s
 .INPUTS
 None. You cannot pipe objects to Initialize-Prerequisites.
 .OUTPUTS
-Nothing 
+Nothing
 .EXAMPLE
 PS> Initialize-Prerequisites
 
@@ -770,7 +770,6 @@ function Set-SdkPaths()
 {
     [cmdletbinding()]
     param()
-    
 
     $SdkPath = (Get-ItemProperty -Path "HKLM:SOFTWARE\WOW6432Node\Microsoft\Azure Sphere").InstallDir
     $SdkToolsPath = Join-Path -Path $SdkPath -ChildPath "Tools"
@@ -778,19 +777,16 @@ function Set-SdkPaths()
     $gccPath = Join-Path -Path $Latest -ChildPath "tools\gcc"
     if( -not $Env:Path.Contains( $SdkPath ) )
     {
-        Write-Host "Adding Azure Sphere SDK path"
         Write-Verbose "[Set-Location] SDK path is $SdkPath"
         $Env:Path = $SdkPath + ";" + $Env:Path
     }
     if( -not $Env:Path.Contains( $SdkToolsPath ) )
     {
-        Write-Host "Adding Azure Sphere SDK tools path"
         Write-Verbose "[Set-Location] SDK tools path is $SdkToolsPath"
         $Env:Path = $SdkToolsPath + ";" + $Env:Path
     }
     if( -not $Env:Path.Contains( $gccPath ) )
     {
-        Write-Host "Adding latest GNU gcc tools path"
         Write-Verbose "[Set-Location] GNU gcc path is $gccPath"
         $Env:Path = $gccPath + ";" + $Env:Path
     }
@@ -799,6 +795,33 @@ function Set-SdkPaths()
         Write-Verbose "[Set-Location] adjusting current directory to root of OTA sample"
         Set-Location ..
     }
+
+    $Help = @(( "dev, device"    , "Manage devices."                                                            ), `
+    ( "dg, device-group"         , "Manage device groups in your Azure Sphere tenant."                          ), `
+    ( "get-support-data"         , "Gather diagnostic data about your system, cloud and device configurations." ), `
+    ( "hwd, hardware-definition" , "Manage hardware definitions."                                               ), `
+    ( "img, image"               , "Manage images in your Azure Sphere tenant."                                 ), `
+    ( "pkg, image-package"       , "Manage image packaging."                                                    ), `
+    ( "login"                    , "Log in to the Azure Sphere Security Service."                               ), `
+    ( "logout"                   , "Log out from the Azure Sphere Security Service."                            ), `
+    ( "prd, product"             , "Manage products in your Azure Sphere tenant."                               ), `
+    ( "register-user"            , "Register a new user to the Azure Sphere Security Service."                  ), `
+    ( "role"                     , "Manage Azure Sphere roles."                                                 ), `
+    ( "show-user"                , "Show information about the logged in Azure Sphere user."                    ), `
+    ( "show-version"             , "Show the version of the Azure Sphere tools."                                ), `
+    ( "tenant"                   , "Manage Azure Sphere tenants."                                               ))
+
+    Write-Host "azsphere -?" -ForegroundColor Green
+
+    ForEach($ln in $Help){
+        Write-Host $ln[0] ( " " * (24-$ln[0].Length)) -ForegroundColor Yellow -NoNewline
+        Write-Host "- " $ln[1] -ForegroundColor Green
+    }
+
+    Write-Host "`nazsphere tenant list" -ForegroundColor Green
+    azsphere tenant list
+
+    Write-Host (&azsphere tenant show-selected)  -ForegroundColor Green
 }
 
 <#
@@ -809,7 +832,7 @@ Initializes the global variables needed for the OTA sample in the Azure Sphere T
 .INPUTS
 None. You cannot pipe objects to Initialize-Prerequisites.
 .OUTPUTS
-Nothing 
+Nothing
 .EXAMPLE
 PS> Initialize-Prerequisites
 
@@ -878,8 +901,19 @@ param()
 
 
 }
-
-Set-SdkPaths
+Export-ModuleMember -Function Initialize-Prerequisites
+Export-ModuleMember -Function Set-SdkPaths
+Export-ModuleMember -Function Add-AS3Image
+Export-ModuleMember -Function Get-ImagePackageFile
+Export-ModuleMember -Function Get-AS3Products
+Export-ModuleMember -Function Get-AS3ProductDeviceGroups
+Export-ModuleMember -Function Get-AS3Product
+Export-ModuleMember -Function New-AS3Product
+Export-ModuleMember -Function New-AS3ProductDeviceGroup
+Export-ModuleMember -Function Get-AS3DeploymentList
+Export-ModuleMember -Function New-AS3Deployment
+Export-ModuleMember -Function Get-AS3DeviceGroup
+Export-ModuleMember -Function Add-AS3Image
 
 #$env:Path = "C:\Program Files (x86)\Microsoft Azure Sphere SDK\Tools" + ";" + $Env:Path
 #Initialize-Prerequisites -Verbose

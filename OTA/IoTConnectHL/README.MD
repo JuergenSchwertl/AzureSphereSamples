@@ -3,13 +3,12 @@
  
 **Build and deploy the high-level connectivety application (IoTConnectHL)**
 
->**Note:** This high-level app sample is using the CMake toolchain, but there are slight differences in the toolchain to build a realtime capable app vs a high-level app. 
->The realtime capable app(s) are built with the master CMakeLists.txt and CMakeSettings.json in the root-directory of the OTA Multicore sample including the 
->RedSphereRT, GreenSphereRT and BlueSphereRT subdirectories and the SharedRT directory as object sources. The CMakeSettings.json in the root refers to 
->the AzureSphere**RTCore**Toolchain.cmake with the build script for realtime capable applications.  
->        For the IoTConnectHL application we need a seperate CMakeSettings.json that refers to the AzureSphereToolchain.cmake script instead.
-1. In Visual Studio, in the Team Explorer Window open the CmakeLists.txt file in the IoTConnectHL directory using **File->Open...->Cmake...**.
-2. To prepares your *app_manifest.json* with your Azure IoT Hub settings, a CMake project does not offer the "Connect to Service..." Wizard.
+>**Note:** If you had looked at this example earlier, you may have seen that it went from a Vidual Studio solution now to use the CMake toolchain, and there are slight 
+>differences in the toolchain to build a realtime capable app vs a high-level app. 
+>The CMakeSettings.json files for real-time applications refer to the AzureSphere**RTCore**Toolchain.cmake with the build script for realtime capable applications.
+>For the IoTConnectHL application the CMakeSettings.json refers to the AzureSphereToolchain.cmake build script.
+1. In Visual Studio, in the Team Explorer Window open the CmakeLists.txt file in the IoTConnectHL directory using **File->Open->Cmake...**.
+2. To prepare your *app_manifest.json* with your Azure IoT Hub settings, a CMake project does not offer the "Connect to Service..." Wizard.
 We therefore need to manually copy the settings from the Azure Portal. 
 ```json
 {
@@ -49,7 +48,7 @@ not delete these applications when deploying the high-level app IoT Connect HL.
         "7E5FAB32-801C-4EDF-A1AA-9263652AA6BD", 
         "07562362-3FEC-46C8-B0AF-DB9507F32748" ]
 ```
-7. In the Visual Studio debug toolbar click *"Select Startup Item..."* and select *"GDB Debugger (HLCore)"*. Press F5 to start the application with debugging.
+7. In the Visual Studio debug toolbar click *"Select Startup Item..."* and select *"IoTConnectHL (HLCore)"*. Press F5 to start the application with debugging.
 
 [Go back to "Multi-Core app and OTA deployment lab"](../README.MD)
 
