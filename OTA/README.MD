@@ -38,32 +38,67 @@ GPIO blocks, timer IRQs and for inter-core communications.
     **Tip:** To easily get the path, Right-Click the root in the Solution Explorer window and click "Copy path" and paste it into the 
     Azure Sphere command shell after a CD command.
 
-**Build and deploy the high-level connectivety application (IoTConnectHL)**
+#### Working with Visual Studio
 
-Follow the instructions in [IoTConnectHL: High-level connectivety application (POSIX)](IoTConnectHL/README.MD) to build and deploy the first
-application. Keep the Visual Studio instance open running the IoTConnectHL application under the debugger.
+There are multiple ways to work with Visual Studio and multi-core applications. 
+You can either open the individual project sub-directories and follow the instructions there, i.e. [IoTConnectHL: High-level connectivety application (POSIX)](IoTConnectHL/README.MD) to build and deploy the first
+application and then open another instance of Visual Studion and follow the instructions in [RedSphereRT: real-time-capable application](RedSphereRT/README.MD) .
 
-**Build and deploy the real-time capable application(s)**
-1. Start a new Visual Studio instance. (The other Visual Studio Window should still run the debugger with the IoTConnectHL app)
-1. From the **File** menu, select **Open > CMake...** and navigate to the "RedSphereRT" folder .
-1. Select the file CMakeLists.txt and then click **Open**.
-1. Open Solution Explorer, right-click the *CMakeLists.txt* file, and select **Build**. This step automatically performs the manual packaging steps. 
-The output locations of the real-time capable Azure Sphere applications appears in the Output window.
-1. From the **Select Startup Item** menu, on the tool bar, select **RedSphereRT (GDB RTCore)**.
-1. Press F5 to start the application with debugging. LED1 will blink red.
+Or you can continue here and start off the main directory:
+
+**Build all apps and deploy the high-level application**
+
+1. Start a Visual Studio instance.
+1. From the **File** menu, select **Open > Folder...** and navigate to the "OTA" folder.
+1. From the **Build** menu select **Rebuild All**
+
+You will see that once you open the OTA-directory in Visual Studio it will start traversing the directory structures 
+and generates the CMake caches for IoTConnectHL, BlueSphereRT, GreenSphereRT and RedSphereRT. The Rebuild all will then compile 
+each application and build the imagepackage files.
+
+>**Note:** Don't forget to update your *IoTConnectHL/app_manifest.json* ! [IoTConnectHL](IoTConnectHL/README.MD) has the details where to find that data.
+
+In your Visual Studio standard toolbar you should see the default build settings alike:
+
+![MT3620 GPIO-Ports](../Images/VS_AllCores.png)
+
+Click on dropdown arrow after "GDB Debugger (All Cores)" to reveal the list of available targets and select **IoTConnectHL (HLCore)**.
+It should now show up as the new target like:
+
+![MT3620 GPIO-Ports](../Images/VS_IoTConnectHL.png)
+
+Now click the *IoTConnectHL (HLCore)* button itself to start the debugging session. Your output will likely look like
+```
+    Remote debugging from host 192.168.35.1, port 58702
+    INFO: Azure IoT application starting.
+    INFO: Opening MT3620_RDB_BUTTON_A.
+    [Azure IoT] Using HSM cert at /run/daa/########-####-####-####-############
+    [Azure IoT] IoTHubDeviceClient_CreateWithAzureSphereDeviceAuthProvisioning returned 'AZURE_SPHERE_PROV_RESULT_OK'.
+    [Azure IoT] INFO: AzureIoT_DoPeriodicTasks calls in progress...
+    INFO: IoT Hub Connection Status Changed to 1.
+    [Azure IoT] INFO: connection to the IoT Hub has been established (IOTHUB_CLIENT_CONNECTION_OK).
+    [Azure IoT] INFO: AzureIoT_DoPeriodicTasks calls in progress...
+    [Azure IoT] INFO: AzureIoT_DoPeriodicTasks calls in progress...
+```
+
+**Build and deploy a real-time capable application**
+
+1. Start a *new* Visual Studio instance.
+1. From the **File** menu, select **Open > Folder...** and open the **RedSphereRT** folder.
+1. In this new Visual Studio session the target app should already be **RedSphereRT (RTCore)**, so click it to run.
 
 >**Note**
->To enable multiple debugging targets, I've applied some amendments to the default *lauch.vs.json* file:
+>To enable multiple debugging targets, each of the application directories needs its own *launch.vs.json* file:
 
 <pre><code>{
   "type": "azurespheredbg",
-  "name": "RedSphereRT (RTCore GDB)",
-  "project": "<b>RedSphereRT/CMakeLists.txt</b>",
+  "name": "RedSphereRT (RTCore)",
+  "project": "CMakeLists.txt",
   "inheritEnvironments": [
     "AzureSphere"
   ],
   "customLauncher": "AzureSphereLaunchOptions",
-  "workingDirectory": "<b>${workspaceRoot}\\RedSphereRT</b>",
+  "workingDirectory": "${workspaceRoot}",
   "applicationPath": "${debugInfo.target}",
   "imagePath": "${debugInfo.targetImage}",
   "targetCore": "<b>RTCore</b>",
@@ -73,15 +108,17 @@ The output locations of the real-time capable Azure Sphere applications appears 
     "07562362-3FEC-46C8-B0AF-DB9507F32748" ]</b>
 },</code></pre>
 
->For each real-time capable application I've added a seperate *configurations* list entry with
->* **name** giving it a unique name that is going to be listed in the **Select Startup Menu**
->* **project** points to the CMakeLists.tx of the individual app.
->* **workingDirectory** points to the source directory of the individual app.
->* **partnerComponents**: lists the ComponentId of the high-level connectivety app ( IoTConnectHL, GreenSphereRT and BlueSphereRT  ). 
->This setting is required for the debugger to not remove the previously sideloaded high-level application 
->(the one we have running in the other Visual Studio instance debugging session). 
+For each real-time capable application I've added a seperate *configurations* list entry with
+* **name** giving it a unique name that is going to be listed in the **Select Startup Menu**
+* **targetCore** for an app, this needs to be either *HLCore* or *RTCore*.
+* **partnerComponents**: lists the ComponentId of the high-level connectivety app ( IoTConnectHL, GreenSphereRT and BlueSphereRT  ). 
+This setting is required for the debugger to not remove the previously sideloaded high-level application 
+(the one we have running in the other Visual Studio instance debugging session). 
 
->**Warning:** If you would use "targetCore": "<i>AnyCore</i>", VS would try to deploy all 4 apps together!
+>**Tip:** The default *launch.vs.json* in the OTA-directory has "targetCore": "<i>AnyCore</i>". 
+>If you run the *GDB Debugger (All Cores)* configuration, VS will deploy all applications and allow debugging them side by side
+>in one Visual Studio instance. However, in our sample setup we have 3 real-time apps but only 2 M-cores available. 
+>VS would happily try to deploy all 4 apps together and fail at some point!
 
 Now change back to the Visual Studio instance running IoTConnectHL. The debug output window should show it 
 connecting to Azure IoT Hub and then show output alike
@@ -92,7 +129,9 @@ connecting to Azure IoT Hub and then show output alike
     [InterCore]: Received 'recv' from F4E25978-6152-447B-A2A1-64577582F327
 ```
 indicating that IoTConnectHL has found the RedSphereRT real-time capable app (it shows its ComponentId). 
-IoTConnectHL then repeatedly sends a *"PING"* message downstream which is acknowledged by a *"recv"* message.
+IoTConnectHL then repeatedly sends a *"PING"* message downstream which is kindly acknowledged by a *"recv"* message.
+This pattern is very similar to a keep-alive message and if you look at the error handling sections in the code you'll see 
+that I use it to check if the application is indeed still alive.
 
 If you now press ButtonA, you should see the blink frequency changing and at the same time the output window will
 show 

@@ -3,18 +3,26 @@
 This directory is part of the Multi-Core OTA sample. On information how build, run and deploy the sample OTA please refer 
 to the documentation in the [master directory](../README.MD).
   
-This directory is part of the Multi-Core OTA sample. On information how build, run and deploy the sample OTA please refer 
-to the documentation in the [master directory](../README.MD).
-  
-For information about how to build the real-time capable application please refer to 
-[RedSphereRT](../RedSphereRT/README.MD)
+If you followed the instructions in the [master directory](../README.MD), all applications should have been built already and you can skip the build step.
+
+**Build the BlueSphereRT application**
+ 
+If you chose to build the IoTConnectHL and RedSphereRT apps manually, you first need to run Visual Studio 
+(or Visual Studio Code respectively) to build the BlueSphere App as well.
+
+1. Start Visual Studio.
+1. From the **File** menu, select **Open > CMake...** and navigate to the *BlueSphereRT*-folder.
+1. Select the file CMakeLists.txt and then click **Open**.
+1. From the **CMake** menu (if present), select **Build All**. If the menu is not present, open Solution Explorer, 
+right-click the CMakeLists.txt file, and select **Build**. This step automatically performs the manual packaging steps. 
+The output location of the Azure Sphere application appears in the Output window.
 
 **Manually deploy the BlueSphereRT application**
 
-1. Open an Azure Sphere Developer Command Prompt and navigate to the OTA folder. 
+1. Open an Azure Sphere Developer Command Prompt and navigate to the *./OTA/BlueSphereRT* folder. 
 1. Deploy the application using 
 ```sh
- azsphere dev sl deploy -p "out\ARM-Debug-4+Beta2001\BlueSphereRT\BlueSphereRT.imagepackage" 
+ azsphere dev sl deploy -p "out\ARM-Debug\BlueSphereRT.imagepackage" 
 ```
 You will see that Led3 starts blinking in blue at a fast rate, likely at a different frequency than Led1 in red.
 1. Once you press Button A both will start blinking at the same frequency as both have received the 'BLNK' message 
