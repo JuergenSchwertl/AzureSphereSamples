@@ -45,7 +45,7 @@ application. Keep the Visual Studio instance open running the IoTConnectHL appli
 
 **Build and deploy the real-time capable application(s)**
 1. Start a new Visual Studio instance. (The other Visual Studio Window should still run the debugger with the IoTConnectHL app)
-1. From the **File** menu, select **Open > CMake...** and navigate to the folder that contains the sample.
+1. From the **File** menu, select **Open > CMake...** and navigate to the "RedSphereRT" folder .
 1. Select the file CMakeLists.txt and then click **Open**.
 1. Open Solution Explorer, right-click the *CMakeLists.txt* file, and select **Build**. This step automatically performs the manual packaging steps. 
 The output locations of the real-time capable Azure Sphere applications appears in the Output window.
