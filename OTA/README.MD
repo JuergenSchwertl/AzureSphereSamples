@@ -42,7 +42,7 @@ There are multiple ways to work with Visual Studio and multi-core applications.
 You can either open the individual project sub-directories and follow the instructions there, i.e. [IoTConnectHL: High-level connectivety application (POSIX)](IoTConnectHL/README.MD) to build and deploy the first
 application and then open another instance of Visual Studion and follow the instructions in [RedSphereRT: real-time-capable application](RedSphereRT/README.MD) .
 
-Or you can continue here and start off the main directory [Using Visual Studio][] or [Using Visual Studio Code][]:
+Or you can continue here and start off the main directory [Using Visual Studio](#using-visual-studio) or [Using Visual Studio Code](#using-visual-studio-code):
 
 ### Using Visual Studio
 
@@ -60,12 +60,12 @@ each application and build the imagepackage files.
 
 In your Visual Studio standard toolbar you should see the default build settings alike:
 
-![MT3620 GPIO-Ports](../Images/VS_AllCores.png)
+![GDB Devugger (All Cores)](../Images/VS_AllCores.png)
 
 Click on dropdown arrow after "GDB Debugger (All Cores)" to reveal the list of available targets and select **IoTConnectHL (HLCore)**.
 It should now show up as the new target like:
 
-![MT3620 GPIO-Ports](../Images/VS_IoTConnectHL.png)
+![IoTConnectHL (HLCore)s](../Images/VS_IotConnectHL.png)
 
 Now click the *IoTConnectHL (HLCore)* button itself to start the debugging session. Your output will likely look like
 ```
