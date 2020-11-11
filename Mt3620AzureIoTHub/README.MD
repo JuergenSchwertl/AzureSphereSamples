@@ -127,11 +127,68 @@ Select "Device Twin" from the navigation pane, edit the json and press the [Save
 ![Azure IoT Explorer - Twin Properties](./images/IoTExplorer_DeviceTwin.png)
 
 
+#### Reviewing the code
+
+Let's review some of the utility code: 
+
+Azure Sphere uses a customized version of the [Azure IoT Hub C SDK](https://github.com/Azure/azure-iot-sdk-c) and implements only the 
+low-level `IoTHubDeviceClient_LL_` functions of the C SDK and restricts the protocols to MQTT(s).
+If you fancy to work on byte or string buffers, you will feel at home with the functions available. Since you will be mostly working with Json data
+when sending messages, reporting properties to your device twin or when you to extract parameters from a direct method call, I've added a few functions
+that make JSON a bit more digestable in your application parsing the data to and from JSON_Object or JSON_Value objects using [Parson](https://github.com/kgabis/parson), 
+a lightweight JSON library for standard C.
+
+Open *azure_iot_utilities.c* on or about line **#550** at function `AzureIoT_SendJsonMessage()`
+
+```C
+/// <summary>
+///     Creates and enqueues a json message to be delivered the IoT Hub. The message is not actually
+///     sent immediately, but it is sent on the next invocation of AzureIoT_DoPeriodicTasks().
+/// </summary>
+/// <param name="jsonPayload">The json payload of the message to send.</param>
+void AzureIoT_SendJsonMessage(JSON_Value* jsonPayload)
+{
+    char* pszMessagePayload = 0;
+    size_t nMessageSize = 0;
+
+    if (setPayloadFromJson(jsonPayload, &pszMessagePayload, &nMessageSize) == IOTHUB_CLIENT_OK) {
+        if (pszMessagePayload != NULL) {
+            AzureIoT_SendMessageWithContentType(pszMessagePayload, cstrJsonContentType, cstrUtf8Encoding);
+            free(pszMessagePayload);
+        }
+    }
+}
+```
+
+If you look at the utility function `AzureIoT_SendMessageWithContentType()` you will see that it does set the property bag 
+of the message accordingly with the ContentType "application/json" (**UUencoded as "application%2Fjson"!**) and ContentEncoding "utf-8".
+Although it is not necessarily required, it is good practice to tell the message processing backend what data format to expect.
+
+```C
+   IOTHUB_MESSAGE_HANDLE messageHandle = IoTHubMessage_CreateFromString(messagePayload);
+    if (messageHandle == 0) {
+        LogMessage("WARNING: unable to create a new IoTHubMessage\n");
+        return;
+    }
+
+    ...
+
+    (void)IoTHubMessage_SetContentTypeSystemProperty(messageHandle, contentType);
+    (void)IoTHubMessage_SetContentEncodingSystemProperty(messageHandle, encoding);
+
+    ...
+
+    if (IoTHubDeviceClient_LL_SendEventAsync(hIoTHubClient, messageHandle, sendMessageCallback,
+        /*&callback_param*/ 0) != IOTHUB_CLIENT_OK) {
+        LogMessage("WARNING: failed to hand over the message to IoTHubClient\n");
+    }
+
+```
+
 ---
 [Go back to root](../README.MD#lab-2-azure-iot-hub-connected-azure-sphere-application)
 
 ---
-
 ### Disclaimer
 
 #### Sample code - No Warranties

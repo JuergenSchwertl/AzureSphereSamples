@@ -4,8 +4,8 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.11)
 PROJECT(IoTConnectHL C)
 
-azsphere_configure_tools(TOOLS_REVISION "20.07")
-azsphere_configure_api(TARGET_API_SET "6")
+azsphere_configure_tools(TOOLS_REVISION "20.10")
+azsphere_configure_api(TARGET_API_SET "7")
 
 ADD_SUBDIRECTORY("../Shared.All" "${CMAKE_CURRENT_BINARY_DIR}/Shared.All")
 
