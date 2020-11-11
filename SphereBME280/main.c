@@ -97,10 +97,10 @@ static struct timespec tsResetDelay = { 5, 0 };
 
 // Azure IoT poll periods
 static const int AzureIoTDefaultPollPeriodSeconds = 5;
-static const int AzureIoTMinReconnectPeriodSeconds = 60;
+static const int AzureIoTMinReconnectPeriodSeconds = 10;
 static const int AzureIoTMaxReconnectPeriodSeconds = 10 * 60;
 
-static int azureIoTPollPeriodSeconds = -1;
+static int azureIoTPollPeriodSeconds = AzureIoTDefaultPollPeriodSeconds;
 
 static const char cstrErrorOutOfMemory[] = "ERROR: Out of memory.\n";
 
