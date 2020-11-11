@@ -1,0 +1,46 @@
+{
+  "SchemaVersion": 1,
+  "Name": "SphereBME280",
+  "ApplicationType": "Default",
+  "ComponentId": "82a16cf9-d4e1-4235-a6e5-14ed23c4cc18",
+  "EntryPoint": "/bin/app",
+  "CmdArgs": [ "0ne0014F704" ],
+  "Capabilities": {
+    "AllowedConnections": [
+      "global.azure-devices-provisioning.net",
+      "iotc-63716bae-88c6-40ea-bf49-355bff19f1ba.azure-devices.net",
+      "iotc-089c4105-62f6-44ec-a39e-dd6a3b53baf7.azure-devices.net",
+      "iotc-592daaa1-4c74-4695-86f5-25d24bb71962.azure-devices.net",
+      "iotc-c0b09aa3-cf9f-4114-a444-f3b547189c76.azure-devices.net",
+      "iotc-17f7f734-9c15-4a71-a7ac-8248235199e3.azure-devices.net",
+      "iotc-17f2c75a-6772-4ab8-9cf7-0aa67fb05f82.azure-devices.net",
+      "iotc-7b76f519-eb2b-42c2-a2c6-c1844fe0ce52.azure-devices.net",
+      "iotc-8a89a18a-3e2d-4a85-88a4-b51ddbccfd21.azure-devices.net",
+      "iotc-96c177a7-4364-4d9c-b9b4-5279fc09b5f4.azure-devices.net",
+      "iotc-18a6b584-3b07-4649-93e4-48fb6105fa22.azure-devices.net"
+    ],
+    "DeviceAuthentication": "c0b88764-9273-46ab-bab2-effecf13f91c",
+    "AllowedTcpServerPorts": [],
+    "AllowedUdpServerPorts": [],
+    "Gpio": [
+      "$MT3620_RDB_LED1_RED",
+      "$MT3620_RDB_LED1_GREEN",
+      "$MT3620_RDB_LED1_BLUE",
+      "$MT3620_RDB_LED2_RED",
+      "$MT3620_RDB_LED2_GREEN",
+      "$MT3620_RDB_LED2_BLUE",
+      "$MT3620_RDB_NETWORKING_LED_RED",
+      "$MT3620_RDB_NETWORKING_LED_GREEN",
+      "$MT3620_RDB_NETWORKING_LED_BLUE",
+      "$MT3620_RDB_BUTTON_A",
+      "$MT3620_RDB_BUTTON_B"
+    ],
+    "Uart": [],
+    "I2cMaster": [ "$MT3620_ISU3_I2C" ],
+    "SpiMaster": [],
+    "WifiConfig": true,
+    "NetworkConfig": false,
+    "SystemTime": false
+  }
+}
+
