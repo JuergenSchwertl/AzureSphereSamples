@@ -17,7 +17,10 @@ ADD_EXECUTABLE(${PROJECT_NAME} main.c azure_iot_utilities.c epoll_timerfd_utilit
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} m azureiot applibs pthread gcc_s c BME280)
 
 # This application targets the Seeed MT3620 Development Board so target for mt3620_rdb
-azsphere_target_hardware_definition(${PROJECT_NAME} TARGET_DIRECTORY "../Hardware/mt3620_rdb" TARGET_DEFINITION "mt3620_rdb.json")
+# Target hardware for the sample.
+set(TARGET_HARDWARE "mt3620_rdb")
+set(TARGET_DEFINITION "mt3620_rdb.json")
+azsphere_target_hardware_definition(${PROJECT_NAME} TARGET_DEFINITION "${TARGET_DEFINITION}")
 
 # Add MakeImage post-build command
 azsphere_target_add_image_package(${PROJECT_NAME})
