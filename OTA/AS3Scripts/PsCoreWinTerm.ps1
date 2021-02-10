@@ -20,7 +20,9 @@ if( -not $Env:Path.Contains( $gccPath ) )
     $Env:Path = $gccPath + ";" + $Env:Path
 }
 
-$Help = @(( "dev, device"    , "Manage devices."                                                            ), `
+$Help = @(
+( "ca, ca-certificate"       , "Manage certificate authority (CA) certificates for the current Azure Sphere tenant."),
+( "dev, device"              , "Manage devices."                                                            ), `
 ( "dg, device-group"         , "Manage device groups in your Azure Sphere tenant."                          ), `
 ( "get-support-data"         , "Gather diagnostic data about your system, cloud and device configurations." ), `
 ( "hwd, hardware-definition" , "Manage hardware definitions."                                               ), `

@@ -1,4 +1,4 @@
-# AzureSphereSamples for 20.10 Azure Sphere SDK Version
+# AzureSphereSamples for 21.01 Azure Sphere SDK Version
 
 This repo contains sources and links for Azure Sphere Bootcamp labs, amongst other Azure Sphere Samples for 
 connected MCUs, sensors and other peripherals.
@@ -28,7 +28,7 @@ This download package installs the AzSphere.Exe command line tool as well as the
 Although you may be able to follow the labs also using Visual Studio Code running on Linux, your milage may vary (i.e. I have only tested the 
 lab projects on Windows).
 
-Although the SDK package is ~150MB, during the installation it may download up to 1GB of Visual Studio 
+Although the SDK package is ~220MB, during the installation it may download up to 1GB of Visual Studio 
 Components, so I strongly recommend to have the SDK preinstalled.
 
 You will also need an active Azure subscription and a user account with sufficient rights to create Azure Resources such as 

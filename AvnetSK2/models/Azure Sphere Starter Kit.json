@@ -1,9 +1,10 @@
 {
-  "@id": "urn:SphereBME280Lab:capabilityModel:1",
+  "@context": "dtmi:dtdl:context;2",
+  "@id": "urn:AVNETSK2Lab:capabilityModel:1",
   "@type": "CapabilityModel",
   "implements": [
     {
-      "@id": "urn:SphereBME280Lab:DeviceInformation:interface:1",
+      "@id": "dtmi:azure:DeviceManagement:DeviceInformation;1",
       "@type": "InterfaceInstance",
       "name": "DeviceInformation",
       "schema": {
@@ -103,26 +104,26 @@
       }
     },
     {
-      "@id": "urn:SphereBME280Lab:RGBled:Interface:1",
+      "@id": "urn:AVNETSK2Lab:RGBled:Interface:1",
       "@type": "InterfaceInstance",
       "displayName": {
         "en": "MT3620RDB RGB led"
       },
       "name": "rgbLed",
       "schema": {
-        "@id": "urn:SphereBME280Lab:RGBled:1",
+        "@id": "urn:AVNETSK2Lab:RGBled:1",
         "@type": "Interface",
         "displayName": {
           "en": "MT3620RDB RGB led"
         },
         "contents": [
           {
-            "@id": "urn:SphereBME280Lab:RGBled:setColorMethod:1",
+            "@id": "urn:AVNETSK2Lab:RGBled:setColorMethod:1",
             "@type": "Command",
             "commandType": "synchronous",
             "durable": false,
             "request": {
-              "@id": "urn:SphereBME280Lab:RGBled:setColorMethod:request:1",
+              "@id": "urn:AVNETSK2Lab:RGBled:setColorMethod:request:1",
               "@type": "SchemaField",
               "comment": "Request to set LED color",
               "description": {
@@ -133,21 +134,21 @@
               },
               "name": "setColorMethodRequest",
               "schema": {
-                "@id" : "urn:SphereBME280Lab:RGBled:setColorMethod:requestPayload:1",
+                "@id" : "urn:AVNETSK2Lab:RGBled:setColorMethod:requestPayload:1",
                 "@type": "Object",
                 "displayName": {
                   "en" : "setColorMethod request payload"
                 },
                 "fields" : [ 
                   {
-                    "@id": "urn:SphereBME280Lab:RGBled:setColorMethod:requestPayload:color:1",
+                    "@id": "urn:AVNETSK2Lab:RGBled:setColorMethod:requestPayload:color:1",
                     "@type": "SchemaField",
                     "displayName": {
                       "en": "Color"
                     },
                     "name": "color",
                     "schema": {
-                      "@id": "urn:SphereBME280Lab:colorEnum:1",
+                      "@id": "urn:AVNETSK2Lab:colorEnum:1",
                       "@type": "Enum",
                       "displayName": {
                         "en": "Enum"
@@ -155,7 +156,7 @@
                       "valueSchema": "string",
                       "enumValues": [
                         {
-                          "@id": "urn:SphereBME280Lab:colorEnum:off:1",
+                          "@id": "urn:AVNETSK2Lab:colorEnum:off:1",
                           "@type": "EnumValue",
                           "displayName": {
                             "en": "Off"
@@ -164,7 +165,7 @@
                           "name": "off"
                         },
                         {
-                          "@id": "urn:SphereBME280Lab:colorEnum:red:1",
+                          "@id": "urn:AVNETSK2Lab:colorEnum:red:1",
                           "@type": "EnumValue",
                           "displayName": {
                             "en": "Red"
@@ -173,7 +174,7 @@
                           "name": "red"
                         },
                         {
-                          "@id": "urn:SphereBME280Lab:colorEnum:blue:1",
+                          "@id": "urn:AVNETSK2Lab:colorEnum:blue:1",
                           "@type": "EnumValue",
                           "displayName": {
                             "en": "Blue"
@@ -182,7 +183,7 @@
                           "name": "blue"
                         },
                         {
-                          "@id": "urn:SphereBME280Lab:colorEnum:green:1",
+                          "@id": "urn:AVNETSK2Lab:colorEnum:green:1",
                           "@type": "EnumValue",
                           "displayName": {
                             "en": "Green"
@@ -191,7 +192,7 @@
                           "name": "green"
                         },
                         {
-                          "@id": "urn:SphereBME280Lab:colorEnum:yellow:1",
+                          "@id": "urn:AVNETSK2Lab:colorEnum:yellow:1",
                           "@type": "EnumValue",
                           "displayName": {
                             "en": "Yellow"
@@ -200,7 +201,7 @@
                           "name": "yellow"
                         },
                         {
-                          "@id": "urn:SphereBME280Lab:colorEnum:magenta:1",
+                          "@id": "urn:AVNETSK2Lab:colorEnum:magenta:1",
                           "@type": "EnumValue",
                           "displayName": {
                             "en": "Magenta"
@@ -209,7 +210,7 @@
                           "name": "magenta"
                         },
                         {
-                          "@id": "urn:SphereBME280Lab:colorEnum:cyan:1",
+                          "@id": "urn:AVNETSK2Lab:colorEnum:cyan:1",
                           "@type": "EnumValue",
                           "displayName": {
                             "en": "Cyan"
@@ -218,7 +219,7 @@
                           "name": "cyan"
                         },
                         {
-                          "@id": "urn:SphereBME280Lab:colorEnum:white:1",
+                          "@id": "urn:AVNETSK2Lab:colorEnum:white:1",
                           "@type": "EnumValue",
                           "displayName": {
                             "en": "White"
@@ -233,21 +234,21 @@
               }
             },
             "response": {
-              "@id": "urn:SphereBME280Lab:RGBled:setColorMethod:response:1",
+              "@id": "urn:AVNETSK2Lab:RGBled:setColorMethod:response:1",
               "@type": "SchemaField",
               "displayName": {
                 "en": "SetColorMethod response"
               },
               "name": "setColorMethodResponse",
               "schema": {
-                "@id": "urn:SphereBME280Lab:RGBled:setColorMethod:responsePayload:1",
+                "@id": "urn:AVNETSK2Lab:RGBled:setColorMethod:responsePayload:1",
                 "@type": "Object",
                 "displayName": {
                   "en": "setColorMethod response payload"
                 },
                 "fields": [
                   {
-                    "@id": "urn:SphereBME280Lab:RGBled:setColorMethod:responsePayload:success:1",
+                    "@id": "urn:AVNETSK2Lab:RGBled:setColorMethod:responsePayload:success:1",
                     "@type": "SchemaField",
                     "displayName": {
                       "en": "Success"
@@ -256,7 +257,7 @@
                     "schema": "boolean"
                   },
                   {
-                    "@id": "urn:SphereBME280Lab:RGBled:setColorMethod:responsePayload:message:1",
+                    "@id": "urn:AVNETSK2Lab:RGBled:setColorMethod:responsePayload:message:1",
                     "@type": "SchemaField",
                     "displayName": {
                       "en": "Message"
@@ -277,7 +278,7 @@
             "name": "setColorMethod"
           },
           {
-            "@id": "urn:SphereBME280Lab:RGBled:blinkRateProperty:1",
+            "@id": "urn:AVNETSK2Lab:RGBled:blinkRateProperty:1",
             "@type": "Property",
             "comment": "index to timer table",
             "description": {
@@ -294,21 +295,21 @@
       }
     },
     {
-      "@id": "urn:SphereBME280Lab:buttons:interface:1",
+      "@id": "urn:AVNETSK2Lab:buttons:interface:1",
       "@type": "InterfaceInstance",
       "displayName": {
         "en": "MT3620RDB Buttons"
       },
       "name": "Buttons",
       "schema": {
-        "@id": "urn:SphereBME280Lab:buttons:1",
+        "@id": "urn:AVNETSK2Lab:buttons:1",
         "@type": "Interface",
         "displayName": {
           "en": "MT3620RDB Buttons"
         },
         "contents": [
           {
-            "@id": "urn:SphereBME280Lab:buttons:buttonA:1",
+            "@id": "urn:AVNETSK2Lab:buttons:buttonA:1",
             "@type": [
               "Telemetry",
               "SemanticType/Event"
@@ -323,7 +324,7 @@
             "schema": "string"
           },
           {
-            "@id": "urn:SphereBME280Lab:buttons:buttonB:1",
+            "@id": "urn:AVNETSK2Lab:buttons:buttonB:1",
             "@type": [
               "Telemetry",
               "SemanticType/Event"
@@ -341,21 +342,21 @@
       }
     },
     {
-      "@id": "urn:SphereBME280Lab:iot:interface:1",
+      "@id": "urn:AVNETSK2Lab:iot:interface:1",
       "@type": "InterfaceInstance",
       "displayName": {
         "en": "IoT Client"
       },
       "name": "IoT",
       "schema": {
-        "@id": "urn:SphereBME280Lab:iot:1",
+        "@id": "urn:AVNETSK2Lab:iot:1",
         "@type": "Interface",
         "displayName": {
           "en": "IoT Client"
         },
         "contents": [
           {
-            "@id": "urn:SphereBME280Lab:iot:connect:1",
+            "@id": "urn:AVNETSK2Lab:iot:connect:1",
             "@type": [
               "Telemetry",
               "SemanticType/Event"
@@ -370,12 +371,12 @@
             "schema": "string"
           },
           {
-            "@id": "urn:SphereBME280Lab:iot:resetMethod:1",
+            "@id": "urn:AVNETSK2Lab:iot:resetMethod:1",
             "@type": "Command",
             "commandType": "synchronous",
             "durable": false,
             "request": {
-              "@id": "urn:SphereBME280Lab:iot:resetMethod:request:1",
+              "@id": "urn:AVNETSK2Lab:iot:resetMethod:request:1",
               "@type": "SchemaField",
               "description": {
                 "en": "resetMethod request"
@@ -385,14 +386,14 @@
               },
               "name": "resetMethodRequest",
               "schema" :{
-                "@id": "urn:SphereBME280Lab:iot:resetMethod:requestPayload:1",
+                "@id": "urn:AVNETSK2Lab:iot:resetMethod:requestPayload:1",
                 "@type": "Object",
                 "displayName": {
                   "en": "ResetMethod request payload"
                 },
                 "fields": [
                   {
-                    "@id": "urn:SphereBME280Lab:iot:resetMethod:requestPayload:resetTimer:1",
+                    "@id": "urn:AVNETSK2Lab:iot:resetMethod:requestPayload:resetTimer:1",
                     "@type": "SchemaField",
                     "description": {
                       "en": "Reset device after given amount of seconds (1..10)."
@@ -407,7 +408,7 @@
               }
             },
             "response": {
-              "@id": "urn:SphereBME280Lab:iot:resetMethod:response:1",
+              "@id": "urn:AVNETSK2Lab:iot:resetMethod:response:1",
               "@type": "SchemaField",
               "description": {
                 "en": "Device response to 'reset' command. "
@@ -417,14 +418,14 @@
               },
               "name": "resetMethodResponse",
               "schema": {
-                "@id": "urn:SphereBME280Lab:iot:resetMethod:responsePayload:1",
+                "@id": "urn:AVNETSK2Lab:iot:resetMethod:responsePayload:1",
                 "@type": "Object",
                 "displayName": {
                   "en": "ResetMethod response payload"
                 },
                 "fields": [
                   {
-                    "@id": "urn:SphereBME280Lab:IoT:resetMethod:responsePayload:success:1",
+                    "@id": "urn:AVNETSK2Lab:IoT:resetMethod:responsePayload:success:1",
                     "@type": "SchemaField",
                     "displayName": {
                       "en": "Success"
@@ -433,7 +434,7 @@
                     "schema": "boolean"
                   },
                   {
-                    "@id": "urn:SphereBME280Lab:IoT:resetMethod:responsePayload:message:1",
+                    "@id": "urn:AVNETSK2Lab:IoT:resetMethod:responsePayload:message:1",
                     "@type": "SchemaField",
                     "displayName": {
                       "en": "Message"
@@ -456,21 +457,21 @@
       }
     },
     {
-      "@id": "urn:SphereBME280Lab:BME280:interface:1",
+      "@id": "urn:AVNETSK2Lab:BME280:interface:1",
       "@type": "InterfaceInstance",
       "displayName": {
         "en": "BME280 Sensor"
       },
       "name": "BME280",
       "schema": {
-        "@id": "urn:SphereBME280Lab:BME280:1",
+        "@id": "urn:AVNETSK2Lab:BME280:1",
         "@type": "Interface",
         "displayName": {
           "en": "BME280 Sensor"
         },
         "contents": [
           {
-            "@id": "urn:SphereBME280Lab:BME280:temperature:1",
+            "@id": "urn:AVNETSK2Lab:BME280:temperature:1",
             "@type": [
               "Telemetry",
               "SemanticType/Temperature"
@@ -489,7 +490,7 @@
             "unit": "Units/Temperature/celsius"
           },
           {
-            "@id": "urn:SphereBME280Lab:BME280:pressure:1",
+            "@id": "urn:AVNETSK2Lab:BME280:pressure:1",
             "@type": [
               "Telemetry",
               "SemanticType/Pressure"
@@ -508,7 +509,7 @@
             "unit": "Units/Pressure/kiloPascal"
           },
           {
-            "@id": "urn:SphereBME280Lab:BME280:humidity:1",
+            "@id": "urn:AVNETSK2Lab:BME280:humidity:1",
             "@type": [
               "Telemetry",
               "SemanticType/Humidity"
@@ -528,57 +529,9 @@
           }
         ]
       }
-    },
-    {
-      "@id": "urn:SphereBME280Lab:DeviceHealth:interface:1",
-      "@type": "InterfaceInstance",
-      "displayName": {
-        "en": "Device-Health Data"
-      },
-      "name": "DeviceHealth",
-      "schema": {
-        "@id": "urn:SphereBME280Lab:DeviceHealth:1",
-        "@type": "Interface",
-        "displayName": {
-          "en": "Device-Health Data"
-        },
-        "contents": [
-          {
-            "@id": "urn:SphereBME280Lab:DeviceHealth:totalMemoryUsed:1",
-            "@type": [
-              "Telemetry" ],
-            "comment": "Total memory usage of your high-level application in kibibytes. Ex. 230 kilobytes.",
-            "displayName": {
-              "en": "Total Memory Usage"
-            },
-            "name": "totalMemoryUsed",
-            "displayUnit": {
-              "en": "kilobytes"
-            },
-            "schema": "long"
-          },
-          {
-            "@id": "urn:SphereBME280Lab:DeviceHealth:userMemoryUsed:1",
-            "@type": [
-              "Telemetry" ],
-            "comment": "User-mode memory usage of your high-level application in kibibytes. Ex. 91 kilobytes.",
-            "displayName": {
-              "en": "User-mode Memory Usage"
-            },
-            "name": "userMemoryUsed",
-            "displayUnit": {
-              "en": "kilobytes"
-            },
-            "schema": "long"
-          }
-        ]
-      }
     }
   ],
   "displayName": {
-    "en": "Azure Sphere with BME280 Lab "
-  },
-  "@context": [
-    "http://azureiot.com/v1/contexts/IoTModel.json"
-  ]
+    "en": "AVNET Starter Kit Rev2 Lab "
+  }
 }

@@ -1,0 +1,40 @@
+{
+    "@id": "urn:SphereBME280Lab:DeviceHealth:1",
+    "@type": "Interface",
+    "displayName": {
+        "en": "Device-Health Data"
+    },
+    "contents": [
+        {
+            "@id": "urn:SphereBME280Lab:DeviceHealth:totalMemoryUsed:1",
+            "@type": [
+                "Telemetry"
+            ],
+            "comment": "Total memory usage of your high-level application in kibibytes. Ex. 230 kilobytes.",
+            "displayName": {
+                "en": "Total Memory Usage"
+            },
+            "name": "totalMemoryUsed",
+            "displayUnit": {
+                "en": "kilobytes"
+            },
+            "schema": "long"
+        },
+        {
+            "@id": "urn:SphereBME280Lab:DeviceHealth:userMemoryUsed:1",
+            "@type": [
+                "Telemetry"
+            ],
+            "comment": "User-mode memory usage of your high-level application in kibibytes. Ex. 91 kilobytes.",
+            "displayName": {
+                "en": "User-mode Memory Usage"
+            },
+            "name": "userMemoryUsed",
+            "displayUnit": {
+                "en": "kilobytes"
+            },
+            "schema": "long"
+        }
+    ],
+    "@context": "http://azureiot.com/v1/contexts/IoTModel.json"
+}

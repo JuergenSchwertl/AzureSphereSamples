@@ -5,8 +5,8 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
 PROJECT( Mt3620DirectDHT C)
 message("Project ${PROJECT_NAME}")
 
-azsphere_configure_tools(TOOLS_REVISION "20.10")
-azsphere_configure_api(TARGET_API_SET "7")
+azsphere_configure_tools(TOOLS_REVISION "21.01")
+azsphere_configure_api(TARGET_API_SET "8")
 
 #Add library for DHT11 sensor
 ADD_SUBDIRECTORY(DHT11)
@@ -16,7 +16,10 @@ ADD_EXECUTABLE(${PROJECT_NAME} main.c parson.c rgbled_utility.c epoll_timerfd_ut
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} applibs azureiot pthread gcc_s DHT11)
 
 # This application targets the Seeed MT3620 Development Board so target for mt3620_rdb
-azsphere_target_hardware_definition(${PROJECT_NAME} TARGET_DIRECTORY "../Hardware/mt3620_rdb" TARGET_DEFINITION "mt3620_rdb.json")
+# Target hardware for the sample.
+set(TARGET_HARDWARE "mt3620_rdb")
+set(TARGET_DEFINITION "mt3620_rdb.json")
+azsphere_target_hardware_definition(${PROJECT_NAME} TARGET_DEFINITION "${TARGET_DEFINITION}")
 
 # Add MakeImage post-build command
 azsphere_target_add_image_package(${PROJECT_NAME})
