@@ -12,6 +12,7 @@
 #include <applibs/networking.h>
 #include <applibs/wificonfig.h>
 #include <applibs/powermanagement.h>
+#include <applibs/applications.h>
 #include <libBME280.h>
 
 #include "mt3620_rdb.h"
@@ -162,6 +163,13 @@ static const char cstrDevInfoProcMfgrValue[] = "MediaTek";
 static const int ciDevInfoStorageValue = 16384;
 static const int ciDevInfoMemoryValue = 4096;
 
+///<summary>Azure IoT PnP compatible device-health</summary>
+static const char cstrDevHealthTotalMemoryUsed[] ="totalMemoryUsed";
+static const char cstrDevHealthUserMemoryUsed[] ="userMemoryUsed";
+
+static size_t nLastTotalMemoryUsed = 0;
+static size_t nLastUserMemoryUsed = 0;
+
 // method response messages
 static const char cstrColorResponseMsg[] = "LED color set to %s";
 static const char cstrResetResponseMsg[] = "Reset in %d seconds";
@@ -277,10 +285,10 @@ static void DebugPrintCurrentlyConnectedWiFiNetwork(void)
         Log_Debug("INFO: Not currently connected to a WiFi network.\n");
     } else {
         Log_Debug("INFO: Currently connected WiFi network: \n");
-        Log_Debug("INFO: SSID \"%.*s\", BSSID %02x:%02x:%02x:%02x:%02x:%02x, Frequency %dMHz.\n",
+        Log_Debug("INFO: SSID \"%.*s\", BSSID %02x:%02x:%02x:%02x:%02x:%02x, Frequency %dMHz, Signal %d.\n",
                   network.ssidLength, network.ssid, network.bssid[0], network.bssid[1],
                   network.bssid[2], network.bssid[3], network.bssid[4], network.bssid[5],
-                  network.frequencyMHz);
+                  network.frequencyMHz, network.signalRssi);
     }
 }
 
@@ -371,26 +379,40 @@ static void SendTelemetryMessage(void)
 {
     if (connectedToIoTHub) {
 		bme280_data_t bmeData;
+        JSON_Value * jsonRoot = json_value_init_object();
+        JSON_Object* jsonObject = NULL;
 		
 		if (BME280_GetSensorData(&bmeData) == 0)
 		{
 			Log_Debug("[Send] Temperature: %.2f, Pressure: %.2f, Humidity: %.2f\n", bmeData.temperature, bmeData.pressure, bmeData.humidity);
-
-            JSON_Value * jsonRoot = json_value_init_object();
-            JSON_Object* jsonObject = json_value_get_object( jsonRoot );
+            jsonObject = json_value_get_object( jsonRoot );
             json_object_set_number(jsonObject, cstrTemperatureProperty, bmeData.temperature);
             json_object_set_number(jsonObject, cstrPressureProperty, bmeData.pressure);
             json_object_set_number(jsonObject, cstrHumidityProperty, bmeData.humidity);
-            
-            // Send a message
+		}
+
+        size_t nTotalMemUsed = Applications_GetTotalMemoryUsageInKB();
+        size_t nUserMemUsed = Applications_GetUserModeMemoryUsageInKB();
+        if( (nLastTotalMemoryUsed != nTotalMemUsed) || (nLastUserMemoryUsed != nUserMemUsed) ){
+			Log_Debug("[Send] TotalMemoryUsed: %d, UserMemoryUsed: %d\n", nTotalMemUsed, nUserMemUsed);
+
+            nLastTotalMemoryUsed = nTotalMemUsed;
+            nLastUserMemoryUsed = nUserMemUsed;
+            jsonObject = json_value_get_object( jsonRoot );
+            json_object_set_number(jsonObject, cstrDevHealthTotalMemoryUsed, nTotalMemUsed);
+            json_object_set_number(jsonObject, cstrDevHealthUserMemoryUsed, nUserMemUsed);
+        }
+
+        if( jsonObject != NULL )
+        {   // if there is any telemetry to be sent...
             AzureIoT_SendJsonMessage(jsonRoot);
-
-            json_value_free(jsonRoot);
-
 			// Set the send/receive LED2 to blink once immediately to indicate 
 			// the message has been queued.
 			BlinkLed2Once( RgbLedUtility_Colors_Green );
-		}
+        }
+        
+        json_value_free(jsonRoot);
+
     } else {
 		Log_Debug("[Send] not connected to IoT Central: no telemtry sent.\n");
 		BlinkLed2Once(RgbLedUtility_Colors_Red);
