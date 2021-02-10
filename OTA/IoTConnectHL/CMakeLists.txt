@@ -1,11 +1,11 @@
 #  Copyright (c) Microsoft Corporation. All rights reserved.
 #  Licensed under the MIT License.
 
-CMAKE_MINIMUM_REQUIRED(VERSION 3.11)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
 PROJECT(IoTConnectHL C)
 
-azsphere_configure_tools(TOOLS_REVISION "20.10")
-azsphere_configure_api(TARGET_API_SET "7")
+azsphere_configure_tools(TOOLS_REVISION "21.01")
+azsphere_configure_api(TARGET_API_SET "8")
 
 ADD_SUBDIRECTORY("../Shared.All" "${CMAKE_CURRENT_BINARY_DIR}/Shared.All")
 

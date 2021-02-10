@@ -17,6 +17,8 @@
  ******************************************************************************
  */
 
+#pragma GCC diagnostic ignored "-Wconversion"
+
 #include "lsm6dso_reg.h"
 
 /**

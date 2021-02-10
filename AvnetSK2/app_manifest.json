@@ -1,6 +1,6 @@
 {
   "SchemaVersion": 1,
-  "Name": "SphereBME280",
+  "Name": "AVNET_StarterKit_Telemetry",
   "ApplicationType": "Default",
   "ComponentId": "82a16cf9-d4e1-4235-a6e5-14ed23c4cc18",
   "EntryPoint": "/bin/app",
@@ -22,25 +22,24 @@
     "DeviceAuthentication": "c0b88764-9273-46ab-bab2-effecf13f91c",
     "AllowedTcpServerPorts": [],
     "AllowedUdpServerPorts": [],
-    "Gpio": [
-      "$MT3620_RDB_LED1_RED",
-      "$MT3620_RDB_LED1_GREEN",
-      "$MT3620_RDB_LED1_BLUE",
-      "$MT3620_RDB_LED2_RED",
-      "$MT3620_RDB_LED2_GREEN",
-      "$MT3620_RDB_LED2_BLUE",
-      "$MT3620_RDB_NETWORKING_LED_RED",
-      "$MT3620_RDB_NETWORKING_LED_GREEN",
-      "$MT3620_RDB_NETWORKING_LED_BLUE",
-      "$MT3620_RDB_BUTTON_A",
-      "$MT3620_RDB_BUTTON_B"
-    ],
     "Uart": [],
-    "I2cMaster": [ "$MT3620_ISU3_I2C" ],
+    "Pwm" : ["$AVNET_MT3620_SK_PWM_CONTROLLER0"],
+    "I2cMaster": [ "$AVNET_MT3620_SK_ISU2_I2C" ],
+    "Gpio": [ 
+      "$AVNET_MT3620_SK_USER_LED_RED",
+      "$AVNET_MT3620_SK_USER_LED_GREEN",
+      "$AVNET_MT3620_SK_USER_LED_BLUE",
+      "$AVNET_MT3620_SK_APP_STATUS_LED_YELLOW",
+      "$AVNET_MT3620_SK_USER_BUTTON_A",
+      "$AVNET_MT3620_SK_USER_BUTTON_B"
+       ],
     "SpiMaster": [],
     "WifiConfig": true,
     "NetworkConfig": false,
-    "SystemTime": false
+    "SystemTime": false,
+    "PowerControls": [
+      "ForceReboot"
+    ]
   }
 }
 

@@ -874,7 +874,7 @@ static void twinCallback(DEVICE_TWIN_UPDATE_STATE updateState, const unsigned ch
     }
     // Call the provided Twin Device callback
     fnTwinUpdateHandler(desiredProperties);
-
+    
     json_value_free(rootProperties);
 }
 
