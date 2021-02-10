@@ -1,26 +1,6 @@
-## Connecting an I2C sensor (Bosch BME280) and send telemetry to Azure IoT Central
+## Send telemetry from AVNET Starter Kit Rev2 to Azure IoT Central
 
-In this example we will connect an I2C based sensor and send telemetry data to **Azure IoT Central**. In this example it is the 
-Bosch BME280 temperature/humidity/pressure sensor.
-
-The libBME280 project contains a wrapper library based on the original [Bosch driver](https://github.com/BoschSensortec/BME280_driver) for the 
-Bosch BME280 temperature-, humidity- and pressure-sensor.
-
-This sensor is e.g. available as [Seeed Groove BME280 sensor board](http://wiki.seeedstudio.com/Grove-Barometer_Sensor-BME280/) amongst other suppliers.
-
-### Wiring the BME280 sensor
-
-There are multiple sensor boards for the BME280 available (the Seeed Grove BME280 mentioned above looks slightly different but offers to use a Grove connector cable)
-but essentially they all have the necessary power supply V(in) & GND and the I2C Pins *SDA* for data and *SCL* for clock called out on the printout.
-
-| Purpose  | MT3620          |  BME280  | Pictured wire below |
-|----------|-----------------|:--------:|:-------------------:|
-|3.3 volts | Header 3, pin 3 | Vin/Vcc  | red                 |
-|Ground    | Header 3, pin 2 | Gnd      | green               |
-|Data      | Header 3, pin 7 | SCL      | purple              |
-|Clock     | Header 3, pin 9 | SDA      | blue                |
-
-![MT3620 with connected DHT11 sensor](./Images/Lab_BME280.png)
+>**Note**: This sample is still work in progress for the upcoming train-the-trainer bootcamp
 
 
 ## Seting up Azure IoT Central
@@ -28,7 +8,7 @@ If you want to get rolling within minutes, follow the steps to [Import IoT Centr
 dashboard manually, follow the steps layed out in [Manual IoT Central setup](#Manual-IoT-Central-setup).
 
 #### Import IoT Central Application Template
-Just click here to [import Azure Sphere with BME 280 Template](https://apps.azureiotcentral.com/build/new/04687a86-f0f4-4d65-889c-8ef7fd52d24d),
+Just click here to [import Azure Sphere with AVNET SK2 Template](https://apps.azureiotcentral.com/build/new/04687a86-f0f4-4d65-889c-8ef7fd52d24d),
 and then select the type of IoT Central application you like. There is a free version available that allows to test your application for 7 days.
 
 Since IoT Central uses Azure IoT Hub and Azure IoT Hub Device Provisioning Service under the hood, you need to setup the certificate chain 
@@ -47,15 +27,15 @@ Apart from creating the IoT Central application itself, the remaining steps will
 Setting up the certificate chain for Azure IoT Hub DPS inside Azure IoT Central.
 
 To setup the telemetry, commands and properties for this sample you can import an Azure IoT PnP device template from the provided json here: 
-[*Azure Sphere with BME280 Lab.json*](./Azure%20Sphere%20with%20BME280%20Lab.json).
+[*Azure Sphere Starter Kit.json*](./models/Azure%20Sphere%20Starter%20Kit.json).
 
 To do this, open your IoT Central application and under *App settings* go to *Device Templates* -> *+New* and under 
 *Create a custom device template* select "IoT Device" and press [Next:Review], give it a name and hit [Create] .
 
-On the device template page you can now *Import capabililty model* and import the [*Azure Sphere with BME280 Lab.json*](./Azure%20Sphere%20with%20BME280%20Lab.json) .
+On the device template page you can now *Import capabililty model* and import the [*Azure Sphere Starter Kit.json*](./models/Azure%20Sphere%20Starter%20Kit.json) .
 
 ### Create a Device
-You could just start this lab and fire up the SphereBME280 application. If you have everything setup correctly with IoT Central, it would autmatically 
+You could just start this lab and fire up the AVNETSK2 application. If you have everything setup correctly with IoT Central, it would autmatically 
 connect and create a device therein. The only caveat with that is that the device name would be your Azure Sphere Device Id.
 
 To have devices enlisted with a more human readable names you can do a pre-setup of the device entry. Navigate to

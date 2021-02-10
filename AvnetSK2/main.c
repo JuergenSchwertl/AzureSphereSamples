@@ -141,6 +141,12 @@ static const MethodRegistration clstDirectMethods[] = {
 
 
 // json property names and values
+
+static const char cstrDisconnectTimeStampProperty[] = "disconnectTimestamp";
+static const char cstrDisconnectReasonProperty[] = "reason";
+static const char cstrNetworkStatus[] = "wifiAvailable";
+static const char cstrConnectTimeStampProperty[] = "connectTimestamp";
+
 static const char cstrColorProperty[] = "color";
 static const char cstrResetTimerProperty[] = "resetTimer";
 static const char cstrSuccessProperty[] = "success";
@@ -662,9 +668,14 @@ static void IoTHubConnectionStatusChanged(bool connected, const char *statusText
 	if (bConnectedToIoTHub)
 	{
         Log_Debug("[IoTHubConnectionStatusChanged]: Connected.\n");
+
+        SetIsoTimestamp(msgConnectionStatus.szConnectTimeStamp, sizeof(msgConnectionStatus.szConnectTimeStamp));
+
+
+        /// TODO: create richer event message with disconnect/connect timestamps. IoT Central only supports integer & string events but not objects
         // send a "connect" event telemetry message with the previous disconnect reason
-		SendEventMessage(cstrEvtConnected, pstrConnectionStatus);
-        pstrConnectionStatus = cstrEvtConnected;
+		SendEventMessage(cstrEvtConnected, msgConnectionStatus.pstrDisconnectReason);
+        memset( (void *) &msgConnectionStatus, 0, sizeof(msgConnectionStatus));
 
         // report initial Azure IoT PnP-compatible DeviceInformation & BlinkRate
         ReportAllProperties();
@@ -677,10 +688,11 @@ static void IoTHubConnectionStatusChanged(bool connected, const char *statusText
         // switch off telemetry timer as we are disconnected
         SetTimerFdToPeriod(fdTelemetryTimer, &tsNullInterval);
         // save reason for disconnect event
-        pstrConnectionStatus = statusText;
+        msgConnectionStatus.pstrDisconnectReason = statusText;
         bool bNetWorkStatus = false;
         Networking_IsNetworkingReady(&bNetWorkStatus);
-
+        msgConnectionStatus.bWasNetworkAvailable = bNetWorkStatus;
+        SetIsoTimestamp(msgConnectionStatus.szDisconnectTimeStamp, sizeof(msgConnectionStatus.szDisconnectTimeStamp));
     }
 }
 
