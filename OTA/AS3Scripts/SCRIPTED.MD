@@ -3,6 +3,15 @@
 This directory is part of the Multi-Core OTA sample. On information how build, run and deploy the sample OTA please refer 
 to the documentation in the [master directory](../README.MD).
 
+>**Note:** The OTA.psm1 scripts are developed for the v1-version of the Azure Sphere command line tools. The v2-Preview has slightly different parameter sets and 
+>does also support json output using `--output json` which makes scripting much easier. E.g. in PowerShell you can then get the response in object notation e.g. using
+>```PowerShell
+> $Products = (&azsphere.exe product list --output json) | ConvertFrom-Json
+> Write-Host $Products[0].Id
+>``` 
+>which  obsoletes the complex script arithmetics used in my earlier scripts.
+
+
 ## Prerequisites
 
 - Have the [IoTConnectHL application](../IoTConnectHL/README.MD) and the three [Realtime-capable applications](../RedSphereRT/README.MD) 

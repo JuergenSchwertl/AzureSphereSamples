@@ -1,4 +1,4 @@
-# AzureSphereSamples for 21.01 Azure Sphere SDK Version
+# AzureSphereSamples for 21.02 Azure Sphere SDK Version
 
 This repo contains sources and links for Azure Sphere Bootcamp labs, amongst other Azure Sphere Samples for 
 connected MCUs, sensors and other peripherals.
@@ -8,6 +8,7 @@ Please make sure to have a Windows 10 laptop capable of running Visual Studio 20
 already installed and a free USB port available. 
 * Visual Studio 2019 Download: https://visualstudio.microsoft.com/vs/ <br>
 In Visual Studio please go to *Extensions* -> *Manage Extensions* and download the **Azure Sphere** Extension for Visual Studio. 
+This may also download dependencies like C/C++ and the Linux development evironment for Visual Studio so it may take a little while.
 * alternatively Visual Studio Code Download: https://code.visualstudio.com/ <br>
 In Visual Studio Code, please also download the **Azure Sphere** extension (which will also download the **C/C++** and **CMake Tools** Extensions). 
 Please also follow the instructions on the Extension page to configure your settings.json!
@@ -15,21 +16,20 @@ Please also follow the instructions on the Extension page to configure your sett
 >but can refer to the VS2019 versions in settings.json alike:
 >```json
 >    "AzureSphere.SdkPath": "C:\\Program Files (x86)\\Microsoft Azure Sphere SDK\\",
->    "AzureSphere.ArmGnuPath": "C:\\Program Files (x86)\\Microsoft Azure Sphere SDK\\Sysroots\\6\\tools\\gcc",
+>    "AzureSphere.ArmGnuPath": "C:\\Program Files (x86)\\Microsoft Azure Sphere SDK\\Sysroots\\8\\tools\\gcc",
 >    "cmake.cmakePath": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe",
 >    "cmake.configureSettings": {
 >        "CMAKE_MAKE_PROGRAM" : "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\Ninja\\ninja.exe"
 >    }
 >```
+>When you update SDK versions, you may need to adapt the `"AzureSphere.ArmGnuPath"` to point to the current sysroot target API level.
+
 
 * Azure Sphere SDK (for Windows): https://aka.ms/azurespheresdkdownload/Windows <br>
 This download package installs the AzSphere.Exe command line tool as well as the network & FTDI drivers 
 
-Although you may be able to follow the labs also using Visual Studio Code running on Linux, your milage may vary (i.e. I have only tested the 
-lab projects on Windows).
-
-Although the SDK package is ~220MB, during the installation it may download up to 1GB of Visual Studio 
-Components, so I strongly recommend to have the SDK preinstalled.
+Although you may be able to follow the labs also using Visual Studio Code running on Linux, your milage may vary (i.e. I have mainly tested the 
+lab projects on Windows using Visual Studio and Visual Studio Code and only tried some of them on Ubuntu 20.04 Linux).
 
 You will also need an active Azure subscription and a user account with sufficient rights to create Azure Resources such as 
 * Azure Resource Groups 
