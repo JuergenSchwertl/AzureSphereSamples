@@ -7,7 +7,7 @@ PROJECT(AVNET_StarterKit_Telemetry C)
 message("Project ${PROJECT_NAME}")
 
 azsphere_configure_tools(TOOLS_REVISION "21.02")
-azsphere_configure_api(TARGET_API_SET "latest-lts")
+azsphere_configure_api(TARGET_API_SET "8")
 
 # Add the ST Micro LSM6DSO 3D Gyro and Accelerometer sensor lib
 ADD_SUBDIRECTORY(LSM6DSO)
