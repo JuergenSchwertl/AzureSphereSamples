@@ -16,13 +16,14 @@ Please also follow the instructions on the Extension page to configure your sett
 >but can refer to the VS2019 versions in settings.json alike:
 >```json
 >    "AzureSphere.SdkPath": "C:\\Program Files (x86)\\Microsoft Azure Sphere SDK\\",
->    "AzureSphere.ArmGnuPath": "C:\\Program Files (x86)\\Microsoft Azure Sphere SDK\\Sysroots\\8\\tools\\gcc",
+>    "AzureSphere.ArmGnuPath": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\Linux\\gcc_arm",
 >    "cmake.cmakePath": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe",
 >    "cmake.configureSettings": {
 >        "CMAKE_MAKE_PROGRAM" : "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\Ninja\\ninja.exe"
 >    }
 >```
->When you update SDK versions, you may need to adapt the `"AzureSphere.ArmGnuPath"` to point to the current sysroot target API level.
+>The `"AzureSphere.ArmGnuPath"` needs to point to your ARM toolchain (compilers are required to be located in the ...\bin\... subdirectory underneath.
+>In my example I'm referring to the toolchain installed with Visual Studio 2019 Community edition. For Enterprise edition this would be ...\2019\Enterprise\...
 
 
 * Azure Sphere SDK (for Windows): https://aka.ms/azurespheresdkdownload/Windows <br>
