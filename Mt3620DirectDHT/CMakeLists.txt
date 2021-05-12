@@ -5,8 +5,8 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
 PROJECT( Mt3620DirectDHT C)
 message("Project ${PROJECT_NAME}")
 
-azsphere_configure_tools(TOOLS_REVISION "21.02")
-azsphere_configure_api(TARGET_API_SET "8")
+azsphere_configure_tools(TOOLS_REVISION "21.04")
+azsphere_configure_api(TARGET_API_SET "9")
 
 #Add library for DHT11 sensor
 ADD_SUBDIRECTORY(DHT11)

@@ -5,7 +5,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
 PROJECT(RedSphereRT C)
 message("[JSchwert] Project ${PROJECT_NAME}")
 
-azsphere_configure_tools(TOOLS_REVISION "21.02")
+azsphere_configure_tools(TOOLS_REVISION "21.04")
 # real-time capable apps don't need the API-set
    
 ADD_SUBDIRECTORY("../Shared.All" "${CMAKE_CURRENT_BINARY_DIR}/Shared.All")
