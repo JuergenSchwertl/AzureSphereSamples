@@ -1,4 +1,6 @@
 
+Import-Module -Name AzSphereCli
+
 # relative paths of imagepackages to the OTA sample (under the proviso being built for Debug)
 $strIoTConnectHLPath = ".\\IoTConnectHL\\out\\ARM-Debug\\IoTConnectHL.imagepackage"
 $strRedSphereRTPath = ".\\RedSphereRT\\out\\ARM-Debug\\RedSphereRT.imagepackage"
@@ -8,6 +10,28 @@ $strBlueSphereRTPath = ".\\BlueSphereRT\\out\\ARM-Debug\\BlueSphereRT.imagepacka
 $strRedSphereProduct = "RedSphere Product"
 $strGreenSphereProduct = "GreenSphere Product"
 $strBlueSphereProduct = "BlueSphere Product"
+
+Enum Roles {
+    Administrator
+    Contributor
+    Reader
+}
+
+# .SYNOPSIS ImagePackage structure with Component Name, ComponentID, ImageID and FilePath
+Class Tenant
+{
+    [String] $Id
+    [String] $Name
+    [Roles[]] $Roles
+
+    #public constructor
+    Tenant()
+    {
+        
+    }
+
+}
+
 
 # .SYNOPSIS ImagePackage structure with Component Name, ComponentID, ImageID and FilePath
 Class ImagePackage
@@ -200,7 +224,8 @@ Product class with Id, Name, Description properties; public constructors and ToS
 
 }
 
-
+[Tenant[]] $Tenants = $null
+[Tenant] $SelectedTenant = $null
 
 [Product] $RedSphereProduct = $null
 [Product] $GreenSphereProduct = $null
@@ -233,7 +258,7 @@ function Get-ImagePackageFile(
     {
         $app = [ImagePackage]::new( $Path )
 
-        $result = & azsphere pkg show -f "$($app.FilePath)"
+        $result = & azsphere image-package show -f "$($app.FilePath)"
         if( $LASTEXITCODE -eq 0 )
         {
             if( $result[3].Contains("Component ID:") )
@@ -794,34 +819,41 @@ function Set-SdkPaths()
         Set-Location ..
     }
 
-    $Help = @(( "dev, device"    , "Manage devices."                                                            ), `
-    ( "dg, device-group"         , "Manage device groups in your Azure Sphere tenant."                          ), `
-    ( "get-support-data"         , "Gather diagnostic data about your system, cloud and device configurations." ), `
-    ( "hwd, hardware-definition" , "Manage hardware definitions."                                               ), `
-    ( "img, image"               , "Manage images in your Azure Sphere tenant."                                 ), `
-    ( "pkg, image-package"       , "Manage image packaging."                                                    ), `
-    ( "login"                    , "Log in to the Azure Sphere Security Service."                               ), `
-    ( "logout"                   , "Log out from the Azure Sphere Security Service."                            ), `
-    ( "prd, product"             , "Manage products in your Azure Sphere tenant."                               ), `
-    ( "register-user"            , "Register a new user to the Azure Sphere Security Service."                  ), `
-    ( "role"                     , "Manage Azure Sphere roles."                                                 ), `
-    ( "show-user"                , "Show information about the logged in Azure Sphere user."                    ), `
-    ( "show-version"             , "Show the version of the Azure Sphere tools."                                ), `
-    ( "tenant"                   , "Manage Azure Sphere tenants."                                               ))
+#    $Help = @(( "dev, device"    , "Manage devices."                                                            ), `
+#    ( "dg, device-group"         , "Manage device groups in your Azure Sphere tenant."                          ), `
+#    ( "get-support-data"         , "Gather diagnostic data about your system, cloud and device configurations." ), `
+#    ( "hwd, hardware-definition" , "Manage hardware definitions."                                               ), `
+#    ( "img, image"               , "Manage images in your Azure Sphere tenant."                                 ), `
+#    ( "pkg, image-package"       , "Manage image packaging."                                                    ), `
+#    ( "login"                    , "Log in to the Azure Sphere Security Service."                               ), `
+#    ( "logout"                   , "Log out from the Azure Sphere Security Service."                            ), `
+#    ( "prd, product"             , "Manage products in your Azure Sphere tenant."                               ), `
+#    ( "register-user"            , "Register a new user to the Azure Sphere Security Service."                  ), `
+#   ( "role"                     , "Manage Azure Sphere roles."                                                 ), `
+#   ( "show-user"                , "Show information about the logged in Azure Sphere user."                    ), `
+#    ( "show-version"             , "Show the version of the Azure Sphere tools."                                ), `
+#    ( "tenant"                   , "Manage Azure Sphere tenants."                                               ))
+#
+#    Write-Host "azsphere -?" -ForegroundColor Green
+#
+#    ForEach($ln in $Help){
+#        Write-Host $ln[0] ( " " * (24-$ln[0].Length)) -ForegroundColor Yellow -NoNewline
+#        Write-Host "- " $ln[1] -ForegroundColor Green
+#    }
+    
+    &azsphere
 
-    Write-Host "azsphere -?" -ForegroundColor Green
+    Write-Host "azsphere tenant list" -ForegroundColor Cyan
+    $Tenants = &azsphere tenant list -o json | ConvertFrom-Json
+    Format-Table -InputObject $Tenants
 
-    ForEach($ln in $Help){
-        Write-Host $ln[0] ( " " * (24-$ln[0].Length)) -ForegroundColor Yellow -NoNewline
-        Write-Host "- " $ln[1] -ForegroundColor Green
-    }
+    Write-Host "azsphere tenant show-selected" -ForegroundColor Cyan
+    $SelectedTenant = &azsphere tenant show-selected -o json | ConvertFrom-Json
+    Format-Table -InputObject $SelectedTenant
 
-    Write-Host "`nazsphere tenant list" -ForegroundColor Green
-    &azsphere tenant list
+    Write-Host "azsphere show-user" -ForegroundColor Cyan
+    &azsphere show-User --output json --query "name"
 
-
-    Write-Host "`nazsphere tenant show-selected" -ForegroundColor Green
-    &azsphere tenant show-selected
 }
 
 <#
