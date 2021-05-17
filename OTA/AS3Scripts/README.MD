@@ -69,53 +69,81 @@ You can either choose to follow the manual steps get the setup done or follow th
 ```sh
 azsphere product create --name "RedSphere Product" --description "The RedSphere Appliance"
 ```
-you should see an output like the following, indicating that the product itself and the 5 default devicegroups have been
+you should see an output indicating that the product itself and the default devicegroups have been
 successfully created. 
 ```
-Created product 'RedSphere Product' with default device groups:
-ID                                   Name
---                                   ----
-3560f888-d19b-47dd-ac3d-551bedb2af7b Development
-d38ad51d-39df-4be8-be3d-a6f355a3dd2d Field Test
-a8bbef58-6233-4f03-9c03-de390138682a Production
-5ac74c7d-7f1c-4b39-b14c-d9eb097ecd2b Production OS Evaluation
-5210b268-7150-4d99-880f-4f831df957db Field Test OS Evaluation
+Default device groups will be created for this product, use the 'azsphere product device-group list' 
+command to see them.
+...
 ```
-Let's check and compare the details for some DeviceGroups inside the Product using the following
+If you would only run `azsphere product device-group list --product "RedSphere Product"` you'll likely get a rather 
+unreadable table output, so let's add the **`--query`** parameter for a [JMESPath query](http://jsmespath.org) query.
 ```sh
-azsphere device-group show -productname "RedSphere Product" -devicegroupname "Production"
-azsphere device-group show -productname "RedSphere Product" -devicegroupname "Development"
+azsphere product device-group list --product "RedSphere Product" --query "[].{Id:id,Name:name}"
+```
+you should get a more digestable output alike
+```
+------------------------------------ ------------------------
+ Id                                   Name
+ =============================================================
+ 3560f888-d19b-47dd-ac3d-551bedb2af7b Development
+ ------------------------------------ ------------------------
+ d38ad51d-39df-4be8-be3d-a6f355a3dd2d Field Test
+ ------------------------------------ ------------------------
+ a8bbef58-6233-4f03-9c03-de390138682a Production
+ ------------------------------------ ------------------------
+ 5ac74c7d-7f1c-4b39-b14c-d9eb097ecd2b Production OS Evaluation
+ ------------------------------------ ------------------------
+ 5210b268-7150-4d99-880f-4f831df957db Field Test OS Evaluation
+ ------------------------------------ ------------------------
+ 73a504dc-b1ba-4a86-aed6-fc2c73ad5a47 Color Variant
+ ------------------------------------ ------------------------
+```
+
+Let's check and compare the details for some DeviceGroups inside the Product using **`... device-group show`** and 
+formatting the output differently.
+```sh
+azsphere device-group show --device-group "RedSphere Product/Production" --output jsonc
 ```
 You should see an output similar to 
+```json
+{
+  "allowCrashDumpsCollection": "Off",
+  "currentDeployment": null,
+  "description": "Default production device group",
+  "id": "a8bbef58-6233-4f03-9c03-de390138682a",
+  "name": "Production",
+  "osFeedType": "Retail",
+  "productId": "48bc4d96-a2e9-4a3d-8ce7-db06996666f2",
+  "tenantId": "c0b88764-9273-46ab-bab2-effecf13f91c",
+  "updatePolicy": "UpdateAll"
+}
 ```
-Getting device group 'Production' for product 'RedSphere Product'.
-Successfully retrieved the device group:
-   ID:                 'a8bbef58-6233-4f03-9c03-de390138682a'
-   Name:               'Production'
-   Description:        'Default production device group'
-   OS Feed Type:       'Retail'
-   Update Policy:      Accept all updates from the Azure Sphere Security Service.
-   Current Deployment: None
-
-
-Getting device group 'Development' for product 'RedSphere Product'.
-Successfully retrieved the device group:
-   ID:                 '3560f888-d19b-47dd-ac3d-551bedb2af7b'
-   Name:               'Development'
-   Description:        'Default development device group'
-   OS Feed Type:       'Retail'
-   Update Policy:      Accept only system software updates.  Don't accept application updates.
-   Current Deployment: None
+wheras
+```sh
+azsphere device-group show --device-group "RedSphere Product/Development" --output yamlc
 ```
-2. Looking at the "Development" device-group, you'll realize that it has by default the **OS Feed Type: 'Retail'** set. As we 
+gives
+```yaml
+allowCrashDumpsCollection: 'Off'
+currentDeployment: null
+description: Default development device group
+id: 3560f888-d19b-47dd-ac3d-551bedb2af7b
+name: Development
+osFeedType: Retail
+productId: 48bc4d96-a2e9-4a3d-8ce7-db06996666f2
+tenantId: c0b88764-9273-46ab-bab2-effecf13f91c
+updatePolicy: No3rdPartyAppUpdates
+```
+2. Looking at the "Development" device-group, you'll realize that it has by default the **osFeedType: Retail** set. As we 
 want to develop on the latest Azure Sphere Evaluation version we want to update the device-group to use 
 the **RetailEval** operating system feed:
 ```sh
-azsphere device-group update --productname "RedSphere Product" --devicegroupname "Development" --osfeed RetailEval
+azsphere device-group update --device-group "RedSphere Product/Development" --os-feed RetailEval --output yamlc
 ```
 3. Since we want an additional custom device-group named "*Color Variants*" running on the latest OS realease and OTA-enabled we need to add it using
 ```sh
-azsphere device-group create --productname "RedSphere Product" --name "Color Variant" --osfeed RetailEval --applicationupdate On
+azsphere device-group create --product "RedSphere Product" --name "Color Variant" --os-feed RetailEval --application-update On
 ```
 
 
@@ -123,8 +151,8 @@ azsphere device-group create --productname "RedSphere Product" --name "Color Var
 to update the device-group "Development" with the Azure Sphere Evaluaton OS feed (Hint: the commands below show the
 help page with the parameters):
 ```sh
-azsphere prd create -?
-azsphere dg update -?
+azsphere product create --help
+azsphere device-group update --help
 ```
 
 **Looking at the Dev side**
@@ -134,42 +162,41 @@ applications.
 Devices in the "Field Test" and "Field Test OS Evaluation" device-groups should run both the "IoT Connect" high-level application 
 together with one of the real-time capable applications.
 
-If you would attempt to create the deployments e.g. using 
-```sh
+In **version 1** of the azsphere you could attempt to create the deployments e.g. using 
+```
 azsphere dg dep create -pn "RedSphere Product" -dgn "Production" -p ".\RedSphereRT\out\ARM-Debug\RedSphereRT.imagepackage" -f
 azsphere dg dep create -pn "RedSphere Product" -dgn "Production OS Evaluation" -p ".\RedSphereRT\out\ARM-Debug\RedSphereRT.imagepackage" -f
 ```
-you will though receive an error message on the 2nd command, complaining that "*An image with the same ID ('f1c5d8dd-16e6-499b-9a6d-b7fd828ee48e') already exists.*"
+but would have received an error message on the 2nd command, complaining that "*An image with the same ID ('f1c5d8dd-16e6-499b-9a6d-b7fd828ee48e') already exists.*"
 since the 1st command implicitly already uploaded the image-package for the RedSphereRT application. 
+
 Since running the same application (or application combinations) in deployments on different device groups is 
 a rather common scenario, we need to take a slightly different route and first upload the current application image-packages and 
 then create the deployments referencing the uploaded image packages by their ImageId.
 
 ```sh
-azsphere img add -f ".\RedSphereRT\out\ARM-Debug\RedSphereRT.imagepackage" --force
-azsphere img add -f ".\GreenSphereRT\out\ARM-Debug\GreenSphereRT.imagepackage" --force
-azsphere img add -f ".\BlueSphereRT\out\ARM-Debug\BlueSphereRT.imagepackage" --force
-azsphere img add -f ".\IoTConnectHL\out\ARM-Debug\IoTConnectHL.imagepackage" --force
+azsphere image add --image ".\RedSphereRT\out\ARM-Debug\RedSphereRT.imagepackage" --force
+azsphere image add --image ".\GreenSphereRT\out\ARM-Debug\GreenSphereRT.imagepackage" --force
+azsphere image add --image ".\BlueSphereRT\out\ARM-Debug\BlueSphereRT.imagepackage" --force
+azsphere image add --image ".\IoTConnectHL\out\ARM-Debug\IoTConnectHL.imagepackage" --force
 ```
 
 you should see an output like:
 ```
-C:\Repos\AzureSphereSamples\OTA>azsphere img add -f ".\RedSphereRT\out\ARM-Debug\RedSphereRT.imagepackage" --force
-warn: '.\out\ARM-Debug-4+Beta2001\RedSphereRT\RedSphereRT.imagepackage' targets Beta APIs that may change or be removed in future.
-Uploading image from file '.\RedSphereRT\out\ARM-Debug\RedSphereRT.imagepackage':
- --> Image ID:       8e224bb1-9440-423d-9b8e-e2d05f1902a7
+Uploading image from file 'RedSphereRT\out\ARM-Debug\RedSphereRT.imagepackage':
+ --> Image ID:       63fdae39-b1ef-4044-b27d-1ed5c2c3fb1f
  --> Component ID:   f4e25978-6152-447b-a2a1-64577582f327
  --> Component name: 'RedSphereRT'
 Removing temporary state for uploaded image.
-Successfully uploaded image with ID '8e224bb1-9440-423d-9b8e-e2d05f1902a7' and name 'RedSphereRT' to component with ID 'f4e25978-6152-447b-a2a1-64577582f327'.
+Successfully uploaded image with ID '63fdae39-b1ef-4044-b27d-1ed5c2c3fb1f' and name 'RedSphereRT' to component with ID 'f4e25978-6152-447b-a2a1-64577582f327'.```
 ```
 
 To proceed further you need to note down the individual ImageID´s to create the deployments along the lines of  
 
-<pre><code>azsphere dg dep create -pn "RedSphere Product" -dgn "Production" -ii <i>[RedSphereRT-ImageID]</i> -f
-azsphere dg dep create -pn "RedSphere Product" -dgn "Production OS Evaluation" -ii <i>[RedSphereRT-ImageID]</i> -f
-azsphere dg dep create -pn "RedSphere Product" -dgn "Field Test" -ii <i>[RedSphereRT-ImageID],[IoTConnectHL-ImageID]</i> -f
-azsphere dg dep create -pn "RedSphere Product" -dgn "Field Test OS Evaluation" -ii <i>[RedSphereRT-ImageID],[IoTConnectHL-ImageID]</i> -f
+<pre><code>azsphere device-group deployment create --device-group "RedSphere Product/Production" --images <i>[RedSphereRT-ImageID]</i>
+azsphere device-group deployment create --device-group "RedSphere Product/Production OS Evaluation" --images <i>[RedSphereRT-ImageID]</i>
+azsphere device-group deployment create --device-group "RedSphere Product/Field Test" --images <i>[RedSphereRT-ImageID],[IoTConnectHL-ImageID]</i>
+azsphere device-group deployment create --device-group "RedSphere Product/Field Test OS Evaluation" --images <i>[RedSphereRT-ImageID],[IoTConnectHL-ImageID]</i>
 </code></pre>
 I leave it up to you to do the same for the other products.
 
@@ -181,13 +208,13 @@ I leave it up to you to do the same for the other products.
 We then need to prepare your device for OTA deployment. Open an Azure Sphere Developer Command Prompt Window, change the directory to OTA sample directory and then
 run the following command to enable your device to receive OTA application updates and at the sam etime assign it to one of our devicegroups:
 ```sh
-azsphere device enable-cloud-test -pn "RedSphere Product" -dgn "Production"
+azsphere device enable-cloud-test --device-group "RedSphere Product/Production"
 ```
 During that process, your device will reboot and after a minute you'll see the 1st LED Blinking red.
 ```sh
-azsphere dev img list-targeted
-azsphere dev img list-installed
-azsphere dev app show-status
+azsphere device image list-targeted
+azsphere device image list-installed
+azsphere device app show-status
 ```
 will now show that the device is targeted with the RedSphereRT application, that this application is installed and also running.
 
@@ -212,9 +239,9 @@ After Reboot it will still start the old (RedSphereRT) application while in the 
 application updates, find that it is now targeted the GreenSphereRT deployment, download the image package(s), then send a SIG_TERM to the RedSphereRT app
 to gracefully have it terminated and only afterwards start the GreenSphereRT .  
 ```sh
-azsphere dev img list-targeted
-azsphere dev img list-installed
-azsphere dev app show-status
+azsphere device image list-targeted
+azsphere device image list-installed
+azsphere device app show-status
 ```
 also reveals that we now have both targeted apps installed and running.
 
