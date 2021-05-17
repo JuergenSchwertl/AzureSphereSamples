@@ -5,8 +5,8 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
 PROJECT(SphereBME280 C)
 
 # set the used sensor type (uncomment the line as appropriate)
-#SET(SENSOR_TYPE BME280)
-SET(SENSOR_TYPE BMP280)
+SET(SENSOR_TYPE BME280)
+#SET(SENSOR_TYPE BMP280)
 
 message("Project ${PROJECT_NAME} with sensor ${SENSOR_TYPE}")
 
