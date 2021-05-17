@@ -121,8 +121,10 @@ Please follow the steps as outlined in [WifiSetupAndDeviceControlViaBle](https:/
 to connect the [Nordic Semiconductor nRF52 Development Kit](https://www.nordicsemi.com/Software-and-Tools/Development-Kits/nRF52-DK)
 
 In case you want to use the AVNET Starter Kit (Rev2) together with the nRF 52 DK Development Kit, the wiring should then look like:
+
 [![AVNET Starter Kit with nRF 52 DK](./Images/nRF52_AVNET_SK2_sm.png)](./Images/nRF52_AVNET_SK2.png)
-You also need to update the used HW pins:
+
+You also need to update the used HW pins as well as the [`"Capabilities"`-section in *app_manifest.json*](https://github.com/Azure/azure-sphere-samples/blob/master/Samples/WifiSetupAndDeviceControlViaBle/AzureSphere_HighLevelApp/app_manifest.json#L7):
 
 [`SAMPLE_NRF52_RESET` in *main.c#L315*](https://github.com/Azure/azure-sphere-samples/blob/master/Samples/WifiSetupAndDeviceControlViaBle/AzureSphere_HighLevelApp/main.c#L315)
 is expanded to `MT3620_GPIO5`. The **RST**-pin on the Clickboard socket is connected to GPIO 2 and therefore the line needs to be changed to
@@ -146,8 +148,11 @@ and the [Nordic Semiconductor nRF52 DK Development Kit](https://www.nordicsemi.c
 Please follow the steps as outlined in [External MCU Update](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/ExternalMcuUpdateNrf52).
 
 In case you want to use the AVNET Starter Kit (Rev2) together with the nRF 52 DK Development Kit, the wiring should then look like:
+
 [![AVNET Starter Kit with nRF 52 DK](./Images/nRF52_AVNET_SK2_sm.png)](./Images/nRF52_AVNET_SK2.png)
-You also need to update the used HW pins:
+
+You also need to update the used HW pins in the software as well as the [`"Capabilities"`-section in the *appmanifest.json*](https://github.com/Azure/azure-sphere-samples/blob/master/Samples/ExternalMcuUpdate/AzureSphere_HighLevelApp/app_manifest.json#L7):
+
 [`SAMPLE_NRF52_RESETSAMPLE_NRF52_RESET` in *main.c#L159*](https://github.com/Azure/azure-sphere-samples/blob/master/Samples/ExternalMcuUpdate/AzureSphere_HighLevelApp/main.c#L159)
 is expanded to `MT3620_GPIO5`. The **RST**-pin on the Clickboard socket is connected to GPIO 2 and therefore the line needs to be changed to
 ```C
