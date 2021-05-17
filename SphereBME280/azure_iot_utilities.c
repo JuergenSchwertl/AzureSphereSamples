@@ -434,6 +434,14 @@ bool AzureIoT_SetupClient(void)
         return false;
     }
 
+    // if (IoTHubDeviceClient_LL_SetRetryPolicy(hIoTHubClient,  IOTHUB_CLIENT_RETRY_EXPONENTIAL_BACKOFF_WITH_JITTER, 240) 
+    //     != IOTHUB_CLIENT_OK)
+    // {
+    //     LogMessage("ERROR: failure setting retry option: ...EXPONENTIAL_BACKOFF_WITH_JITTER \n");
+    //     return false;
+    // }
+
+
      // Set callbacks for Message, MethodCall and Device Twin features.
     IoTHubDeviceClient_LL_SetMessageCallback(hIoTHubClient, receiveMessageCallback, NULL);
     IoTHubDeviceClient_LL_SetDeviceMethodCallback(hIoTHubClient, directMethodCallback, NULL);
@@ -548,7 +556,7 @@ void AzureIoT_SendMessageWithContentType(const char* messagePayload, const char 
     (void)IoTHubMessage_SetContentEncodingSystemProperty(messageHandle, encoding);
 
     //// Add custom properties to message, i.e. for IoT Hub Message Routing
-    //(void)IoTHubMessage_SetProperty(messageHandle, "property_key", "property_value");
+    (void)IoTHubMessage_SetProperty(messageHandle, "JSchwertProperty", "JSchwertValue");
 
 
     if (IoTHubDeviceClient_LL_SendEventAsync(hIoTHubClient, messageHandle, sendMessageCallback,
