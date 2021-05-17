@@ -143,7 +143,7 @@ azsphere device-group update --device-group "RedSphere Product/Development" --os
 ```
 3. Since we want an additional custom device-group named "*Color Variants*" running on the latest OS realease and OTA-enabled we need to add it using
 ```sh
-azsphere device-group create --product "RedSphere Product" --name "Color Variant" --os-feed RetailEval --application-update On
+azsphere device-group create --product "RedSphere Product" --name "Color Variant" --os-feed RetailEval --application-update UpdateAll
 ```
 
 
