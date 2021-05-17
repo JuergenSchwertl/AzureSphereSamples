@@ -13,7 +13,14 @@
 #include <applibs/wificonfig.h>
 #include <applibs/powermanagement.h>
 #include <applibs/applications.h>
+
+#ifdef BME280
 #include <libBME280.h>
+#endif
+
+#ifdef BMP280
+#include <libBMP280.h>
+#endif
 
 #include "mt3620_rdb.h"
 #include "rgbled_utility.h"
@@ -135,7 +142,9 @@ static const char cstrSuccessProperty[] = "success";
 static const char cstrMessageProperty[] = "message";
 static const char cstrTemperatureProperty[] = "temperature";
 static const char cstrPressureProperty[] = "pressure";
-static const char cstrHumidityProperty[] = "humidity";
+#ifdef BME280
+    static const char cstrHumidityProperty[] = "humidity";
+#endif
 static const char cstrLedBlinkRateProperty[] = "blinkRateProperty";
 static const char cstrValueProperty[] = "value";
 static const char cstrVersionProperty[] = "av";
@@ -156,7 +165,7 @@ static const char cstrDevInfoMemoryProperty[] = "totalMemory";
 
 static const char cstrDevInfoManufacturerValue[] = "Seeed";
 static const char cstrDevInfoModelValue[] = "MT3620 Developer Kit";
-static const char cstrDevInfoSWVersionValue[] = "SphereBME280 v20.08.0819";
+static const char cstrDevInfoSWVersionValue[] = "SphereBME280 v21.05.17.1130";
 static const char cstrDevInfoOSNameValue[] = "Azure Sphere IoT OS";
 static const char cstrDevInfoProcArchValue[] = "ARM Core A7,M4";
 static const char cstrDevInfoProcMfgrValue[] = "MediaTek";
@@ -378,10 +387,11 @@ static void SendEventMessage(const char * cstrEvent, const char * cstrMessage)
 static void SendTelemetryMessage(void)
 {
     if (connectedToIoTHub) {
-		bme280_data_t bmeData;
         JSON_Value * jsonRoot = json_value_init_object();
         JSON_Object* jsonObject = NULL;
-		
+
+#ifdef BME280		
+		bme280_data_t bmeData;
 		if (BME280_GetSensorData(&bmeData) == 0)
 		{
 			Log_Debug("[Send] Temperature: %.2f, Pressure: %.2f, Humidity: %.2f\n", bmeData.temperature, bmeData.pressure, bmeData.humidity);
@@ -390,6 +400,19 @@ static void SendTelemetryMessage(void)
             json_object_set_number(jsonObject, cstrPressureProperty, bmeData.pressure);
             json_object_set_number(jsonObject, cstrHumidityProperty, bmeData.humidity);
 		}
+#endif
+
+#ifdef BMP280		
+		bmp280_data_t bmpData;
+
+		if (BMP280_GetSensorData(&bmpData) == 0)
+		{
+			Log_Debug("[Send] Temperature: %.2f, Pressure: %.2f\n", bmpData.temperature, bmpData.pressure);
+            jsonObject = json_value_get_object( jsonRoot );
+            json_object_set_number(jsonObject, cstrTemperatureProperty, bmpData.temperature);
+            json_object_set_number(jsonObject, cstrPressureProperty, bmpData.pressure);
+		}
+#endif
 
         size_t nTotalMemUsed = Applications_GetTotalMemoryUsageInKB();
         size_t nUserMemUsed = Applications_GetUserModeMemoryUsageInKB();
@@ -852,12 +875,23 @@ static int InitPeripheralsAndHandlers(void)
     // the ledBlink, ledMessageEventSentReceived, ledNetworkStatus variables)
     RgbLedUtility_OpenLeds(rgbLeds, nLedCount, gpioLedPins);
 
+#ifdef BME280
     // Initialize I2C sensor(s)
     Log_Debug("INFO: Initializing BME280 I2C sensor on primary address.\n");
-    bool bInitSuccessful = BME280_Init(fdSensorI2c, GROOVE_BME280_I2C_ADDRESS);
+    bool bInitSuccessful = BME280_Init(fdSensorI2c, true);
     if (!bInitSuccessful) {
         return -1;
     }
+#endif
+
+#ifdef BMP280
+    // Initialize I2C sensor(s)
+    Log_Debug("INFO: Initializing BMP280 I2C sensor on primary address.\n");
+    bool bInitSuccessful = BMP280_Init(fdSensorI2c, true);
+    if (!bInitSuccessful) {
+        return -1;
+    }
+#endif
 
     // Initialize the Azure IoT SDK
     if (!AzureIoT_Initialize()) {
