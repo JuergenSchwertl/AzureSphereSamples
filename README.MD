@@ -120,6 +120,22 @@ available and the  Azure Sphere Product Team [Azure Sphere Samples repo](https:/
 Please follow the steps as outlined in [WifiSetupAndDeviceControlViaBle](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/WifiSetupAndDeviceControlViaBle) 
 to connect the [Nordic Semiconductor nRF52 Development Kit](https://www.nordicsemi.com/Software-and-Tools/Development-Kits/nRF52-DK)
 
+In case you want to use the AVNET Starter Kit (Rev2) together with the nRF 52 DK Development Kit, the wiring should then look like:
+[![AVNET Starter Kit with nRF 52 DK](./Images/nRF52_AVNET_SK2_sm.png)](./Images/nRF52_AVNET_SK2.png)
+You also need to update the used HW pins:
+
+[`SAMPLE_NRF52_RESET` in *main.c#L315*](https://github.com/Azure/azure-sphere-samples/blob/master/Samples/WifiSetupAndDeviceControlViaBle/AzureSphere_HighLevelApp/main.c#L315)
+is expanded to `MT3620_GPIO5`. The **RST**-pin on the Clickboard socket is connected to GPIO 2 and therefore the line needs to be changed to
+```C
+GPIO_OpenAsOutput(MT3620_GPIO2, GPIO_OutputMode_OpenDrain, GPIO_Value_Low);
+```
+
+The used [`SAMPLE_NRF52_UART` in *main.c#L336*](https://github.com/Azure/azure-sphere-samples/blob/master/Samples/WifiSetupAndDeviceControlViaBle/AzureSphere_HighLevelApp/main.c#L336)
+is expanded into `MT3620_ISU0_UART` which is the same ISU routed to Click socket #1 with SPI printout.
+
+The [WifiSetupAndDeviceControlViaBle](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/WifiSetupAndDeviceControlViaBle)-Sample 
+doesn't use `SAMPLE_NRF52_DFU` so no change there.
+
 ### Lab #8: Updating an external MCU Firmware
 As Lab #7 already involves the Nordic Semiconductor nRF 52 Development Kit, this lab re-uses it to showcase how to update the firmware of another Micro Controller.
 This covers scenarios, where Azure Sphere is retro-fit as a Guardian Module to an existing MCU-based controller board.
@@ -128,6 +144,23 @@ For this lab you'll need the Azure Sphere Product Team [Azure Sphere Samples rep
 and the [Nordic Semiconductor nRF52 DK Development Kit](https://www.nordicsemi.com/Software-and-tools/Development-Kits/nRF52-DK) available .
 
 Please follow the steps as outlined in [External MCU Update](https://github.com/Azure/azure-sphere-samples/tree/master/Samples/ExternalMcuUpdateNrf52).
+
+In case you want to use the AVNET Starter Kit (Rev2) together with the nRF 52 DK Development Kit, the wiring should then look like:
+[![AVNET Starter Kit with nRF 52 DK](./Images/nRF52_AVNET_SK2_sm.png)](./Images/nRF52_AVNET_SK2.png)
+You also need to update the used HW pins:
+[`SAMPLE_NRF52_RESETSAMPLE_NRF52_RESET` in *main.c#L159*](https://github.com/Azure/azure-sphere-samples/blob/master/Samples/ExternalMcuUpdate/AzureSphere_HighLevelApp/main.c#L159)
+is expanded to `MT3620_GPIO5`. The **RST**-pin on the Clickboard socket is connected to GPIO 2 and therefore the line needs to be changed to
+```C
+GPIO_OpenAsOutput(MT3620_GPIO2, GPIO_OutputMode_OpenDrain, GPIO_Value_Low);
+```
+The used [`SAMPLE_NRF52_UART` in *main.c#L1´82*](https://github.com/Azure/azure-sphere-samples/blob/master/Samples/ExternalMcuUpdate/AzureSphere_HighLevelApp/main.c#L182)
+is expanded into `MT3620_ISU0_UART` which is the same ISU routed to Click socket #1 with SPI printout again.
+
+The [`SAMPLE_NRF52_DFU` in *main.c#L190*](https://github.com/Azure/azure-sphere-samples/blob/master/Samples/ExternalMcuUpdate/AzureSphere_HighLevelApp/main.c#L190)
+expands into `MT3620_GPIO44` and the **AN**-pin on the Clickboard socket is routed to GPIO 42 so you need to update the line to
+```C
+GPIO_OpenAsOutput(MT3620_GPIO44, GPIO_OutputMode_OpenDrain, GPIO_Value_High);
+```
 
 
 ## Other samples
