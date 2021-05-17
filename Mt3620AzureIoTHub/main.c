@@ -824,7 +824,7 @@ void ClosePeripheralsAndHandlers(void)
 /// </summary>
 int main(int argc, char *argv[])
 {
-    Log_Debug("INFO: SphereBME280 application starting.\n");
+    Log_Debug("INFO: Mt3620AzureIoTHub application starting.\n");
 
     // app_manifest.json:"CmdArgs" 1st parameter should be DPS Scope ID
     if (argc > 1)

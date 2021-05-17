@@ -22,13 +22,17 @@ but essentially they all have the necessary power supply V(in) & GND and the I2C
 
 ![MT3620 with connected DHT11 sensor](./Images/Lab_BME280.png)
 
+>**Note:**
+>In case you want to use a Bosch BM**P**280 instead of the BM**E**280, the wiring is identical, you just need to change the
+>`SENSOR_TYPE` variable in *CMakeLists.txt* after [Line 8](./CMakeLists.txt#L7)
+
 
 ## Seting up Azure IoT Central
 If you want to get rolling within minutes, follow the steps to [Import IoT Central Application Template](#Import-IoT-Central-Application-Template) , if you want to setup your 
 dashboard manually, follow the steps layed out in [Manual IoT Central setup](#Manual-IoT-Central-setup).
 
 #### Import IoT Central Application Template
-Just click here to [import Azure Sphere with BME 280 Template](https://apps.azureiotcentral.com/build/new/04687a86-f0f4-4d65-889c-8ef7fd52d24d),
+Just click here to [import Azure Sphere with BME 280 Template](https://apps.azureiotcentral.com/build/new/4485e1a2-63ab-439e-af6d-948c9ccb49b3),
 and then select the type of IoT Central application you like. There is a free version available that allows to test your application for 7 days.
 
 Since IoT Central uses Azure IoT Hub and Azure IoT Hub Device Provisioning Service under the hood, you need to setup the certificate chain 

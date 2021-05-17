@@ -19,10 +19,7 @@ to the documentation in the [master directory](../README.MD).
    ```
    azsphere device enable-development --EnableRTCoreDebugging
    ```
-    or in short
-   ```
-   azsphere dev edv -r
-   ```
+   
 
    This command must be run as administrator when you enable real-time core debugging because it installs USB drivers for the debugger.
 1. Close the window after the command completes because administrator privilege is no longer required.  
