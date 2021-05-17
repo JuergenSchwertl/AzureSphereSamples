@@ -162,13 +162,13 @@ applications.
 Devices in the "Field Test" and "Field Test OS Evaluation" device-groups should run both the "IoT Connect" high-level application 
 together with one of the real-time capable applications.
 
-In **version 1** of the azsphere you could attempt to create the deployments e.g. using 
-```
-azsphere dg dep create -pn "RedSphere Product" -dgn "Production" -p ".\RedSphereRT\out\ARM-Debug\RedSphereRT.imagepackage" -f
-azsphere dg dep create -pn "RedSphere Product" -dgn "Production OS Evaluation" -p ".\RedSphereRT\out\ARM-Debug\RedSphereRT.imagepackage" -f
-```
-but would have received an error message on the 2nd command, complaining that "*An image with the same ID ('f1c5d8dd-16e6-499b-9a6d-b7fd828ee48e') already exists.*"
-since the 1st command implicitly already uploaded the image-package for the RedSphereRT application. 
+>**Note:**: In **version 1** of the azsphere you could attempt to create the deployments e.g. using 
+>```
+>azsphere dg dep create -pn "RedSphere Product" -dgn "Production" -p ".\RedSphereRT\out\ARM-Debug\RedSphereRT.imagepackage" -f
+>azsphere dg dep create -pn "RedSphere Product" -dgn "Production OS Evaluation" -p ".\RedSphereRT\out\ARM-Debug\RedSphereRT.imagepackage" -f
+>```
+>but would have received an error message on the 2nd command, complaining that "*An image with the same ID ('f1c5d8dd-16e6-499b-9a6d-b7fd828ee48e') already exists.*"
+>since the 1st command implicitly already uploaded the image-package for the RedSphereRT application. 
 
 Since running the same application (or application combinations) in deployments on different device groups is 
 a rather common scenario, we need to take a slightly different route and first upload the current application image-packages and 
@@ -222,7 +222,7 @@ will now show that the device is targeted with the RedSphereRT application, that
 
 Now change it to another product and device group
 ```sh
-azsphere device update -pn "GreenSphere Product" -dgn "Field Test"
+azsphere device update --device-group "GreenSphere Product/Field Test"
 ```
 You would expect the green LED starting blinking but will realize that not much is going to change. 
 ```sh
