@@ -28,7 +28,7 @@ GPIO blocks, timer IRQs and for inter-core communications.
 1. Right-click the Azure Sphere Developer Command Prompt shortcut and select **More&gt;Run as administrator**.
 1. At the administrative command prompt, prepare the connected device for RTCore-Debugging :
    ```sh
-   azsphere dev edv --EnableRTCoreDebugging
+   azsphere device enable-development --enable-rt-core-debugging
    ```
    This command must be run as administrator when you enable real-time capable core debugging because it installs USB drivers for the debugger.
 1. Close the window after the command completes because administrator privilege is no longer required.  

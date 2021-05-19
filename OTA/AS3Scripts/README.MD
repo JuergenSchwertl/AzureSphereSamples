@@ -191,12 +191,12 @@ Removing temporary state for uploaded image.
 Successfully uploaded image with ID '63fdae39-b1ef-4044-b27d-1ed5c2c3fb1f' and name 'RedSphereRT' to component with ID 'f4e25978-6152-447b-a2a1-64577582f327'.```
 ```
 
-To proceed further you need to note down the individual ImageID´s to create the deployments along the lines of  
+To proceed further you need to note down the individual ImageID's to create the deployments along the lines of  
 
 <pre><code>azsphere device-group deployment create --device-group "RedSphere Product/Production" --images <i>[RedSphereRT-ImageID]</i>
 azsphere device-group deployment create --device-group "RedSphere Product/Production OS Evaluation" --images <i>[RedSphereRT-ImageID]</i>
-azsphere device-group deployment create --device-group "RedSphere Product/Field Test" --images <i>[RedSphereRT-ImageID],[IoTConnectHL-ImageID]</i>
-azsphere device-group deployment create --device-group "RedSphere Product/Field Test OS Evaluation" --images <i>[RedSphereRT-ImageID],[IoTConnectHL-ImageID]</i>
+azsphere device-group deployment create --device-group "RedSphere Product/Field Test" --images <i>[RedSphereRT-ImageID] [IoTConnectHL-ImageID]</i>
+azsphere device-group deployment create --device-group "RedSphere Product/Field Test OS Evaluation" --images <i>[RedSphereRT-ImageID] [IoTConnectHL-ImageID]</i>
 </code></pre>
 I leave it up to you to do the same for the other products.
 
