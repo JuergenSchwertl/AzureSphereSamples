@@ -477,7 +477,8 @@ static void DeviceTwinUpdate(JSON_Object *desiredProperties)
 		SetLedRate(&atsBlinkingIntervals[blinkIntervalIndex]);
 
         // REMARK: IoT Central desired property response since August 2020 needs to be message as 
-        //"{ "blinkRateProperty" : { "value" : ##, "desiredVersion" : ##, "status" : "completed" } }" 
+        // { "blinkRateProperty" : { "value": 1, "ac": 200, "ad": "completed", "av": 7 } }
+        //<seealso href="https://docs.microsoft.com/en-us/azure/iot-central/core/concepts-telemetry-properties-commands#writable-property-types" />
         JSON_Value* jsonRoot = json_value_init_object();
         
         JSON_Value* jsonPropertyValue = json_value_init_object();
@@ -839,6 +840,7 @@ void ResetTimerHandler(EventData* eventData)
 
     PowerManagement_ForceSystemReboot();
     terminationRequired = true;
+
 }
 
 /// <summary>

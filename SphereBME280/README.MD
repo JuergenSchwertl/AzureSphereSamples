@@ -163,7 +163,7 @@ Azure IoT Central also supports properties, that are actually based on Azure IoT
 >and required the property to be mirrored as reported property with additional metadata.
 >
 >As of end of July 2020 the schema was reverted back to use the shortform notation  `{ "propertyname" : 1, "$version" : 7 }` . 
->See [IoT Central Properties](https://docs.microsoft.com/en-us/azure/iot-central/core/concepts-telemetry-properties-commands#properties) for more
+>See [IoT Central Properties](https://docs.microsoft.com/en-us/azure/iot-central/core/concepts-telemetry-properties-commands#writable-property-types) for more
 >info on the schema for *reported properties*.
 >
 >For a *desired property*, you need to indicate the successful receipt to Azure Iot Central in the form of of a telemetry message:
