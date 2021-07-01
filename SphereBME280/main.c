@@ -827,6 +827,9 @@ void TelemetryTimerHandler(EventData *eventData)
 	SendTelemetryMessage();
 }
 
+// forward declaration to allow reset function to gracefuly close all connections
+void ClosePeripheralsAndHandlers(void);
+int InitPeripheralsAndHandlers(void);
 
 /// <summary>
 ///     Handle reset timer event.
@@ -838,16 +841,21 @@ void ResetTimerHandler(EventData* eventData)
         return;
     }
 
-    PowerManagement_ForceSystemReboot();
-    terminationRequired = true;
+    Log_Debug("[ResetTimerHandler] Gracefully closing and forcing system reboot.\n");
+    ClosePeripheralsAndHandlers();
 
+    if( -1 == PowerManagement_ForceSystemReboot())
+    {
+        Log_Debug("[ResetTimerHandler] Reboot failed %d (%s).\n", errno, strerror(errno));
+        InitPeripheralsAndHandlers();
+    }
 }
 
 /// <summary>
 ///     Initialize peripherals, termination handler, and Azure IoT
 /// </summary>
 /// <returns>0 on success, or -1 on failure</returns>
-static int InitPeripheralsAndHandlers(void)
+int InitPeripheralsAndHandlers(void)
 {
     // Register a SIGTERM handler for termination requests
     struct sigaction action;

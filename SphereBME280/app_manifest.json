@@ -31,7 +31,8 @@
     "SpiMaster": [],
     "WifiConfig": true,
     "NetworkConfig": false,
-    "SystemTime": false
+    "SystemTime": false,
+    "PowerControls" : ["ForceReboot"]
   }
 }
 
