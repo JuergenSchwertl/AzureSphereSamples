@@ -113,7 +113,6 @@ static int azureIoTPollPeriodSeconds = AzureIoTDefaultPollPeriodSeconds;
 static const char cstrErrorOutOfMemory[] = "ERROR: Out of memory.\n";
 
 // telemetry events
-static const char cstrEvtConnected[] = "connect";
 static const char cstrEvtButtonB[] = "buttonB";
 static const char cstrEvtButtonA[] = "buttonA";
 
@@ -123,29 +122,11 @@ static const char cstrMsgApplicationStarted[] = "Application started";
 //static const char cstrMsgOccurred[] = "occurred";
 
 
-// forward declarations for method handlers
-HTTP_STATUS_CODE SetColorMethod(JSON_Value* jsonParameters, JSON_Value** jsonResponseAddress);
-HTTP_STATUS_CODE ResetMethod(JSON_Value* jsonParameters, JSON_Value** jsonResponseAddress);
-
-// list of method registrations
-static const MethodRegistration clstDirectMethods[] = {
-    {.MethodName = "setColorMethod", .MethodHandler = &SetColorMethod},
-    {.MethodName = "resetMethod", .MethodHandler = &ResetMethod},
-    {.MethodName = NULL, .MethodHandler = NULL}
-};
-
-
-// json property names and values
+///<summary>Azure IoT PnP component "dtmi:azsphere:SphereTTT:rgbLed;1"</summary>  
+static const char cstrSetColorMethodName[] = "rgbLed*setColorMethod";
+static const char cstrColorResponseMsg[] = "LED color set to %s";
 static const char cstrColorProperty[] = "color";
-static const char cstrResetTimerProperty[] = "resetTimer";
-static const char cstrSuccessProperty[] = "success";
-static const char cstrMessageProperty[] = "message";
-static const char cstrTemperatureProperty[] = "temperature";
-static const char cstrPressureProperty[] = "pressure";
-#ifdef BME280
-    static const char cstrHumidityProperty[] = "humidity";
-#endif
-static const char cstrLedBlinkRateProperty[] = "blinkRateProperty";
+static const char cstrLedBlinkRateProperty[] = "rgbLed.blinkRateProperty";
 static const char cstrValueProperty[] = "value";
 static const char cstrVersionProperty[] = "av";
 static const char cstrStatusProperty[] = "ac";
@@ -153,7 +134,30 @@ static const char cstrStatusDescriptionProperty[] = "ad";
 static const char cstrSysVersionProperty[] = "$version";
 static const char cstrCompleted[] = "completed";
 
-///<summary>Azure IoT PnP compatible DeviceInformation</summary>  
+#ifdef BME280
+///<summary>Azure IoT PnP component "dtmi:azsphere:SphereTTT:bme280;1"</summary>  
+static const char cstrBME280Component[] = "bme280";
+
+static const char cstrSuccessProperty[] = "success";
+static const char cstrMessageProperty[] = "message";
+static const char cstrTemperatureProperty[] = "temperature";
+static const char cstrPressureProperty[] = "pressure";
+    static const char cstrHumidityProperty[] = "humidity";
+#endif
+
+#ifdef BMP280
+///<summary>Azure IoT PnP component "dtmi:azsphere:SphereTTT:bmp280;1"</summary>  
+static const char cstrBMP280Component[] = "bmp280";
+
+static const char cstrSuccessProperty[] = "success";
+static const char cstrMessageProperty[] = "message";
+static const char cstrTemperatureProperty[] = "temperature";
+static const char cstrPressureProperty[] = "pressure";
+#endif
+
+///<summary>Azure IoT PnP component "dtmi:azure:DeviceManagement:DeviceInformation;1"</summary>  
+static const char cstrDevInfoComponent[] = "deviceInformation";
+
 static const char cstrDevInfoManufacturerProperty[] = "manufacturer";
 static const char cstrDevInfoModelProperty[] = "model";
 static const char cstrDevInfoSWVersionProperty[] = "swVersion";
@@ -165,24 +169,40 @@ static const char cstrDevInfoMemoryProperty[] = "totalMemory";
 
 static const char cstrDevInfoManufacturerValue[] = "Seeed";
 static const char cstrDevInfoModelValue[] = "MT3620 Developer Kit";
-static const char cstrDevInfoSWVersionValue[] = "SphereBME280 v21.05.17.1130";
+static const char cstrDevInfoSWVersionValue[] = "SphereBME280 v21.07.01.1530";
 static const char cstrDevInfoOSNameValue[] = "Azure Sphere IoT OS";
 static const char cstrDevInfoProcArchValue[] = "ARM Core A7,M4";
 static const char cstrDevInfoProcMfgrValue[] = "MediaTek";
 static const int ciDevInfoStorageValue = 16384;
 static const int ciDevInfoMemoryValue = 4096;
 
-///<summary>Azure IoT PnP compatible device-health</summary>
+///<summary>Azure IoT PnP component "dtmi:azsphere:SphereTTT:DeviceHealth;1"</summary>
+static const char cstrDevHealthComponent[] ="deviceHealth";
+static const char cstrEvtConnected[] = "connect";
 static const char cstrDevHealthTotalMemoryUsed[] ="totalMemoryUsed";
 static const char cstrDevHealthUserMemoryUsed[] ="userMemoryUsed";
+static const char cstrResetTimerProperty[] = "resetTimer";
+static const char cstrResetMethodName[] = "deviceHealth*resetMethod";
+static const char cstrResetResponseMsg[] = "Reset in %d seconds";
 
 static size_t nLastTotalMemoryUsed = 0;
 static size_t nLastUserMemoryUsed = 0;
 
 // method response messages
-static const char cstrColorResponseMsg[] = "LED color set to %s";
-static const char cstrResetResponseMsg[] = "Reset in %d seconds";
 static const char cstrBadDataResponseMsg[] = "Request does not contain identifiable data.";
+
+
+// forward declarations for method handlers
+HTTP_STATUS_CODE SetColorMethod(JSON_Value* jsonParameters, JSON_Value** jsonResponseAddress);
+HTTP_STATUS_CODE ResetMethod(JSON_Value* jsonParameters, JSON_Value** jsonResponseAddress);
+
+// list of method registrations
+static const MethodRegistration clstDirectMethods[] = {
+    {.MethodName = cstrSetColorMethodName, .MethodHandler = &SetColorMethod},
+    {.MethodName = cstrResetMethodName, .MethodHandler = &ResetMethod},
+    {.MethodName = NULL, .MethodHandler = NULL}
+};
+
 
 // LED state
 static RgbLed rgbLed1 = RGBLED_INIT_VALUE;
@@ -345,7 +365,7 @@ static void SetLedRate(const struct timespec * pBlinkRate)
         // <seealso href="https://docs.microsoft.com/en-us/azure/iot-central/core/concepts-telemetry-properties-commands#properties" />
         JSON_Value* jsonRoot = json_value_init_object();
         json_object_set_number(json_object(jsonRoot), cstrLedBlinkRateProperty, (double)blinkIntervalIndex);
-
+        
         // Report the current state to the Device Twin on the IoT Hub.
         AzureIoT_TwinReportStateJson(jsonRoot);
 

@@ -4,4 +4,10 @@
 			"path": "."
 		}
 	],
+	"settings": {
+		"files.associations": {
+			"prov_client_const.h": "c",
+			"const_defines.h": "c"
+		}
+	},
 }
