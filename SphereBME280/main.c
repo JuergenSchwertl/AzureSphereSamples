@@ -121,18 +121,40 @@ static const char cstrMsgPressed[] = "pressed";
 static const char cstrMsgApplicationStarted[] = "Application started";
 //static const char cstrMsgOccurred[] = "occurred";
 
+///<summary>The Azure IoT PnP Model Id and component property</summary>
+#ifdef BME280
+static char cstrPnPModelId[] = "dtmi:azsphere:SphereTTT:SphereBME280;1"; 
+#endif
+
+#ifdef BMP280
+static char cstrPnPModelId[] = "dtmi:azsphere:SphereTTT:SphereBMP280;1"; 
+#endif
+
+///<summary>
+/// With Azure IoT PnP, components need to be published alike
+/// "componentname" : { 
+///    "__t" : "c", 
+///    #component properties 
+/// } 
+///</summary
+static const char cstrPnpComponentProperty[] = "__t";
+static const char cstrPnPComponentValue[] = "c";
+
 
 ///<summary>Azure IoT PnP component "dtmi:azsphere:SphereTTT:rgbLed;1"</summary>  
+static const char cstrRgbledComponent[] = "rgbLed";
+
 static const char cstrSetColorMethodName[] = "rgbLed*setColorMethod";
 static const char cstrColorResponseMsg[] = "LED color set to %s";
 static const char cstrColorProperty[] = "color";
-static const char cstrLedBlinkRateProperty[] = "rgbLed.blinkRateProperty";
+static const char cstrLedBlinkRateProperty[] = "blinkRateProperty";
+static const char cstrBlinkRatePropertyPath[] = "rgbLed.blinkRateProperty";
 static const char cstrValueProperty[] = "value";
 static const char cstrVersionProperty[] = "av";
 static const char cstrStatusProperty[] = "ac";
 static const char cstrStatusDescriptionProperty[] = "ad";
 static const char cstrSysVersionProperty[] = "$version";
-static const char cstrCompleted[] = "completed";
+static const char cstrStatusComplete[] = "complete";
 
 #ifdef BME280
 ///<summary>Azure IoT PnP component "dtmi:azsphere:SphereTTT:bme280;1"</summary>  
@@ -169,7 +191,7 @@ static const char cstrDevInfoMemoryProperty[] = "totalMemory";
 
 static const char cstrDevInfoManufacturerValue[] = "Seeed";
 static const char cstrDevInfoModelValue[] = "MT3620 Developer Kit";
-static const char cstrDevInfoSWVersionValue[] = "SphereBME280 v21.07.01.1530";
+static const char cstrDevInfoSWVersionValue[] = "SphereBME280 v21.07.19.1200";
 static const char cstrDevInfoOSNameValue[] = "Azure Sphere IoT OS";
 static const char cstrDevInfoProcArchValue[] = "ARM Core A7,M4";
 static const char cstrDevInfoProcMfgrValue[] = "MediaTek";
@@ -257,12 +279,12 @@ static const char* pstrConnectionStatus = cstrMsgApplicationStarted;
 /// <summary>
 /// desired property blinkRateProperty 
 /// </summary>
-static size_t blinkIntervalIndex = 0;
+static size_t nBlinkRateValue = 0;
 
 /// <summary>
 /// desired property blinkRateProperty version
 /// </summary>
-static unsigned int blinkIntervalVersion = 1;
+static unsigned int nBlinkRateVersion = 1;
 
 /// <summary>
 /// Termination state
@@ -347,12 +369,55 @@ static bool OpenGpioFdAsInput(GPIO_Id gpioId, int *outGpioFd)
     return true;
 }
 
+
+static JSON_Value * CreateBlinkRatePropertyJson( size_t nValue, unsigned int nVersion, unsigned int nStatus, const char * strStatus )
+{
+    nBlinkRateValue = nValue;
+    nBlinkRateVersion = nVersion;
+
+    // For DTDL v2, writeable property schema with multiple components is 
+    // { "rgbLed" : {                   # component 
+    //      "__t" : "c",                # component moniker
+    //      "blinkRateProperty" : {     # property
+    //          "value" : 21.00,        # property value
+    //          "av" : 1,               # property version
+    //          "ac" : 200,             # status
+    //          "ad" : "complete" } } } }
+    // <seealso href="https://docs.microsoft.com/en-us/azure/iot-develop/concepts-convention#sample-multiple-components-writable-property" /> 
+    // <seealso href="https://docs.microsoft.com/en-us/azure/iot-central/core/concepts-telemetry-properties-commands#properties" />
+    //
+
+    JSON_Value  *jsonRootValue = json_value_init_object();
+    JSON_Object *jsonRootObject = json_value_get_object( jsonRootValue );
+    JSON_Value  *jsonComponentValue = json_value_init_object();
+    JSON_Object *jsonComponentObject = json_value_get_object( jsonComponentValue );
+    JSON_Value  *jsonPropertyValue = json_value_init_object();
+    JSON_Object *jsonPropertyObject = json_value_get_object( jsonPropertyValue );
+
+    json_object_set_string(jsonComponentObject, cstrPnpComponentProperty, cstrPnPComponentValue);
+    
+    json_object_set_number(jsonPropertyObject, cstrValueProperty, (double)nValue);
+    json_object_set_number(jsonPropertyObject, cstrStatusProperty, (double)nStatus );
+    json_object_set_number(jsonPropertyObject, cstrVersionProperty, (double)nVersion );
+    json_object_set_string(jsonPropertyObject, cstrStatusDescriptionProperty, strStatus );
+
+    json_object_set_value( jsonComponentObject, cstrLedBlinkRateProperty, jsonPropertyValue);
+
+    json_object_set_value( jsonRootObject, cstrRgbledComponent, jsonComponentValue);
+
+    return jsonRootValue;
+}
+
 /// <summary>
 ///     Toggles the blink speed of the blink LED between 3 values.
 /// </summary>
-/// <param name="rate">ptr to blink rate</param>
-static void SetLedRate(const struct timespec * pBlinkRate)
+/// <param name="nValue">new Blink rate (index into timespec table)</param>
+/// <param name="nVersion">new version to report to IoT Hub</param>
+static void SetLedRate(size_t nValue, unsigned int nVersion)
 {
+    nBlinkRateValue = nValue;
+    const struct timespec * pBlinkRate = &atsBlinkingIntervals[nValue];
+
     if (SetTimerFdToPeriod(fdLed1BlinkTimer, pBlinkRate) != 0) {
         Log_Debug("ERROR: could not set the period of the LED.\n");
         terminationRequired = true;
@@ -361,15 +426,13 @@ static void SetLedRate(const struct timespec * pBlinkRate)
 
     // report changed blink rate as property to IoT Central
     if (connectedToIoTHub) {
-        // REMARK: Since August 2020, IoT Central reported property schema is { "blinkRateProperty" : ## } 
-        // <seealso href="https://docs.microsoft.com/en-us/azure/iot-central/core/concepts-telemetry-properties-commands#properties" />
-        JSON_Value* jsonRoot = json_value_init_object();
-        json_object_set_number(json_object(jsonRoot), cstrLedBlinkRateProperty, (double)blinkIntervalIndex);
+
+        JSON_Value  *jsonValue = CreateBlinkRatePropertyJson( nValue, nVersion, 200, cstrStatusComplete);
         
         // Report the current state to the Device Twin on the IoT Hub.
-        AzureIoT_TwinReportStateJson(jsonRoot);
+        AzureIoT_TwinReportStateJson(jsonValue);
 
-        json_value_free(jsonRoot);
+        json_value_free(jsonValue);
     }
 }
 
@@ -383,13 +446,19 @@ static void SendEventMessage(const char * cstrEvent, const char * cstrMessage)
 	if (connectedToIoTHub) {
 		Log_Debug("[Send] Event '%s' is '%s'\n", cstrEvent, cstrMessage);
 
-        JSON_Value* jsonRoot = json_value_init_object();
-        json_object_set_string(json_object(jsonRoot), cstrEvent, cstrMessage);
+        JSON_Value  *jsonRootValue = json_value_init_object();
+        JSON_Object *jsonRootObject = json_value_get_object( jsonRootValue );
+        JSON_Value  *jsonComponentValue = json_value_init_object();
+        JSON_Object *jsonObject = json_value_get_object( jsonComponentValue );
 
+        json_object_set_string(jsonObject, cstrPnpComponentProperty, cstrPnPComponentValue);
+        json_object_set_string(jsonObject, cstrEvent, cstrMessage);
+
+        json_object_set_value(jsonRootObject, cstrBME280Component, jsonComponentValue);
 		// Send a message
-		AzureIoT_SendJsonMessage(jsonRoot);
+		AzureIoT_SendJsonMessage(jsonRootValue);
 
-        json_value_free(jsonRoot);
+        json_value_free(jsonRootValue);
 
 		// Set the send/receive LED2 to blink once immediately to indicate 
 		// the message has been queued.
@@ -406,19 +475,30 @@ static void SendEventMessage(const char * cstrEvent, const char * cstrMessage)
 /// </summary>
 static void SendTelemetryMessage(void)
 {
+    JSON_Value * jsonRootValue = NULL;
+    JSON_Object * jsonRootObject = NULL;
+    JSON_Value * jsonComponentValue = NULL;
+    JSON_Object* jsonObject = NULL;
+
     if (connectedToIoTHub) {
-        JSON_Value * jsonRoot = json_value_init_object();
-        JSON_Object* jsonObject = NULL;
+        // initialize root object
+        jsonRootValue = json_value_init_object();
+        jsonRootObject = json_value_get_object( jsonRootValue );
 
 #ifdef BME280		
 		bme280_data_t bmeData;
 		if (BME280_GetSensorData(&bmeData) == 0)
 		{
 			Log_Debug("[Send] Temperature: %.2f, Pressure: %.2f, Humidity: %.2f\n", bmeData.temperature, bmeData.pressure, bmeData.humidity);
-            jsonObject = json_value_get_object( jsonRoot );
+            jsonComponentValue = json_value_init_object();
+            jsonObject = json_value_get_object( jsonComponentValue );
+
+            json_object_set_string(jsonObject, cstrPnpComponentProperty, cstrPnPComponentValue);
             json_object_set_number(jsonObject, cstrTemperatureProperty, bmeData.temperature);
             json_object_set_number(jsonObject, cstrPressureProperty, bmeData.pressure);
             json_object_set_number(jsonObject, cstrHumidityProperty, bmeData.humidity);
+
+            json_object_set_value(jsonRootObject, cstrBME280Component, jsonComponentValue);
 		}
 #endif
 
@@ -428,9 +508,14 @@ static void SendTelemetryMessage(void)
 		if (BMP280_GetSensorData(&bmpData) == 0)
 		{
 			Log_Debug("[Send] Temperature: %.2f, Pressure: %.2f\n", bmpData.temperature, bmpData.pressure);
-            jsonObject = json_value_get_object( jsonRoot );
+            jsonComponentValue = json_value_init_object();
+            jsonObject = json_value_get_object( jsonComponentValue );
+
+            json_object_set_string(jsonObject, cstrPnpComponentProperty, cstrPnPComponentValue);
             json_object_set_number(jsonObject, cstrTemperatureProperty, bmpData.temperature);
             json_object_set_number(jsonObject, cstrPressureProperty, bmpData.pressure);
+
+            json_object_set_value(jsonRootObject, cstrBMP280Component, jsonComponentValue);
 		}
 #endif
 
@@ -441,20 +526,25 @@ static void SendTelemetryMessage(void)
 
             nLastTotalMemoryUsed = nTotalMemUsed;
             nLastUserMemoryUsed = nUserMemUsed;
-            jsonObject = json_value_get_object( jsonRoot );
+            jsonComponentValue = json_value_init_object();
+            jsonObject = json_value_get_object( jsonComponentValue );
+
+            json_object_set_string(jsonObject, cstrPnpComponentProperty, cstrPnPComponentValue);
             json_object_set_number(jsonObject, cstrDevHealthTotalMemoryUsed, nTotalMemUsed);
             json_object_set_number(jsonObject, cstrDevHealthUserMemoryUsed, nUserMemUsed);
+
+            json_object_set_value(jsonRootObject, cstrDevHealthComponent, jsonComponentValue);
         }
 
         if( jsonObject != NULL )
         {   // if there is any telemetry to be sent...
-            AzureIoT_SendJsonMessage(jsonRoot);
+            AzureIoT_SendJsonMessage(jsonRootValue);
 			// Set the send/receive LED2 to blink once immediately to indicate 
 			// the message has been queued.
 			BlinkLed2Once( RgbLedUtility_Colors_Green );
         }
         
-        json_value_free(jsonRoot);
+        json_value_free(jsonRootValue);
 
     } else {
 		Log_Debug("[Send] not connected to IoT Central: no telemtry sent.\n");
@@ -478,42 +568,39 @@ static void MessageReceived(const char *payload)
 /// </summary>
 /// <param name="desiredProperties">The JSON root object containing the desired Device Twin
 /// properties received from the Azure IoT Hub.</param>
-static void DeviceTwinUpdate(JSON_Object *desiredProperties)
+static void DeviceTwinUpdate(const JSON_Object *desiredProperties)
 {
-	if (json_object_has_value_of_type(desiredProperties, cstrLedBlinkRateProperty, JSONNumber))
+	if (json_object_dothas_value_of_type(desiredProperties, cstrBlinkRatePropertyPath, JSONObject))
 	{
-        unsigned int desiredVersion = (unsigned int)json_object_get_number(desiredProperties, cstrSysVersionProperty);
+        JSON_Object *jsonObject = json_object_dotget_object(desiredProperties, cstrBlinkRatePropertyPath);
 
-        // REMARK IoTC since August 2020 now sends twin as { "blinkRateProperty" : ## , "$version" : ## }  
-		size_t desiredBlinkRate = (size_t)json_object_get_number(desiredProperties, cstrLedBlinkRateProperty);
+        unsigned int desiredVersion = (unsigned int)json_object_get_number(jsonObject, cstrSysVersionProperty);
 
-		blinkIntervalIndex = desiredBlinkRate % nBlinkingIntervalsCount; // Clamp value to [0..nBlinkingIntervalsCount) .
-        blinkIntervalVersion = desiredVersion;
+		size_t desiredBlinkRate = (size_t)json_object_get_number(jsonObject, cstrValueProperty);
 
 		Log_Debug("[DeviceTwinUpdate] Received desired value %zu for blinkRateProperty, setting it to %zu.\n",
-			desiredBlinkRate, blinkIntervalIndex);
+			desiredBlinkRate, desiredBlinkRate % nBlinkingIntervalsCount);
 
-		tsBlinkingLedInterval = atsBlinkingIntervals[blinkIntervalIndex];
-		SetLedRate(&atsBlinkingIntervals[blinkIntervalIndex]);
+		SetLedRate(desiredBlinkRate % nBlinkingIntervalsCount, desiredVersion);
 
-        // REMARK: IoT Central desired property response since August 2020 needs to be message as 
-        // { "blinkRateProperty" : { "value": 1, "ac": 200, "ad": "completed", "av": 7 } }
-        //<seealso href="https://docs.microsoft.com/en-us/azure/iot-central/core/concepts-telemetry-properties-commands#writable-property-types" />
-        JSON_Value* jsonRoot = json_value_init_object();
+        // // REMARK: IoT Central desired property response since August 2020 needs to be message as 
+        // // { "blinkRateProperty" : { "value": 1, "ac": 200, "ad": "completed", "av": 7 } }
+        // //<seealso href="https://docs.microsoft.com/en-us/azure/iot-central/core/concepts-telemetry-properties-commands#writable-property-types" />
+        // JSON_Value* jsonRoot = json_value_init_object();
         
-        JSON_Value* jsonPropertyValue = json_value_init_object();
-        JSON_Object* jsonPropertyValueObject = json_value_get_object(jsonPropertyValue);
-        json_object_set_number(jsonPropertyValueObject, cstrValueProperty, (double)blinkIntervalIndex);
-        json_object_set_number(jsonPropertyValueObject, cstrVersionProperty, (double)blinkIntervalVersion);
-        json_object_set_number(jsonPropertyValueObject, cstrStatusProperty, 200);
-        json_object_set_string(jsonPropertyValueObject, cstrStatusDescriptionProperty, cstrCompleted);
+        // JSON_Value* jsonPropertyValue = json_value_init_object();
+        // JSON_Object* jsonPropertyObject = json_value_get_object(jsonPropertyValue);
+        // json_object_set_number(jsonPropertyObject, cstrValueProperty, (double)nBlinkRateValue);
+        // json_object_set_number(jsonPropertyObject, cstrVersionProperty, (double)nBlinkRateVersion);
+        // json_object_set_number(jsonPropertyObject, cstrStatusProperty, 200);
+        // json_object_set_string(jsonPropertyObject, cstrStatusDescriptionProperty, cstrCompleted);
 
-        json_object_set_value(json_object(jsonRoot), cstrLedBlinkRateProperty, jsonPropertyValue);
+        // json_object_set_value(json_object(jsonRoot), cstrLedBlinkRateProperty, jsonPropertyValue);
 
-        // Report accepted device twin change back to IoT Central as message
-        AzureIoT_SendJsonMessage(jsonRoot);
+        // // Report accepted device twin change back to IoT Central as message
+        // AzureIoT_SendJsonMessage(jsonRoot);
 
-        json_value_free(jsonRoot);
+        // json_value_free(jsonRoot);
 
 
 		BlinkLed2Once(RgbLedUtility_Colors_Blue);
@@ -620,18 +707,32 @@ HTTP_STATUS_CODE ResetMethod(JSON_Value* jsonParameters, JSON_Value** jsonRespon
 static void ReportAllProperties(void)
 {
     JSON_Value* jsonRoot = json_value_init_object();
-    JSON_Object *jsonObj = json_value_get_object(jsonRoot);
+    JSON_Object *jsonRootObject = json_value_get_object(jsonRoot);
+    JSON_Value* jsonComponentValue = NULL;
+    JSON_Object *jsonObject = NULL;
 
-    json_object_set_string(jsonObj, cstrDevInfoManufacturerProperty, cstrDevInfoManufacturerValue);
-    json_object_set_string(jsonObj, cstrDevInfoModelProperty, cstrDevInfoModelValue);
-    json_object_set_string(jsonObj, cstrDevInfoSWVersionProperty, cstrDevInfoSWVersionValue);
-    json_object_set_string(jsonObj, cstrDevInfoOSNameProperty, cstrDevInfoOSNameValue);
-    json_object_set_string(jsonObj, cstrDevInfoProcArchProperty, cstrDevInfoProcArchValue);
-    json_object_set_string(jsonObj, cstrDevInfoProcMfgrProperty, cstrDevInfoProcMfgrValue);
-    json_object_set_number(jsonObj, cstrDevInfoStorageProperty, (double) ciDevInfoStorageValue);
-    json_object_set_number(jsonObj, cstrDevInfoMemoryProperty, (double) ciDevInfoMemoryValue);
+    jsonComponentValue = json_value_init_object();
+    jsonObject = json_value_get_object( jsonComponentValue );
+    json_object_set_string(jsonObject, cstrPnpComponentProperty, cstrPnPComponentValue);
 
-    json_object_set_number(jsonObj, cstrLedBlinkRateProperty, (double) blinkIntervalIndex);
+    json_object_set_string(jsonObject, cstrDevInfoManufacturerProperty, cstrDevInfoManufacturerValue);
+    json_object_set_string(jsonObject, cstrDevInfoModelProperty, cstrDevInfoModelValue);
+    json_object_set_string(jsonObject, cstrDevInfoSWVersionProperty, cstrDevInfoSWVersionValue);
+    json_object_set_string(jsonObject, cstrDevInfoOSNameProperty, cstrDevInfoOSNameValue);
+    json_object_set_string(jsonObject, cstrDevInfoProcArchProperty, cstrDevInfoProcArchValue);
+    json_object_set_string(jsonObject, cstrDevInfoProcMfgrProperty, cstrDevInfoProcMfgrValue);
+    json_object_set_number(jsonObject, cstrDevInfoStorageProperty, (double) ciDevInfoStorageValue);
+    json_object_set_number(jsonObject, cstrDevInfoMemoryProperty, (double) ciDevInfoMemoryValue);
+
+    json_object_set_value( jsonRootObject, cstrDevInfoComponent, jsonComponentValue);
+
+    jsonComponentValue = json_value_init_object();
+    jsonObject = json_value_get_object( jsonComponentValue );
+    json_object_set_string(jsonObject, cstrPnpComponentProperty, cstrPnPComponentValue);
+
+    json_object_set_number(jsonObject, cstrLedBlinkRateProperty, (double) nBlinkRateValue);
+
+    json_object_set_value( jsonRootObject, cstrRgbledComponent, jsonComponentValue);
 
     AzureIoT_TwinReportStateJson(jsonRoot);
 
@@ -756,8 +857,7 @@ void ButtonPollTimerHandler(EventData *eventData)
     // If the button A is pressed, change the LED blink interval, update the Device Twin and send a buttonA event message.
     static GPIO_Value_Type blinkButtonState;
     if (IsButtonPressed(fdBlinkRateButtonGpio, &blinkButtonState)) {
-		blinkIntervalIndex = (blinkIntervalIndex + 1) % nBlinkingIntervalsCount;
-        SetLedRate(&atsBlinkingIntervals[blinkIntervalIndex]);
+        SetLedRate((nBlinkRateValue + 1) % nBlinkingIntervalsCount, nBlinkRateVersion+1 );
 
         if (connectedToIoTHub) {
             SendEventMessage(cstrEvtButtonA, cstrMsgPressed);
@@ -1027,6 +1127,8 @@ int main(int argc, char *argv[])
 {
     Log_Debug("INFO: SphereBME280 application starting.\n");
 
+    AzureIoT_SetModelId( cstrPnPModelId );
+    
     // app_manifest.json:"CmdArgs" 1st parameter should be DPS Scope ID
     if (argc > 1)
 	{

@@ -175,7 +175,13 @@ void AzureIoT_SetMessageReceivedCallback(MessageReceivedFnType callback);
 ///     received.
 /// </summary>
 /// <param name="handle">The JSON object containing the Device Twin desired properties.</param>
-typedef void (*TwinUpdateFnType)(JSON_Object *desiredProperties);
+typedef void (*TwinUpdateFnType)(const JSON_Object *desiredProperties);
+
+/// <summary>
+///     Sets the Azure IoT PnP Model Id.
+/// </summary>
+/// <param name="cstrID">Model Id string</param>
+void AzureIoT_SetModelId(const char* cstrId);
 
 /// <summary>
 ///     Sets the DPS Scope ID.

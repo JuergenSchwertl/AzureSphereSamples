@@ -26,16 +26,12 @@
 // Refer to https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-device-sdk-c-intro for more
 // information on Azure IoT SDK for C
 
-//
-// String containing the scope id of the Device Provisioning Service
-// used to provision the app with the IoT hub hostname and the device id.
-//
-
 ///<summary>Your DPS Scope ID is filled on app start"</summary>
-static char scopeId[MAX_SCOPEID_LENGTH] = ""; 
+static char strDPSSopeId[MAX_SCOPEID_LENGTH] = ""; 
 
 ///<summary>The Azure IoT PnP Model Id</summary>
-static char azureSphereModelId[MAX_MODELID_LENGTH] = "dtmi:azsphere:SphereTTT:SphereBME280;1"; 
+static char strPnPModelId[MAX_MODELID_LENGTH] = ""; 
+
 /// <summary>
 ///     Function invoked to provide the result of the Device Twin reported properties
 ///     delivery.
@@ -137,9 +133,10 @@ content_type_t ContentType = {
     .Text_XML                    = "text%2Fxml"
 };
 
-// /// <summary>
-// ///     Set of bundle of root certificate authorities.
-// /// </summary>
+/// <summary>
+///     Set of bundle of root certificate authorities including the new DigiCert Global Root.
+///     <see href="https://techcommunity.microsoft.com/t5/internet-of-things/azure-iot-tls-critical-changes-are-almost-here-and-why-you/ba-p/2393169" />
+/// </summary>
 // static const char cstrAzureIoTCertificates[] =
 //     /* DigiCert Baltimore Root */
 //     "-----BEGIN CERTIFICATE-----\r\n"
@@ -422,7 +419,7 @@ bool AzureIoT_SetupClient(void)
         IoTHubDeviceClient_LL_Destroy(hIoTHubClient);
 
     AZURE_SPHERE_PROV_RETURN_VALUE provResult =
-        IoTHubDeviceClient_LL_CreateWithAzureSphereDeviceAuthProvisioning(scopeId, 10000,
+        IoTHubDeviceClient_LL_CreateWithAzureSphereDeviceAuthProvisioning(strDPSSopeId, 10000,
                                                                           &hIoTHubClient);
     LogMessage("IoTHubDeviceClient_CreateWithAzureSphereDeviceAuthProvisioning returned '%s'.\n",
                getAzureSphereProvisioningResultString(provResult));
@@ -451,7 +448,7 @@ bool AzureIoT_SetupClient(void)
 
     // Sets Azure IoT PnP Model ID on IoT Hub Client
     if (IOTHUB_CLIENT_OK !=
-        IoTHubDeviceClient_LL_SetOption(hIoTHubClient, OPTION_MODEL_ID, azureSphereModelId) )
+        IoTHubDeviceClient_LL_SetOption(hIoTHubClient, OPTION_MODEL_ID, strPnPModelId) )
     {
         LogMessage("ERROR: failure setting option \"%s\"\n", OPTION_MODEL_ID);
         return false;
@@ -487,27 +484,6 @@ bool AzureIoT_SetupClient(void)
     return true;
 }
 
-
-/// <summary>
-///     Sets the DPS Scope ID.
-/// </summary>
-/// <param name="cstrID">The Scope ID string (typically from command line)</param>
-void AzureIoT_SetDPSScopeID(const char* cstrID)
-{
-	strncpy(scopeId, cstrID, sizeof(scopeId));
-}
-
-
-/// <summary>
-///     Destroys the Azure IoT Hub client.
-/// </summary>
-void AzureIoT_DestroyClient(void)
-{
-    if (hIoTHubClient != NULL) {
-        IoTHubDeviceClient_LL_Destroy(hIoTHubClient);
-        hIoTHubClient = NULL;
-    }
-}
 
 /// <summary>
 ///     Periodically outputs a provided format string with a variable number of arguments.
@@ -586,7 +562,7 @@ void AzureIoT_SendMessageWithContentType(const char* messagePayload, const char 
     (void)IoTHubMessage_SetContentEncodingSystemProperty(messageHandle, encoding);
 
     //// Add custom properties to message, i.e. for IoT Hub Message Routing
-    //(void)IoTHubMessage_SetProperty(messageHandle, "JSchwertProperty", "JSchwertValue");
+    //(void)IoTHubMessage_SetProperty(messageHandle, "MyProperty", "MyValue");
 
 
     if (IoTHubDeviceClient_LL_SendEventAsync(hIoTHubClient, messageHandle, sendMessageCallback,
@@ -630,17 +606,6 @@ void AzureIoT_SendJsonMessage(JSON_Value* jsonPayload)
     }
 }
 
-
-/// <summary>
-///     Sets the function to be invoked whenever the Device Twin properties have been delivered
-///     to the IoT Hub.
-/// </summary>
-/// <param name="callback">The function pointer to the callback function.</param>
-void AzureIoT_SetDeviceTwinDeliveryConfirmationCallback(
-    DeviceTwinDeliveryConfirmationFnType callback)
-{
-    fnDeviceTwinConfirmationHandler = callback;
-}
 
 /// <summary>
 ///     Callback invoked when the Device Twin reported properties are accepted by IoT Hub.
@@ -728,24 +693,6 @@ IOTHUB_CLIENT_RESULT AzureIoT_TwinReportStateJson(const JSON_Value* jsonState)
 
 
 /// <summary>
-///     Sets a callback function invoked whenever a message is received from IoT Hub.
-/// </summary>
-/// <param name="callback">The callback function invoked when a message is received</param>
-void AzureIoT_SetMessageReceivedCallback(MessageReceivedFnType callback)
-{
-    fnMessageReceivedHandler = callback;
-}
-
-/// <summary>
-///     Sets the function to be invoked whenever the message to the Iot Hub has been delivered.
-/// </summary>
-/// <param name="callback">The function pointer to the callback function.</param>
-void AzureIoT_SetMessageConfirmationCallback(MessageDeliveryConfirmationFnType callback)
-{
-    fnMessageDeliveryConfirmationHandler = callback;
-}
-
-/// <summary>
 ///     Function invoked when the message delivery confirmation is being reported.
 /// </summary>
 /// <param name="result">Message delivery status</param>
@@ -799,39 +746,9 @@ static IOTHUBMESSAGE_DISPOSITION_RESULT receiveMessageCallback(IOTHUB_MESSAGE_HA
 }
 
 /// <summary>
-///     Sets a raw low-level function to be invoked whenever a Direct Method call from the IoT Hub is
-///     received.
-/// </summary>
-/// <param name="callback">The callback function invoked when a Direct Method call is received</param>
-void AzureIoT_SetDirectMethodCallback(DirectMethodCallFnType callback)
-{
-    fnDirectMethodHandler = callback;
-}
-
-
-/// <summary>
-///     Registers an array of Direct Method handlers. Superseded by <seealso cref="AzureIoT_SetDirectMethodCallback">AzureIoT_SetDirectMethodCallback</seealso>
-/// </summary>
-/// <param name="methods">list of MethodRegistration entries (ended by NULL,NULL)</param>
-void AzureIoT_RegisterDirectMethodHandlers(const MethodRegistration * methods)
-{
-    pRegisteredMethods = (MethodRegistration*) methods;
-}
-
-
-/// <summary>
-///     Sets the function callback invoked whenever a Device Twin update from the IoT Hub is
-///     received.
-/// </summary>
-/// <param name="callback">The callback function invoked when a Device Twin update is
-/// received</param>
-void AzureIoT_SetDeviceTwinUpdateCallback(TwinUpdateFnType callback)
-{
-    fnTwinUpdateHandler = callback;
-}
-
-/// <summary>
 ///     Callback when direct method is called.
+///     if raw handler was registered with AzureIoT_SetDirectMethodHandler: it takes precedence
+///     if handlers are registered with AzureIoT_RegisterDirectMethodHandlers: loops through list and calls handler
 /// </summary>
 static int directMethodCallback(const char *methodName, const unsigned char *payload, size_t payloadSize,
                                 unsigned char **response, size_t *responseSize,
@@ -917,16 +834,6 @@ static void twinCallback(DEVICE_TWIN_UPDATE_STATE updateState, const unsigned ch
 }
 
 /// <summary>
-///     Sets the function to be invoked whenever the connection status to the IoT Hub changes.
-/// </summary>
-/// <param name="callback">The callback function invoked when Azure IoT Hub network connection
-/// status changes.</param>
-void AzureIoT_SetConnectionStatusCallback(ConnectionStatusFnType callback)
-{
-    fnConnectionStatusChangedHandler = callback;
-}
-
-/// <summary>
 ///     Callback function invoked whenever the connection status to IoT Hub changes.
 /// </summary>
 /// <param name="result">Current authentication status</param>
@@ -948,6 +855,14 @@ static void hubConnectionStatusCallback(IOTHUB_CLIENT_CONNECTION_STATUS result,
     }
 }
 
+/**********************************************************************************  
+ *
+ * public:
+ * Initialisation and De-Initialisation
+ * 
+ **********************************************************************************/
+
+
 /// <summary>
 ///     Initializes the Azure IoT Hub SDK.
 /// </summary>
@@ -961,6 +876,18 @@ bool AzureIoT_Initialize(void)
     return true;
 }
 
+
+/// <summary>
+///     Destroys the Azure IoT Hub client.
+/// </summary>
+void AzureIoT_DestroyClient(void)
+{
+    if (hIoTHubClient != NULL) {
+        IoTHubDeviceClient_LL_Destroy(hIoTHubClient);
+        hIoTHubClient = NULL;
+    }
+}
+
 /// <summary>
 ///     Deinitializes the Azure IoT Hub SDK.
 /// </summary>
@@ -968,3 +895,108 @@ void AzureIoT_Deinitialize(void)
 {
     IoTHub_Deinit();
 }
+
+/**********************************************************************************  
+ *
+ * public:
+ * Configuration functions to set callbacks  and IoT Hub client parameters
+ * 
+ **********************************************************************************/
+
+
+/// <summary>
+///     Sets the DPS Scope ID.
+/// </summary>
+/// <param name="cstrID">The Scope ID string (typically from command line)</param>
+void AzureIoT_SetDPSScopeID(const char* cstrId)
+{
+    if( NULL != cstrId){
+	    strncpy(strDPSSopeId, cstrId, sizeof(strDPSSopeId));
+    } else {
+        strDPSSopeId[0] = '\0';
+    }
+}
+
+/// <summary>
+///     Sets the Azure IoT PnP Model Id.
+/// </summary>
+/// <param name="cstrID">Model Id string</param>
+void AzureIoT_SetModelId(const char* cstrId)
+{
+    if( NULL != cstrId){
+	    strncpy(strPnPModelId, cstrId, sizeof(strPnPModelId));
+    } else {
+        strPnPModelId[0] = '\0';
+    }
+}
+
+/// <summary>
+///     Registers an array of Direct Method handlers. Superseded by <seealso cref="AzureIoT_SetDirectMethodCallback">AzureIoT_SetDirectMethodCallback</seealso>
+/// </summary>
+/// <param name="methods">list of MethodRegistration entries (ended by NULL,NULL)</param>
+void AzureIoT_RegisterDirectMethodHandlers(const MethodRegistration * methods)
+{
+    pRegisteredMethods = (MethodRegistration*) methods;
+}
+
+/// <summary>
+///     Sets a raw low-level function to be invoked whenever a Direct Method call from the IoT Hub is
+///     received.
+/// </summary>
+/// <param name="callback">The callback function invoked when a Direct Method call is received</param>
+void AzureIoT_SetDirectMethodCallback(DirectMethodCallFnType callback)
+{
+    fnDirectMethodHandler = callback;
+}
+
+
+/// <summary>
+///     Sets the function to be invoked whenever the connection status to the IoT Hub changes.
+/// </summary>
+/// <param name="callback">The callback function invoked when Azure IoT Hub network connection
+/// status changes.</param>
+void AzureIoT_SetConnectionStatusCallback(ConnectionStatusFnType callback)
+{
+    fnConnectionStatusChangedHandler = callback;
+}
+
+/// <summary>
+///     Sets the function callback invoked whenever a Device Twin update from the IoT Hub is
+///     received.
+/// </summary>
+/// <param name="callback">The callback function invoked when a Device Twin update is
+/// received</param>
+void AzureIoT_SetDeviceTwinUpdateCallback(TwinUpdateFnType callback)
+{
+    fnTwinUpdateHandler = callback;
+}
+
+/// <summary>
+///     Sets the function to be invoked whenever the Device Twin properties have been delivered
+///     to the IoT Hub.
+/// </summary>
+/// <param name="callback">The function pointer to the callback function.</param>
+void AzureIoT_SetDeviceTwinDeliveryConfirmationCallback(
+    DeviceTwinDeliveryConfirmationFnType callback)
+{
+    fnDeviceTwinConfirmationHandler = callback;
+}
+
+/// <summary>
+///     Sets a callback function invoked whenever a message is received from IoT Hub.
+/// </summary>
+/// <param name="callback">The callback function invoked when a message is received</param>
+void AzureIoT_SetMessageReceivedCallback(MessageReceivedFnType callback)
+{
+    fnMessageReceivedHandler = callback;
+}
+
+/// <summary>
+///     Sets the function to be invoked whenever the message to the Iot Hub has been delivered.
+/// </summary>
+/// <param name="callback">The function pointer to the callback function.</param>
+void AzureIoT_SetMessageConfirmationCallback(MessageDeliveryConfirmationFnType callback)
+{
+    fnMessageDeliveryConfirmationHandler = callback;
+}
+
