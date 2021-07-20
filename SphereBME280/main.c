@@ -112,14 +112,9 @@ static int azureIoTPollPeriodSeconds = AzureIoTDefaultPollPeriodSeconds;
 
 static const char cstrErrorOutOfMemory[] = "ERROR: Out of memory.\n";
 
-// telemetry events
-static const char cstrEvtButtonB[] = "buttonB";
-static const char cstrEvtButtonA[] = "buttonA";
-
 // telemetry event messages
 static const char cstrMsgPressed[] = "pressed";
 static const char cstrMsgApplicationStarted[] = "Application started";
-//static const char cstrMsgOccurred[] = "occurred";
 
 ///<summary>The Azure IoT PnP Model Id and component property</summary>
 #ifdef BME280
@@ -140,6 +135,10 @@ static char cstrPnPModelId[] = "dtmi:azsphere:SphereTTT:SphereBMP280;1";
 static const char cstrPnpComponentProperty[] = "__t";
 static const char cstrPnPComponentValue[] = "c";
 
+///<summary>Azure IoT PnP component "dtmi:azsphere:SphereTTT:buttons;1"</summary>  
+static const char cstrButtonsComponent[] = "buttons";
+static const char cstrEvtButtonB[] = "buttonB";
+static const char cstrEvtButtonA[] = "buttonA";
 
 ///<summary>Azure IoT PnP component "dtmi:azsphere:SphereTTT:rgbLed;1"</summary>  
 static const char cstrRgbledComponent[] = "rgbLed";
@@ -441,7 +440,7 @@ static void SetLedRate(size_t nValue, unsigned int nVersion)
 /// </summary>
 /// <param name="cstrEvent">event name</param>
 /// <param name="pstrMessage">event message</param>
-static void SendEventMessage(const char * cstrEvent, const char * cstrMessage)
+static void SendEventMessage(const char cstrComponent, const char * cstrEvent, const char * cstrMessage)
 {
 	if (connectedToIoTHub) {
 		Log_Debug("[Send] Event '%s' is '%s'\n", cstrEvent, cstrMessage);
@@ -454,7 +453,7 @@ static void SendEventMessage(const char * cstrEvent, const char * cstrMessage)
         json_object_set_string(jsonObject, cstrPnpComponentProperty, cstrPnPComponentValue);
         json_object_set_string(jsonObject, cstrEvent, cstrMessage);
 
-        json_object_set_value(jsonRootObject, cstrBME280Component, jsonComponentValue);
+        json_object_set_value(jsonRootObject, cstrComponent, jsonComponentValue);
 		// Send a message
 		AzureIoT_SendJsonMessage(jsonRootValue);
 
@@ -751,7 +750,7 @@ static void IoTHubConnectionStatusChanged(bool connected, const char *statusText
 	{
         Log_Debug("[IoTHubConnectionStatusChanged]: Connected.\n");
         // send a "connect" event telemetry message with the previous disconnect reason
-		SendEventMessage(cstrEvtConnected, pstrConnectionStatus);
+		SendEventMessage(cstrDevHealthComponent, cstrEvtConnected, pstrConnectionStatus);
         pstrConnectionStatus = cstrEvtConnected;
 
         // report initial Azure IoT PnP-compatible DeviceInformation & BlinkRate
@@ -860,7 +859,7 @@ void ButtonPollTimerHandler(EventData *eventData)
         SetLedRate((nBlinkRateValue + 1) % nBlinkingIntervalsCount, nBlinkRateVersion+1 );
 
         if (connectedToIoTHub) {
-            SendEventMessage(cstrEvtButtonA, cstrMsgPressed);
+            SendEventMessage(cstrButtonsComponent,cstrEvtButtonA, cstrMsgPressed);
         }
         else {
             Log_Debug("WARNING: Cannot send buttonA event: not connected to the IoT Hub.\n");
@@ -871,7 +870,7 @@ void ButtonPollTimerHandler(EventData *eventData)
     static GPIO_Value_Type messageButtonState;
     if (IsButtonPressed(fdSendMessageButtonGpio, &messageButtonState)) {
         if (connectedToIoTHub) {
-		    SendEventMessage(cstrEvtButtonB, cstrMsgPressed);
+		    SendEventMessage(cstrButtonsComponent, cstrEvtButtonB, cstrMsgPressed);
 		    SendTelemetryMessage();
         }
         else {
