@@ -136,6 +136,7 @@ content_type_t ContentType = {
 /// <summary>
 ///     Set of bundle of root certificate authorities including the new DigiCert Global Root.
 ///     <see href="https://techcommunity.microsoft.com/t5/internet-of-things/azure-iot-tls-critical-changes-are-almost-here-and-why-you/ba-p/2393169" />
+///    These updated certs will be part of an upcoming Azure Sphere OS release automatically in good time before the Cert rotation happens
 /// </summary>
 // static const char cstrAzureIoTCertificates[] =
 //     /* DigiCert Baltimore Root */

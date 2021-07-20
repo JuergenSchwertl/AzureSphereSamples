@@ -146,7 +146,7 @@ static const char cstrRgbledComponent[] = "rgbLed";
 static const char cstrSetColorMethodName[] = "rgbLed*setColorMethod";
 static const char cstrColorResponseMsg[] = "LED color set to %s";
 static const char cstrColorProperty[] = "color";
-static const char cstrLedBlinkRateProperty[] = "blinkRateProperty";
+static const char cstrBlinkRateProperty[] = "blinkRateProperty";
 static const char cstrBlinkRatePropertyPath[] = "rgbLed.blinkRateProperty";
 static const char cstrValueProperty[] = "value";
 static const char cstrVersionProperty[] = "av";
@@ -400,7 +400,7 @@ static JSON_Value * CreateBlinkRatePropertyJson( size_t nValue, unsigned int nVe
     json_object_set_number(jsonPropertyObject, cstrVersionProperty, (double)nVersion );
     json_object_set_string(jsonPropertyObject, cstrStatusDescriptionProperty, strStatus );
 
-    json_object_set_value( jsonComponentObject, cstrLedBlinkRateProperty, jsonPropertyValue);
+    json_object_set_value( jsonComponentObject, cstrBlinkRateProperty, jsonPropertyValue);
 
     json_object_set_value( jsonRootObject, cstrRgbledComponent, jsonComponentValue);
 
@@ -440,10 +440,10 @@ static void SetLedRate(size_t nValue, unsigned int nVersion)
 /// </summary>
 /// <param name="cstrEvent">event name</param>
 /// <param name="pstrMessage">event message</param>
-static void SendEventMessage(const char cstrComponent, const char * cstrEvent, const char * cstrMessage)
+static void SendEventMessage(const char * cstrComponent, const char * cstrEvent, const char * cstrMessage)
 {
 	if (connectedToIoTHub) {
-		Log_Debug("[Send] Event '%s' is '%s'\n", cstrEvent, cstrMessage);
+		Log_Debug("[Send] Component '%s' event '%s' is '%s'\n", cstrComponent, cstrEvent, cstrMessage);
 
         JSON_Value  *jsonRootValue = json_value_init_object();
         JSON_Object *jsonRootObject = json_value_get_object( jsonRootValue );
@@ -569,38 +569,15 @@ static void MessageReceived(const char *payload)
 /// properties received from the Azure IoT Hub.</param>
 static void DeviceTwinUpdate(const JSON_Object *desiredProperties)
 {
-	if (json_object_dothas_value_of_type(desiredProperties, cstrBlinkRatePropertyPath, JSONObject))
+	if (json_object_dothas_value_of_type(desiredProperties, cstrBlinkRatePropertyPath, JSONNumber))
 	{
-        JSON_Object *jsonObject = json_object_dotget_object(desiredProperties, cstrBlinkRatePropertyPath);
+        unsigned int desiredVersion = (unsigned int)json_object_get_number(desiredProperties, cstrSysVersionProperty);
+		double desiredBlinkRate = json_object_dotget_number(desiredProperties, cstrBlinkRatePropertyPath);
 
-        unsigned int desiredVersion = (unsigned int)json_object_get_number(jsonObject, cstrSysVersionProperty);
+		Log_Debug("[DeviceTwinUpdate] Received desired value %f for blinkRateProperty, setting it to %zu.\n",
+			desiredBlinkRate, ((size_t) desiredBlinkRate) % nBlinkingIntervalsCount);
 
-		size_t desiredBlinkRate = (size_t)json_object_get_number(jsonObject, cstrValueProperty);
-
-		Log_Debug("[DeviceTwinUpdate] Received desired value %zu for blinkRateProperty, setting it to %zu.\n",
-			desiredBlinkRate, desiredBlinkRate % nBlinkingIntervalsCount);
-
-		SetLedRate(desiredBlinkRate % nBlinkingIntervalsCount, desiredVersion);
-
-        // // REMARK: IoT Central desired property response since August 2020 needs to be message as 
-        // // { "blinkRateProperty" : { "value": 1, "ac": 200, "ad": "completed", "av": 7 } }
-        // //<seealso href="https://docs.microsoft.com/en-us/azure/iot-central/core/concepts-telemetry-properties-commands#writable-property-types" />
-        // JSON_Value* jsonRoot = json_value_init_object();
-        
-        // JSON_Value* jsonPropertyValue = json_value_init_object();
-        // JSON_Object* jsonPropertyObject = json_value_get_object(jsonPropertyValue);
-        // json_object_set_number(jsonPropertyObject, cstrValueProperty, (double)nBlinkRateValue);
-        // json_object_set_number(jsonPropertyObject, cstrVersionProperty, (double)nBlinkRateVersion);
-        // json_object_set_number(jsonPropertyObject, cstrStatusProperty, 200);
-        // json_object_set_string(jsonPropertyObject, cstrStatusDescriptionProperty, cstrCompleted);
-
-        // json_object_set_value(json_object(jsonRoot), cstrLedBlinkRateProperty, jsonPropertyValue);
-
-        // // Report accepted device twin change back to IoT Central as message
-        // AzureIoT_SendJsonMessage(jsonRoot);
-
-        // json_value_free(jsonRoot);
-
+		SetLedRate(((size_t) desiredBlinkRate) % nBlinkingIntervalsCount, desiredVersion);
 
 		BlinkLed2Once(RgbLedUtility_Colors_Blue);
 	} else {
@@ -729,7 +706,7 @@ static void ReportAllProperties(void)
     jsonObject = json_value_get_object( jsonComponentValue );
     json_object_set_string(jsonObject, cstrPnpComponentProperty, cstrPnPComponentValue);
 
-    json_object_set_number(jsonObject, cstrLedBlinkRateProperty, (double) nBlinkRateValue);
+    json_object_set_number(jsonObject, cstrBlinkRateProperty, (double) nBlinkRateValue);
 
     json_object_set_value( jsonRootObject, cstrRgbledComponent, jsonComponentValue);
 
