@@ -448,7 +448,6 @@ static void SendEventMessage(const char * cstrComponent, const char * cstrEvent,
         JSON_Value  *jsonRootValue = json_value_init_object();
         JSON_Object *jsonRootObject = json_value_get_object( jsonRootValue );
 
-        json_object_set_string(jsonRootObject, cstrPnpComponentProperty, cstrPnPComponentValue);
         json_object_set_string(jsonRootObject, cstrEvent, cstrMessage);
 
 		// Send a message
