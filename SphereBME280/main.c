@@ -447,15 +447,12 @@ static void SendEventMessage(const char * cstrComponent, const char * cstrEvent,
 
         JSON_Value  *jsonRootValue = json_value_init_object();
         JSON_Object *jsonRootObject = json_value_get_object( jsonRootValue );
-        JSON_Value  *jsonComponentValue = json_value_init_object();
-        JSON_Object *jsonObject = json_value_get_object( jsonComponentValue );
 
-        json_object_set_string(jsonObject, cstrPnpComponentProperty, cstrPnPComponentValue);
-        json_object_set_string(jsonObject, cstrEvent, cstrMessage);
+        json_object_set_string(jsonRootObject, cstrPnpComponentProperty, cstrPnPComponentValue);
+        json_object_set_string(jsonRootObject, cstrEvent, cstrMessage);
 
-        json_object_set_value(jsonRootObject, cstrComponent, jsonComponentValue);
 		// Send a message
-		AzureIoT_SendJsonMessage(jsonRootValue);
+		AzureIoT_SendJsonMessage(jsonRootValue, cstrComponent);
 
         json_value_free(jsonRootValue);
 
@@ -474,30 +471,22 @@ static void SendEventMessage(const char * cstrComponent, const char * cstrEvent,
 /// </summary>
 static void SendTelemetryMessage(void)
 {
-    JSON_Value * jsonRootValue = NULL;
-    JSON_Object * jsonRootObject = NULL;
-    JSON_Value * jsonComponentValue = NULL;
-    JSON_Object* jsonObject = NULL;
-
     if (connectedToIoTHub) {
         // initialize root object
-        jsonRootValue = json_value_init_object();
-        jsonRootObject = json_value_get_object( jsonRootValue );
+        JSON_Value * jsonRootValue = json_value_init_object();
+        JSON_Object * jsonRootObject = json_value_get_object( jsonRootValue );
 
 #ifdef BME280		
 		bme280_data_t bmeData;
 		if (BME280_GetSensorData(&bmeData) == 0)
 		{
-			Log_Debug("[Send] Temperature: %.2f, Pressure: %.2f, Humidity: %.2f\n", bmeData.temperature, bmeData.pressure, bmeData.humidity);
-            jsonComponentValue = json_value_init_object();
-            jsonObject = json_value_get_object( jsonComponentValue );
+			Log_Debug("[Send] Component '%s': Temperature: %.2f, Pressure: %.2f, Humidity: %.2f\n", cstrBME280Component, bmeData.temperature, bmeData.pressure, bmeData.humidity);
 
-            json_object_set_string(jsonObject, cstrPnpComponentProperty, cstrPnPComponentValue);
-            json_object_set_number(jsonObject, cstrTemperatureProperty, bmeData.temperature);
-            json_object_set_number(jsonObject, cstrPressureProperty, bmeData.pressure);
-            json_object_set_number(jsonObject, cstrHumidityProperty, bmeData.humidity);
-
-            json_object_set_value(jsonRootObject, cstrBME280Component, jsonComponentValue);
+            json_object_set_number(jsonRootObject, cstrTemperatureProperty, bmeData.temperature);
+            json_object_set_number(jsonRootObject, cstrPressureProperty, bmeData.pressure);
+            json_object_set_number(jsonRootObject, cstrHumidityProperty, bmeData.humidity);
+            
+            AzureIoT_SendJsonMessage(jsonRootValue, cstrBME280Component);
 		}
 #endif
 
@@ -506,44 +495,36 @@ static void SendTelemetryMessage(void)
 
 		if (BMP280_GetSensorData(&bmpData) == 0)
 		{
-			Log_Debug("[Send] Temperature: %.2f, Pressure: %.2f\n", bmpData.temperature, bmpData.pressure);
-            jsonComponentValue = json_value_init_object();
-            jsonObject = json_value_get_object( jsonComponentValue );
+			Log_Debug("[Send] Component '%s' Temperature: %.2f, Pressure: %.2f\n", cstrBMP280Component, bmpData.temperature, bmpData.pressure);
 
-            json_object_set_string(jsonObject, cstrPnpComponentProperty, cstrPnPComponentValue);
-            json_object_set_number(jsonObject, cstrTemperatureProperty, bmpData.temperature);
-            json_object_set_number(jsonObject, cstrPressureProperty, bmpData.pressure);
-
-            json_object_set_value(jsonRootObject, cstrBMP280Component, jsonComponentValue);
-		}
+            json_object_set_number(jsonRootObject, cstrTemperatureProperty, bmpData.temperature);
+            json_object_set_number(jsonRootObject, cstrPressureProperty, bmpData.pressure);
+            
+            AzureIoT_SendJsonMessage(jsonRootValue, cstrBMP280Component);
+        }
 #endif
+        json_value_free( jsonRootValue );
+
 
         size_t nTotalMemUsed = Applications_GetTotalMemoryUsageInKB();
         size_t nUserMemUsed = Applications_GetUserModeMemoryUsageInKB();
         if( (nLastTotalMemoryUsed != nTotalMemUsed) || (nLastUserMemoryUsed != nUserMemUsed) ){
-			Log_Debug("[Send] TotalMemoryUsed: %d, UserMemoryUsed: %d\n", nTotalMemUsed, nUserMemUsed);
-
+			Log_Debug("[Send] Component:'%s' TotalMemoryUsed: %d, UserMemoryUsed: %d\n", cstrDevHealthComponent, nTotalMemUsed, nUserMemUsed);
+            
             nLastTotalMemoryUsed = nTotalMemUsed;
             nLastUserMemoryUsed = nUserMemUsed;
-            jsonComponentValue = json_value_init_object();
-            jsonObject = json_value_get_object( jsonComponentValue );
 
-            json_object_set_string(jsonObject, cstrPnpComponentProperty, cstrPnPComponentValue);
-            json_object_set_number(jsonObject, cstrDevHealthTotalMemoryUsed, nTotalMemUsed);
-            json_object_set_number(jsonObject, cstrDevHealthUserMemoryUsed, nUserMemUsed);
+            jsonRootValue = json_value_init_object();
+            jsonRootObject = json_value_get_object( jsonRootValue );
 
-            json_object_set_value(jsonRootObject, cstrDevHealthComponent, jsonComponentValue);
+            json_object_set_number(jsonRootObject, cstrDevHealthTotalMemoryUsed, nTotalMemUsed);
+            json_object_set_number(jsonRootObject, cstrDevHealthUserMemoryUsed, nUserMemUsed);
+    
+            AzureIoT_SendJsonMessage(jsonRootValue, cstrDevHealthComponent);
+            json_value_free(jsonRootValue);
         }
 
-        if( jsonObject != NULL )
-        {   // if there is any telemetry to be sent...
-            AzureIoT_SendJsonMessage(jsonRootValue);
-			// Set the send/receive LED2 to blink once immediately to indicate 
-			// the message has been queued.
-			BlinkLed2Once( RgbLedUtility_Colors_Green );
-        }
-        
-        json_value_free(jsonRootValue);
+	    BlinkLed2Once( RgbLedUtility_Colors_Green );
 
     } else {
 		Log_Debug("[Send] not connected to IoT Central: no telemtry sent.\n");
@@ -836,7 +817,7 @@ void ButtonPollTimerHandler(EventData *eventData)
         SetLedRate((nBlinkRateValue + 1) % nBlinkingIntervalsCount, nBlinkRateVersion+1 );
 
         if (connectedToIoTHub) {
-            SendEventMessage(cstrButtonsComponent,cstrEvtButtonA, cstrMsgPressed);
+            SendEventMessage(cstrButtonsComponent, cstrEvtButtonA, cstrMsgPressed);
         }
         else {
             Log_Debug("WARNING: Cannot send buttonA event: not connected to the IoT Hub.\n");

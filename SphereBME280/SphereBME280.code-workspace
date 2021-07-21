@@ -7,7 +7,8 @@
 	"settings": {
 		"files.associations": {
 			"prov_client_const.h": "c",
-			"const_defines.h": "c"
+			"const_defines.h": "c",
+			"prov_security_factory.h": "c"
 		}
 	},
 }

@@ -23,79 +23,59 @@
 #define MAX_SCOPEID_LENGTH (32)
 #define MAX_MODELID_LENGTH (512)
 
-// Refer to https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-device-sdk-c-intro for more
-// information on Azure IoT SDK for C
+/*
+* Refer to @link https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-device-sdk-c-intro for more
+* information on Azure IoT SDK for C
+*/ 
 
-///<summary>Your DPS Scope ID is filled on app start"</summary>
+
+/* @brief    Buffer for DPS Scope ID. Filled on app start via command line parameter */
 static char strDPSSopeId[MAX_SCOPEID_LENGTH] = ""; 
 
-///<summary>The Azure IoT PnP Model Id</summary>
+/* @brief    Buffer for  Azure IoT PnP Model Id */
 static char strPnPModelId[MAX_MODELID_LENGTH] = ""; 
 
-/// <summary>
-///     Function invoked to provide the result of the Device Twin reported properties
-///     delivery.
-/// </summary>
-static DeviceTwinDeliveryConfirmationFnType fnDeviceTwinConfirmationHandler = 0;
-
-/// <summary>
-///     Pointer to array of MethodRegistration records.
-///     Last array record needs to have NULL, NULL as end marker;
-/// </summary>
+/* @brief    Pointer to array of MethodRegistration records. Last array record needs to have NULL, NULL as end marker. */
 static MethodRegistration* pRegisteredMethods = NULL;
 
-/// <summary>
-///     Function invoked whenever a Direct Method call is received from the IoT Hub.
-/// </summary>
+/* @brief    Function invoked to provide the result of the Device Twin reported properties delivery. */
+static DeviceTwinDeliveryConfirmationFnType fnDeviceTwinConfirmationHandler = 0;
+
+/* @brief    Function invoked whenever a Direct Method call is received from the IoT Hub. */
 static DirectMethodCallFnType fnDirectMethodHandler = 0;
 
-/// <summary>
-///     Function invoked whenever a Device Twin update is received from the IoT Hub.
-/// </summary>
+/* @brief    Function invoked whenever a Device Twin update is received from the IoT Hub. */
 static TwinUpdateFnType fnTwinUpdateHandler = 0;
 
-/// <summary>
-///     Function invoked whenever the connection status to the IoT Hub changes.
-/// </summary>
+/* @brief    Function invoked whenever the connection status to the IoT Hub changes. */
 static ConnectionStatusFnType fnConnectionStatusChangedHandler = 0;
 
-/// <summary>
-///     Function invoked whenever a message is received from the IoT Hub.
-/// </summary>
+/* @brief    Function invoked whenever a message is received from the IoT Hub. */
 static MessageReceivedFnType fnMessageReceivedHandler = 0;
 
-/// <summary>
-///     Function invoked to report the delivery confirmation of a message sent to the IoT
-///     Hub.
-/// </summary>
+/* @brief    Function invoked to report the delivery confirmation of a message sent to the IoT Hub. */
 static MessageDeliveryConfirmationFnType fnMessageDeliveryConfirmationHandler = 0;
 
-/// <summary>
-///     The handle to the IoT Hub client used for communication with the hub.
-/// </summary>
+/* @brief    The handle to the IoT Hub client used for communication with the hub. */
 static IOTHUB_DEVICE_CLIENT_LL_HANDLE hIoTHubClient = NULL;
 
-/// <summary>
-///     The status of the authentication to the hub. When 'false' a
-///     connection and authentication to the hub will be attempted.
-/// </summary>
+/* @brief    The status of the authentication to the hub. When 'false' a
+*     connection and authentication to the hub will be attempted. */
 static bool bIoTHubAuthenticated = false;
 
-/// <summary>
-///     Used to set the keepalive period over MQTT to 20 seconds.
-/// </summary>
+/* @brief    Used to set the keepalive period over MQTT to 20 seconds. */
 static int iKeepalivePeriodSeconds = 20;
 
-/// <summary>
-///     Message Id system property.
-/// </summary>
+/* @brief    Message Id system property. */
 static unsigned int uMessageId = 0;
 
 
-const char cstrErrorOutOfMemory[] = "ERROR: out of memory.\n";
-const char cstrWarnNotInitialized[] = "WARNING: IoT Hub client not initialized\n";
+/* @brief    re-usable error and warning strings. */
+const char cstrErrorOutOfMemory[] = "[IoT] ERROR: out of memory.\n";
+const char cstrWarnNotInitialized[] = "[IoT] WARNING: IoT Hub client not initialized\n";
 
 
+/* @brief   Content encoding strings for message properties. */
 content_encoding_t ContentEncoding = { 
     .UTF_8          = "utf-8",
     .UTF_16         = "utf-16", // == utf-16le, unicodefeff
@@ -107,6 +87,7 @@ content_encoding_t ContentEncoding = {
 };
 
 
+/* @brief   URL-encoded content types for message properties. */
 content_type_t ContentType = { 
     .Application_OctetStream    = "application%2Foctet-stream",
     .Application_PDF            = "application%2Fpdf",
@@ -133,11 +114,12 @@ content_type_t ContentType = {
     .Text_XML                    = "text%2Fxml"
 };
 
-/// <summary>
-///     Set of bundle of root certificate authorities including the new DigiCert Global Root.
-///     <see href="https://techcommunity.microsoft.com/t5/internet-of-things/azure-iot-tls-critical-changes-are-almost-here-and-why-you/ba-p/2393169" />
-///    These updated certs will be part of an upcoming Azure Sphere OS release automatically in good time before the Cert rotation happens
-/// </summary>
+/*
+* @brief    Set of bundle of root certificate authorities including the new DigiCert Global Root.
+*     @link https://techcommunity.microsoft.com/t5/internet-of-things/azure-iot-tls-critical-changes-are-almost-here-and-why-you/ba-p/2393169
+*    These updated certs will be part of an upcoming Azure Sphere OS release automatically in good time before the Cert rotation happens
+*/
+
 // static const char cstrAzureIoTCertificates[] =
 //     /* DigiCert Baltimore Root */
 //     "-----BEGIN CERTIFICATE-----\r\n"
@@ -211,7 +193,7 @@ content_type_t ContentType = {
 //     "Johw1+qRzT65ysCQblrGXnRl11z+o+I=\r\n"
 //     "-----END CERTIFICATE-----\r\n";
 
-// Forward declarations.
+/* @brief  Forward declarations. */
 static void sendMessageCallback(IOTHUB_CLIENT_CONFIRMATION_RESULT result, void *context);
 static IOTHUBMESSAGE_DISPOSITION_RESULT receiveMessageCallback(IOTHUB_MESSAGE_HANDLE message,
                                                                void *context);
@@ -224,25 +206,13 @@ static void hubConnectionStatusCallback(IOTHUB_CLIENT_CONNECTION_STATUS result,
                                         IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason,
                                         void *userContextCallback);
 
-/// <summary>
-///     Log a message related to the Azure IoT Hub client with
-///     prefix [Azure IoT]:"
-/// </summary>
-/// <param name="message">The format string containing the error to output along with placeholders</param>
-/// <param name="...">The list of arguments to populate the format string placeholders</param>
-void LogMessage(const char* message, ...)
-{
-    va_list args;
-    va_start(args, message);
-    Log_Debug("[Azure IoT] ");
-    Log_DebugVarArgs(message, args);
-    va_end(args);
-}
-
-/// <summary>
-///     Converts the IoT Hub connection status reason to a string.
-/// </summary>
-/// <param name="reason">connection change status reason</param>
+/*
+* @brief Converts the IoT Hub connection status reason to a string.
+* 
+* @param    reason  Connection change status reason
+*
+* @return Connection status as string
+*/
 static const char *getReasonString(IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason)
 {
     switch (reason) {
@@ -266,10 +236,12 @@ static const char *getReasonString(IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason
     return "unknown IOTHUB_CLIENT_CONNECTION_STATUS_REASON";
 }
 
-/// <summary>
-///     Converts AZURE_SPHERE_PROV_RETURN_VALUE to a string.
-/// </summary>
-/// <param name="provisioningResult">result of provisioning phase</param>
+/*
+* @brief Converts AZURE_SPHERE_PROV_RETURN_VALUE to a string.
+* 
+* @param    provisioningResult  result of provisioning phase
+* @return   Provisioning result string
+*/
 static char *getAzureSphereProvisioningResultString(
     AZURE_SPHERE_PROV_RETURN_VALUE provisioningResult)
 {
@@ -335,23 +307,24 @@ static char *getAzureSphereProvisioningResultString(
     }
 }
 
-///<summary>
-/// Convert message payload (not NULL terminated) to heap allocated json value
-///</summary>
-/// <param name="pbPayload">pointer to message pszPayload buffer</param>
-/// <param name="nPayloadSize">size of payload buffer</param>
-/// <returns>The pointer to the heap allocated json value.</returns>
+/*
+* @brief    Convert message payload (not NULL terminated) to heap allocated json value
+*
+* @param    pbPayload       pointer to message pszPayload buffer
+* @param    nPayloadSize    size of payload buffer
+* @return   The pointer     to the heap allocated json value.
+*/
 static JSON_Value* getJsonFromPayload(const unsigned char* pbPayload, size_t nPayloadSize)
 {
     char* pszPayloadString = malloc(nPayloadSize + 1); // +1 to store null char at the end.
     if (pszPayloadString == NULL) {
-        LogMessage("ERROR: Not enough memory");
+        Log_Debug("[IoT] ERROR: Not enough memory");
         abort();
     }
     memcpy(pszPayloadString, pbPayload, nPayloadSize);
     pszPayloadString[nPayloadSize] = '\0'; // Null terminated string.
 
-    Log_Debug("Payload received %s\n",pszPayloadString);
+    Log_Debug("[IoT] Payload received %s\n",pszPayloadString);
 
     JSON_Value* jsonRootValue = json_parse_string(pszPayloadString);
     free(pszPayloadString);
@@ -359,13 +332,14 @@ static JSON_Value* getJsonFromPayload(const unsigned char* pbPayload, size_t nPa
     return jsonRootValue;
 }
 
-///<summary>
-/// Convert json value to heap allocated string (including NULL) with responseSize (excluding NULL)
-///</summary>
-/// <param name="jsonValue">json payload</param>
-/// <param name="ppbPayload">OUT parameter: address of message payload buffer pointer</param>
-/// <param name="pnResponseSize">OUT parameter: address of size variable</param>
-/// <returns>IOTHUB_CLIENT_OK on successful serialisation</returns>
+/*
+* @brief    Convert json value to heap allocated string (including NULL) with responseSize (excluding NULL)
+*
+* @param    jsonValue">json payload
+* @param    ppbPayload">OUT parameter: address of message payload buffer pointer
+* @param    pnResponseSize">OUT parameter: address of size variable
+* @return   IOTHUB_CLIENT_OK on successful serialisation
+*/
 static IOTHUB_CLIENT_RESULT setPayloadFromJson(JSON_Value* jsonValue, char** ppbResponse, size_t* pnResponseSize)
 {
     if ((ppbResponse == NULL) || (pnResponseSize == NULL)){
@@ -382,12 +356,12 @@ static IOTHUB_CLIENT_RESULT setPayloadFromJson(JSON_Value* jsonValue, char** ppb
     }
 
     if ((pszPayload = (char*)malloc(nPayloadSize)) == NULL) {
-        LogMessage("ERROR: not enough memory.\n");
+        Log_Debug("[IoT] ERROR: not enough memory.\n");
         abort();
     }
 
     if (json_serialize_to_buffer(jsonValue, pszPayload, nPayloadSize) == JSONFailure) {
-        LogMessage("ERROR: Invalid json\n");
+        Log_Debug("[IoT] ERROR: Invalid json\n");
         return IOTHUB_CLIENT_INVALID_ARG;
     }
 
@@ -397,20 +371,21 @@ static IOTHUB_CLIENT_RESULT setPayloadFromJson(JSON_Value* jsonValue, char** ppb
     return IOTHUB_CLIENT_OK;
 }
 
-/// <summary>
-///     Sets up the client in order to establish the communication channel to Azure IoT Hub.
-///
-///     The client is created by using the scope id of the Device Provisioning System which
-///     registers the device with an existing IoT hub and returns the information for
-///     establishing the connection to that hub.
-///     The client is setup with the following options:
-///     - MQTT procotol 'keepalive' value of 20 seconds; when no PINGRESP is received after
-///       20 seconds, the connection is believed to be down;
-/// </summary>
-/// <returns>'true' if the client has been properly set up. 'false' when a fatal error occurred
-/// while setting up the client.</returns>
-/// <remarks>This function is a no-op when the client has already been set up, i.e. this
-/// function has already completed successfully.</remarks>
+/* 
+* @brief    Sets up the client in order to establish the communication channel to Azure IoT Hub.
+*
+* The client is created by using the scope id of the Device Provisioning System which
+* registers the device with an existing IoT hub and returns the information for
+* establishing the connection to that hub.
+* The client is setup with the following options:
+* - MQTT procotol 'keepalive' value of 20 seconds; when no PINGRESP is received after
+* 20 seconds, the connection is believed to be down;
+* This function is a no-op when the client has already been set up, i.e. this
+* function has already completed successfully.
+* 
+* @return 'true' if the client has been properly set up. 'false' when a fatal error occurred
+* while setting up the client.
+*/
 bool AzureIoT_SetupClient(void)
 {
     if (bIoTHubAuthenticated && (hIoTHubClient != NULL))
@@ -422,7 +397,7 @@ bool AzureIoT_SetupClient(void)
     AZURE_SPHERE_PROV_RETURN_VALUE provResult =
         IoTHubDeviceClient_LL_CreateWithAzureSphereDeviceAuthProvisioning(strDPSSopeId, 10000,
                                                                           &hIoTHubClient);
-    LogMessage("IoTHubDeviceClient_CreateWithAzureSphereDeviceAuthProvisioning returned '%s'.\n",
+    Log_Debug("[IoT] ...AzureSphereDeviceAuthProvisioning returned '%s'.\n",
                getAzureSphereProvisioningResultString(provResult));
 
     if ( (hIoTHubClient == NULL) || (provResult.result != AZURE_SPHERE_PROV_RESULT_OK) ) {
@@ -435,7 +410,7 @@ bool AzureIoT_SetupClient(void)
 
     // if (IoTHubDeviceClient_LL_SetOption(hIoTHubClient, "TrustedCerts",
     //                                     cstrAzureIoTCertificates) != IOTHUB_CLIENT_OK) {
-    //     LogMessage("ERROR: failure to set option \"TrustedCerts\"\n");
+    //     Log_Debug("[IoT] ERROR: failure to set option \"TrustedCerts\"\n");
     //     return false;
     // }
 
@@ -443,7 +418,7 @@ bool AzureIoT_SetupClient(void)
     if( IOTHUB_CLIENT_OK !=
         IoTHubDeviceClient_LL_SetOption( hIoTHubClient, OPTION_AUTO_URL_ENCODE_DECODE, &bUrlAutoEncodeDecode) )
     {
-        LogMessage("ERROR: failure setting option \"%s\"\n", OPTION_AUTO_URL_ENCODE_DECODE);
+        Log_Debug("[IoT] ERROR: failure setting option \"%s\"\n", OPTION_AUTO_URL_ENCODE_DECODE);
         return false;
     }
 
@@ -451,21 +426,21 @@ bool AzureIoT_SetupClient(void)
     if (IOTHUB_CLIENT_OK !=
         IoTHubDeviceClient_LL_SetOption(hIoTHubClient, OPTION_MODEL_ID, strPnPModelId) )
     {
-        LogMessage("ERROR: failure setting option \"%s\"\n", OPTION_MODEL_ID);
+        Log_Debug("[IoT] ERROR: failure setting option \"%s\"\n", OPTION_MODEL_ID);
         return false;
      }
 
     if (IOTHUB_CLIENT_OK !=
         IoTHubDeviceClient_LL_SetOption(hIoTHubClient, OPTION_KEEP_ALIVE, &iKeepalivePeriodSeconds) )
     {
-        LogMessage("ERROR: failure setting option \"%s\"\n", OPTION_KEEP_ALIVE);
+        Log_Debug("[IoT] ERROR: failure setting option \"%s\"\n", OPTION_KEEP_ALIVE);
         return false;
     }
 
     if (IOTHUB_CLIENT_OK !=
         IoTHubDeviceClient_LL_SetRetryPolicy(hIoTHubClient,  IOTHUB_CLIENT_RETRY_EXPONENTIAL_BACKOFF_WITH_JITTER, 240) )
     {
-        LogMessage("ERROR: failure setting retry option: ...EXPONENTIAL_BACKOFF_WITH_JITTER \n");
+        Log_Debug("[IoT] ERROR: failure setting retry option: ...CLIENT_RETRY_EXPONENTIAL_BACKOFF_WITH_JITTER \n");
         return false;
     }
 
@@ -478,7 +453,7 @@ bool AzureIoT_SetupClient(void)
     // Set callbacks for connection status related events.
     if (IoTHubDeviceClient_LL_SetConnectionStatusCallback(
             hIoTHubClient, hubConnectionStatusCallback, NULL) != IOTHUB_CLIENT_OK) {
-        LogMessage("ERROR: failure setting callback\n");
+        Log_Debug("[IoT] ERROR: failure setting callback\n");
         return false;
     }
 
@@ -486,13 +461,14 @@ bool AzureIoT_SetupClient(void)
 }
 
 
-/// <summary>
-///     Periodically outputs a provided format string with a variable number of arguments.
-/// </summary>
-/// <param name="lastInvokedTime">Pointer where to store the 'last time this function has been
-/// invoked' information</param>
-/// <param name="periodInSeconds">The desired period of the output</param>
-/// <param name="format">The format string</param>
+/*
+* @brief    Periodically outputs a provided format string with a variable number of arguments.
+* 
+* @param    lastInvokedTime">Pointer where to store the 'last time this function has been
+* invoked' information
+* @param    periodInSeconds">The desired period of the output
+* @param    format  The format string
+*/
 static void PeriodicLogVarArgs(time_t *lastInvokedTime, time_t periodInSeconds, const char *format,
                                ...)
 {
@@ -505,27 +481,25 @@ static void PeriodicLogVarArgs(time_t *lastInvokedTime, time_t periodInSeconds, 
     if (ts.tv_sec > *lastInvokedTime + periodInSeconds) {
         va_list args;
         va_start(args, format);
-        Log_Debug("[Azure IoT] ");
         Log_DebugVarArgs(format, args);
         va_end(args);
         *lastInvokedTime = ts.tv_sec;
     }
 }
 
-/// <summary>
-///     Keeps IoT Hub Client alive by exchanging data with the Azure IoT Hub.
-/// </summary>
-/// <remarks>
-///     This function must to be invoked periodically so that the Azure IoT Hub
-///     SDK can accomplish its work (e.g. sending messages, invocation of callbacks, reconnection
-///     attempts, and so forth).
-/// </remarks>
+/*
+* @brief    Keeps IoT Hub Client alive by exchanging data with the Azure IoT Hub.
+*
+* When using low level samples (iothub_ll_*), the IoTHubDeviceClient_LL_DoWork function must be called regularly 
+* (eg. every 100 milliseconds) for the IoT device client to work properly.
+* <a href="https://github.com/Azure/azure-iot-sdk-c/blob/1c1b2c1a3a00bc445165dde44eb3e58ca999ec23/iothub_client/samples/readme.md#note" />
+*/
 void AzureIoT_DoPeriodicTasks(void)
 {
     static time_t lastTimeLogged = 0;
 
     if (bIoTHubAuthenticated) {
-        PeriodicLogVarArgs(&lastTimeLogged, 5, "INFO: %s calls in progress...\n", __func__);
+        PeriodicLogVarArgs(&lastTimeLogged, 5, "[IoT] %s calls in progress...\n", __func__);
 
         // DoWork - send some of the buffered events to the IoT Hub, and receive some of the
         // buffered events from the IoT Hub.
@@ -533,106 +507,122 @@ void AzureIoT_DoPeriodicTasks(void)
     }
 }
 
-/// <summary>
-///     Creates and enqueues a plain text message to be delivered to the IoT Hub. The message is not actually
-///     sent immediately, but it is sent on the next invocation of AzureIoT_DoPeriodicTasks().
-/// </summary>
-/// <param name="messagePayload">The payload of the message to send.</param>
-void AzureIoT_SendMessageWithContentType(const char* messagePayload, const char *contentType, const char * encoding)
+/* 
+* @brief    Creates and enqueues a plain text message to be delivered to the IoT Hub. The message is not actually
+*           sent immediately, but it is sent on the next invocation of AzureIoT_DoPeriodicTasks().
+*
+* @param    cstrMessage         The payload of the message to send.
+* @param    cstrContentType     The URLEncoded content type (e.g. "application/json" as "application%2fjson")
+* @param    cstrContentEncoding The content character encoding
+* @param    cstrPnPComponent    The component name in the DTDL schema
+*/
+void AzureIoT_SendMessageWithContentType(const char* cstrMessage, const char *cstrContentType, const char * cstrContentEncoding, const char * cstrPnPComponent)
 {
     if (hIoTHubClient == NULL) {
-        LogMessage(cstrWarnNotInitialized);
+        Log_Debug(cstrWarnNotInitialized);
         return;
     }
 
-    IOTHUB_MESSAGE_HANDLE messageHandle = IoTHubMessage_CreateFromString(messagePayload);
+    IOTHUB_MESSAGE_HANDLE messageHandle = IoTHubMessage_CreateFromString(cstrMessage);
     if (messageHandle == 0) {
-        LogMessage("WARNING: unable to create a new IoTHubMessage\n");
+        Log_Debug("[IoT] WARNING: unable to create a new IoTHubMessage\n");
         return;
     }
 
-    //// Set Message properties: for MessageId, use a running message count value.
+    // Set Message properties: for MessageId, use a running message count value.
     char szMessageId[16];
     snprintf(szMessageId, sizeof(szMessageId), "%d", uMessageId++);
     (void)IoTHubMessage_SetMessageId(messageHandle, szMessageId);
 
     //(void)IoTHubMessage_SetCorrelationId(messageHandle, "CORE_ID");
 
-
-    (void)IoTHubMessage_SetContentTypeSystemProperty(messageHandle, contentType);
-    (void)IoTHubMessage_SetContentEncodingSystemProperty(messageHandle, encoding);
+    (void)IoTHubMessage_SetContentTypeSystemProperty(messageHandle, cstrContentType);
+    (void)IoTHubMessage_SetContentEncodingSystemProperty(messageHandle, cstrContentEncoding);
 
     //// Add custom properties to message, i.e. for IoT Hub Message Routing
     //(void)IoTHubMessage_SetProperty(messageHandle, "MyProperty", "MyValue");
 
+    /// Add the "$.sub" property that will be added as "dt-subject"
+    /// @link https://docs.microsoft.com/en-us/azure/iot-develop/concepts-convention#telemetry
+    if( cstrPnPComponent != NULL ){
+        IoTHubMessage_SetProperty(messageHandle, "$.sub", cstrPnPComponent);
+    }
+    Log_Debug("[IoT] Sending message #%s for PnP component:'%s' as '%s'\n",  szMessageId, cstrPnPComponent, cstrMessage);
 
     if (IoTHubDeviceClient_LL_SendEventAsync(hIoTHubClient, messageHandle, sendMessageCallback,
         /*&callback_param*/ 0) != IOTHUB_CLIENT_OK) {
-        LogMessage("WARNING: failed to hand over the message to IoTHubClient\n");
+        Log_Debug("[IoT] WARNING: failed to hand over the message to IoTHubClient\n");
     }
     else {
-        LogMessage("INFO: IoTHubClient accepted the message for delivery\n");
+        Log_Debug("[IoT] IoTHubClient accepted the message for delivery\n");
     }
 
     IoTHubMessage_Destroy(messageHandle);
 }
 
 
-/// <summary>
-///     Creates and enqueues a plain text message to be delivered to the IoT Hub. The message is not actually
-///     sent immediately, but it is sent on the next invocation of AzureIoT_DoPeriodicTasks().
-/// </summary>
-/// <param name="messagePayload">The payload of the message to send.</param>
-void AzureIoT_SendTextMessage(const char *messagePayload)
+/*
+* @brief    Creates and enqueues a plain text message to be delivered to the IoT Hub. The message is not actually
+*           sent immediately, but it is sent on the next invocation of AzureIoT_DoPeriodicTasks().
+* 
+* @param    messagePayload  The payload of the message to send.
+* @param    cstrPnPComponent    The component name in the DTDL schema
+*/
+void AzureIoT_SendTextMessage(const char *cstrMessage, const char * cstrPnPComponent)
 {
-    AzureIoT_SendMessageWithContentType(messagePayload, ContentType.Text_Plain, ContentEncoding.UTF_8);
+    AzureIoT_SendMessageWithContentType(cstrMessage, ContentType.Text_Plain, ContentEncoding.UTF_8, cstrPnPComponent);
 }
 
 
-/// <summary>
-///     Creates and enqueues a json message to be delivered the IoT Hub. The message is not actually
-///     sent immediately, but it is sent on the next invocation of AzureIoT_DoPeriodicTasks().
-/// </summary>
-/// <param name="jsonPayload">The json payload of the message to send.</param>
-void AzureIoT_SendJsonMessage(JSON_Value* jsonPayload)
+/* 
+*  @brief   Creates and enqueues a json message to be delivered the IoT Hub. The message is not actually
+*           sent immediately, but it is sent on the next invocation of AzureIoT_DoPeriodicTasks().
+* 
+* @param    jsonPayload     The json payload of the message to send.
+* @param    cstrPnPComponent    The component name in the DTDL schema
+*/
+void AzureIoT_SendJsonMessage(JSON_Value* jsonPayload, const char * cstrPnPComponent)
 {
     char* pszMessagePayload = 0;
     size_t nMessageSize = 0;
 
     if (setPayloadFromJson(jsonPayload, &pszMessagePayload, &nMessageSize) == IOTHUB_CLIENT_OK) {
         if (pszMessagePayload != NULL) {
-            AzureIoT_SendMessageWithContentType(pszMessagePayload, ContentType.Application_JSON, ContentEncoding.UTF_8);
+            AzureIoT_SendMessageWithContentType(pszMessagePayload, ContentType.Application_JSON, ContentEncoding.UTF_8, cstrPnPComponent);
             free(pszMessagePayload);
         }
     }
 }
 
-
-/// <summary>
-///     Callback invoked when the Device Twin reported properties are accepted by IoT Hub.
-/// </summary>
-static void reportStatusCallback(int result, void *context)
+/*
+* @brief Callback invoked when the Device Twin reported properties are accepted by IoT Hub.
+*
+* @param    iStatus             HTTP status code
+* @param    pContextCallback    context specific pointer
+*/ 
+static void reportStatusCallback(int iStatus, void *pContextCallback)
 {
-    LogMessage("INFO: Device Twin reported properties update result: HTTP status code %d\n",
-               result);
+    Log_Debug("[IoT] Device Twin reported properties update result: HTTP status code %d\n",
+               iStatus);
     if (fnDeviceTwinConfirmationHandler)
-        fnDeviceTwinConfirmationHandler(result);
+        fnDeviceTwinConfirmationHandler(iStatus);
 }
 
-/// <summary>
-///     Creates and enqueues reported properties state using a prepared json string.
-///     The report is not actually sent immediately, but it is sent on the next 
-///     invocation of AzureIoT_DoPeriodicTasks().
-/// </summary>
-///<param name="pszProperties">Reported Properties in json string notation</param>
-///<param name="nPropertiesSize">Size of properties string</param>
-///<returns>IOTHUB_CLIENT_RESULT_OK if report successfully enqueued</returns>
+/*
+* @brief    Creates and enqueues reported properties state using a prepared json string.
+*     The report is not actually sent immediately, but it is sent on the next 
+*     invocation of AzureIoT_DoPeriodicTasks().
+* 
+* @param    pszProperties   Reported Properties in json string notation
+* @param    nPropertiesSize Size of properties string
+* @return   IOTHUB_CLIENT_RESULT_OK if report successfully enqueued
+*/
 IOTHUB_CLIENT_RESULT AzureIoT_TwinReportState(
     const char* pszProperties,
     size_t nPropertiesSize)
 {
     if (hIoTHubClient == NULL) {
-        LogMessage("ERROR: client not initialized\n");
+        Log_Debug("[IoT] ERROR: client not initialized\n");
         return IOTHUB_CLIENT_ERROR;
     }
 
@@ -645,23 +635,24 @@ IOTHUB_CLIENT_RESULT AzureIoT_TwinReportState(
             pszProperties, nPropertiesSize, reportStatusCallback, 0);
     
     if (result != IOTHUB_CLIENT_OK) {
-        LogMessage("ERROR: IOTHUB_CLIENT_RESULT %d with properties %s\n", result, pszProperties);
+        Log_Debug("[IoT] ERROR: IOTHUB_CLIENT_RESULT %d with properties %s\n", result, pszProperties);
     }
     else {
-        LogMessage("INFO: reported properties %s\n", pszProperties);
+        Log_Debug("[IoT] reported properties %s\n", pszProperties);
     }
 
     return result;
 }
 
 
-/// <summary>
-///     Creates and enqueues IoT Hub Device Twin reported properties. 
-///     The report is not actually sent immediately, but it is sent on the
-///     next invocation of AzureIoT_DoPeriodicTasks().
-/// </summary>
-///<param name="jsonState">Reported Properties as JSON_Value</param>
-///<returns>IOTHUB_CLIENT_RESULT_OK if report successfully enqueued</returns>
+/*
+* @brief    Creates and enqueues IoT Hub Device Twin reported properties. 
+* The report is not actually sent immediately, but it is sent on the
+* next invocation of AzureIoT_DoPeriodicTasks().
+* 
+* @param    jsonState   Reported Properties as JSON_Value
+* @return   IOTHUB_CLIENT_RESULT_OK if report successfully enqueued
+*/
 IOTHUB_CLIENT_RESULT AzureIoT_TwinReportStateJson(const JSON_Value* jsonState)
 {
     IOTHUB_CLIENT_RESULT result = IOTHUB_CLIENT_ERROR;
@@ -669,7 +660,7 @@ IOTHUB_CLIENT_RESULT AzureIoT_TwinReportStateJson(const JSON_Value* jsonState)
     unsigned char* pBuf = NULL;
 
     if (hIoTHubClient == NULL) {
-        LogMessage("ERROR: client not initialized\n");
+        Log_Debug("[IoT] ERROR: client not initialized\n");
         return IOTHUB_CLIENT_ERROR;
     }
 
@@ -678,12 +669,12 @@ IOTHUB_CLIENT_RESULT AzureIoT_TwinReportStateJson(const JSON_Value* jsonState)
     }
 
     if ((pBuf = (char*)malloc(nBufSize)) == NULL) {
-        LogMessage("ERROR: not enough memory.\n");
+        Log_Debug("[IoT] ERROR: not enough memory.\n");
         abort();
     }
 
     if (json_serialize_to_buffer(jsonState, pBuf, nBufSize) == JSONFailure) {
-        LogMessage("ERROR: Invalid json\n");
+        Log_Debug("[IoT] ERROR: Invalid json\n");
         result = IOTHUB_CLIENT_INVALID_ARG;
     } else {
         result = AzureIoT_TwinReportState(pBuf, nBufSize);
@@ -693,27 +684,29 @@ IOTHUB_CLIENT_RESULT AzureIoT_TwinReportStateJson(const JSON_Value* jsonState)
 }
 
 
-/// <summary>
-///     Function invoked when the message delivery confirmation is being reported.
-/// </summary>
-/// <param name="result">Message delivery status</param>
-/// <param name="context">User specified context</param>
+/*
+* @brief    Function invoked when the message delivery confirmation is being reported.
+* 
+* @param    result      Message delivery status
+* @param    context     User specified context
+*/
 static void sendMessageCallback(IOTHUB_CLIENT_CONFIRMATION_RESULT result, void *context)
 {
     
-    LogMessage("INFO: Message received by IoT Hub. Result is: %d\n", result);
+    Log_Debug("[IoT] Message received by IoT Hub. Result is: %d\n", result);
     if (fnMessageDeliveryConfirmationHandler)
         fnMessageDeliveryConfirmationHandler(result == IOTHUB_CLIENT_CONFIRMATION_OK);
 }
 
-/// <summary>
-///     Callback function invoked when a message is received from IoT Hub.
-/// </summary>
-/// <param name="message">The handle of the received message</param>
-/// <param name="context">The user context specified at
-/// IoTHubDeviceClient_LL_SetMessageCallback() invocation time</param>
-/// <returns>Return value to indicates the message procession status (i.e. accepted, rejected,
-/// abandoned)</returns>
+/*
+* @brief    Callback function invoked when a message is received from IoT Hub.
+* 
+* @param    message     The handle of the received message
+* @param    context     The user context specified at IoTHubDeviceClient_LL_SetMessageCallback() 
+*                       invocation time
+* @return Return value to indicates the message procession status 
+* (i.e. accepted, rejected, abandoned)
+*/
 static IOTHUBMESSAGE_DISPOSITION_RESULT receiveMessageCallback(IOTHUB_MESSAGE_HANDLE message,
                                                                void *context)
 {
@@ -721,14 +714,14 @@ static IOTHUBMESSAGE_DISPOSITION_RESULT receiveMessageCallback(IOTHUB_MESSAGE_HA
     size_t size = 0;
     IOTHUB_MESSAGE_RESULT result;
     if ((result = IoTHubMessage_GetByteArray(message, &buffer, &size)) != IOTHUB_MESSAGE_OK) {
-        LogMessage("WARNING: failure performing IoTHubMessage_GetByteArray: %d\n", result);
+        Log_Debug("[IoT] WARNING: failure performing IoTHubMessage_GetByteArray: %d\n", result);
         return result;
     }
 
     // 'buffer' is not zero terminated.
     unsigned char *str_msg = (unsigned char *)malloc(size + 1);
     if (str_msg == NULL) {
-        LogMessage("ERROR: could not allocate buffer for incoming message\n");
+        Log_Debug("[IoT] ERROR: could not allocate buffer for incoming message\n");
         abort();
     }
     memcpy(str_msg, buffer, size);
@@ -737,25 +730,25 @@ static IOTHUBMESSAGE_DISPOSITION_RESULT receiveMessageCallback(IOTHUB_MESSAGE_HA
     if (fnMessageReceivedHandler != 0) {
         fnMessageReceivedHandler(str_msg);
     } else {
-        LogMessage("WARNING: no user callback set up for event 'message received from IoT Hub'\n");
+        Log_Debug("[IoT] WARNING: no user callback set up for event 'message received from IoT Hub'\n");
     }
 
-    LogMessage("INFO: Received message '%s' from IoT Hub\n", str_msg);
+    Log_Debug("[IoT] Received message '%s' from IoT Hub\n", str_msg);
     free(str_msg);
 
     return IOTHUBMESSAGE_ACCEPTED;
 }
 
-/// <summary>
-///     Callback when direct method is called.
-///     if raw handler was registered with AzureIoT_SetDirectMethodHandler: it takes precedence
-///     if handlers are registered with AzureIoT_RegisterDirectMethodHandlers: loops through list and calls handler
-/// </summary>
+/*
+* @brief    Internal Callback when direct method is called.
+*     if raw handler was registered with AzureIoT_SetDirectMethodHandler: it takes precedence
+*     if handlers are registered with AzureIoT_RegisterDirectMethodHandlers: loops through list and calls handler
+*/
 static int directMethodCallback(const char *methodName, const unsigned char *payload, size_t payloadSize,
                                 unsigned char **response, size_t *responseSize,
                                 void *userContextCallback)
 {
-    LogMessage("INFO: Trying to invoke method %s\n", methodName);
+    Log_Debug("[IoT] Trying to invoke method %s\n", methodName);
 
     *responseSize = 0;
     *response = NULL;
@@ -784,7 +777,7 @@ static int directMethodCallback(const char *methodName, const unsigned char *pay
                 }
                 if (jsonResponse != NULL) {
                     setPayloadFromJson(jsonResponse, (char **)response, responseSize);
-                    LogMessage("Command Response HTTP: %d '%s' (%d bytes)\n", result, *response, *responseSize);
+                    Log_Debug("Command Response HTTP: %d '%s' (%d bytes)\n", result, *response, *responseSize);
                     json_value_free(jsonResponse);
                 }
                 return result;
@@ -793,28 +786,28 @@ static int directMethodCallback(const char *methodName, const unsigned char *pay
         }
     }
 
-    LogMessage("INFO: Method '%s' not found\n", methodName);
+    Log_Debug("[IoT] WARNING: Method '%s' not found\n", methodName);
     static const char methodNotFound[] = "\"No method found\"";
     *responseSize = strlen(methodNotFound);
     *response = (unsigned char *)malloc(*responseSize);
     if (*response != NULL) {
         strncpy((char *)(*response), methodNotFound, *responseSize);
     } else {
-        LogMessage("ERROR: Cannot create response message for method call.\n");
+        Log_Debug("[IoT] ERROR: Cannot create response message for method call.\n");
         abort();
     }
 
     return result;
 }
 
-/// <summary>
-///     Callback invoked when a Device Twin update is received from IoT Hub.
-/// </summary>
+/*
+* @brief    Internal Callback invoked when a Device Twin update is received from IoT Hub.
+*/
 static void twinCallback(DEVICE_TWIN_UPDATE_STATE updateState, const unsigned char *payLoad,
                          size_t payLoadSize, void *userContextCallback)
 {
     if (fnTwinUpdateHandler == NULL) {
-        LogMessage("WARNING: Received device twin update but no handler available.");
+        Log_Debug("[IoT] WARNING: Received device twin update but no handler available.");
         return;
     }
 
@@ -834,12 +827,13 @@ static void twinCallback(DEVICE_TWIN_UPDATE_STATE updateState, const unsigned ch
     json_value_free(rootProperties);
 }
 
-/// <summary>
-///     Callback function invoked whenever the connection status to IoT Hub changes.
-/// </summary>
-/// <param name="result">Current authentication status</param>
-/// <param name="reason">result's specific reason</param>
-/// <param name="userContextCallback">User specified context</param>
+/*
+* @brief    Internal Callback function invoked whenever the connection status to IoT Hub changes.
+* 
+* @param    result              Current authentication status
+* @param    reason              result's specific reason
+* @param    userContextCallback User specified context
+*/
 static void hubConnectionStatusCallback(IOTHUB_CLIENT_CONNECTION_STATUS result,
                                         IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason,
                                         void *userContextCallback)
@@ -850,9 +844,9 @@ static void hubConnectionStatusCallback(IOTHUB_CLIENT_CONNECTION_STATUS result,
         fnConnectionStatusChangedHandler(bIoTHubAuthenticated, reasonString);
     }
     if (!bIoTHubAuthenticated) {
-        LogMessage("INFO: IoT Hub connection is down (%s), retrying connection...\n", reasonString);
+        Log_Debug("[IoT] IoT Hub connection is down (%s), retrying connection...\n", reasonString);
     } else {
-        LogMessage("INFO: connection to the IoT Hub has been established (%s).\n", reasonString);
+        Log_Debug("[IoT] connection to the IoT Hub has been established (%s).\n", reasonString);
     }
 }
 
@@ -864,23 +858,24 @@ static void hubConnectionStatusCallback(IOTHUB_CLIENT_CONNECTION_STATUS result,
  **********************************************************************************/
 
 
-/// <summary>
-///     Initializes the Azure IoT Hub SDK.
-/// </summary>
-/// <return>'true' if initialization has been successful.</param>
+/*
+* @brief    Initializes the Azure IoT Hub SDK.
+* 
+* @return 'true' if initialization has been successful.
+*/
 bool AzureIoT_Initialize(void)
 {
     if (IoTHub_Init() != 0) {
-        LogMessage("ERROR: failed initializing platform.\n");
+        Log_Debug("[IoT] ERROR: failed initializing platform.\n");
         return false;
     }
     return true;
 }
 
 
-/// <summary>
-///     Destroys the Azure IoT Hub client.
-/// </summary>
+/*
+* @brief    Destroys the Azure IoT Hub client.
+*/
 void AzureIoT_DestroyClient(void)
 {
     if (hIoTHubClient != NULL) {
@@ -889,9 +884,9 @@ void AzureIoT_DestroyClient(void)
     }
 }
 
-/// <summary>
-///     Deinitializes the Azure IoT Hub SDK.
-/// </summary>
+/*
+* @brief    Deinitializes the Azure IoT Hub SDK.
+*/
 void AzureIoT_Deinitialize(void)
 {
     IoTHub_Deinit();
@@ -905,10 +900,11 @@ void AzureIoT_Deinitialize(void)
  **********************************************************************************/
 
 
-/// <summary>
-///     Sets the DPS Scope ID.
-/// </summary>
-/// <param name="cstrID">The Scope ID string (typically from command line)</param>
+/*
+* @brief    Sets the DPS Scope ID.
+* 
+* @param    cstrID      The Scope ID string (typically from command line)
+*/
 void AzureIoT_SetDPSScopeID(const char* cstrId)
 {
     if( NULL != cstrId){
@@ -918,10 +914,11 @@ void AzureIoT_SetDPSScopeID(const char* cstrId)
     }
 }
 
-/// <summary>
-///     Sets the Azure IoT PnP Model Id.
-/// </summary>
-/// <param name="cstrID">Model Id string</param>
+/*
+* @brief    Sets the Azure IoT PnP Model Id.
+* 
+* @param    cstrID  Model Id string
+*/
 void AzureIoT_SetModelId(const char* cstrId)
 {
     if( NULL != cstrId){
@@ -931,71 +928,78 @@ void AzureIoT_SetModelId(const char* cstrId)
     }
 }
 
-/// <summary>
-///     Registers an array of Direct Method handlers. Superseded by <seealso cref="AzureIoT_SetDirectMethodCallback">AzureIoT_SetDirectMethodCallback</seealso>
-/// </summary>
-/// <param name="methods">list of MethodRegistration entries (ended by NULL,NULL)</param>
+/*
+* @brief    Registers an array of Direct Method handlers. Superseded by <seealso cref="AzureIoT_SetDirectMethodCallback">AzureIoT_SetDirectMethodCallback</seealso>
+* 
+* @param    methods     List of MethodRegistration entries (ended by NULL,NULL)
+*/
 void AzureIoT_RegisterDirectMethodHandlers(const MethodRegistration * methods)
 {
     pRegisteredMethods = (MethodRegistration*) methods;
 }
 
-/// <summary>
-///     Sets a raw low-level function to be invoked whenever a Direct Method call from the IoT Hub is
-///     received.
-/// </summary>
-/// <param name="callback">The callback function invoked when a Direct Method call is received</param>
+/*
+* @brief    Sets a raw low-level function to be invoked whenever a Direct Method call from the IoT Hub is
+*     received.
+* 
+* @param    callback    The callback function invoked when a Direct Method call is received
+*/
 void AzureIoT_SetDirectMethodCallback(DirectMethodCallFnType callback)
 {
     fnDirectMethodHandler = callback;
 }
 
 
-/// <summary>
-///     Sets the function to be invoked whenever the connection status to the IoT Hub changes.
-/// </summary>
-/// <param name="callback">The callback function invoked when Azure IoT Hub network connection
-/// status changes.</param>
+/*
+* @brief    Sets the function to be invoked whenever the connection status to the IoT Hub changes.
+* 
+* @param    callback    The callback function invoked when Azure IoT Hub network connection
+*                       status changes.
+*/
 void AzureIoT_SetConnectionStatusCallback(ConnectionStatusFnType callback)
 {
     fnConnectionStatusChangedHandler = callback;
 }
 
-/// <summary>
-///     Sets the function callback invoked whenever a Device Twin update from the IoT Hub is
-///     received.
-/// </summary>
-/// <param name="callback">The callback function invoked when a Device Twin update is
-/// received</param>
+/*
+* @brief    Sets the function callback invoked whenever a Device Twin update from the IoT Hub is
+*     received.
+* 
+* @param    callback    The callback function invoked when a Device Twin update is
+*                       received
+*/
 void AzureIoT_SetDeviceTwinUpdateCallback(TwinUpdateFnType callback)
 {
     fnTwinUpdateHandler = callback;
 }
 
-/// <summary>
-///     Sets the function to be invoked whenever the Device Twin properties have been delivered
-///     to the IoT Hub.
-/// </summary>
-/// <param name="callback">The function pointer to the callback function.</param>
+/*
+* @brief    Sets the function to be invoked whenever the Device Twin properties have been delivered
+*     to the IoT Hub.
+* 
+*     @param    callback    The function pointer to the callback function.
+*/
 void AzureIoT_SetDeviceTwinDeliveryConfirmationCallback(
     DeviceTwinDeliveryConfirmationFnType callback)
 {
     fnDeviceTwinConfirmationHandler = callback;
 }
 
-/// <summary>
-///     Sets a callback function invoked whenever a message is received from IoT Hub.
-/// </summary>
-/// <param name="callback">The callback function invoked when a message is received</param>
+/*
+* @brief    Sets a callback function invoked whenever a message is received from IoT Hub.
+* 
+* @param    callback    The callback function invoked when a message is received
+*/
 void AzureIoT_SetMessageReceivedCallback(MessageReceivedFnType callback)
 {
     fnMessageReceivedHandler = callback;
 }
 
-/// <summary>
-///     Sets the function to be invoked whenever the message to the Iot Hub has been delivered.
-/// </summary>
-/// <param name="callback">The function pointer to the callback function.</param>
+/*
+* @brief    Sets the function to be invoked whenever the message to the Iot Hub has been delivered.
+* 
+* @param    callback    The function pointer to the callback function.
+*/
 void AzureIoT_SetMessageConfirmationCallback(MessageDeliveryConfirmationFnType callback)
 {
     fnMessageDeliveryConfirmationHandler = callback;
