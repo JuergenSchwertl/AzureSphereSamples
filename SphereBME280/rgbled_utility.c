@@ -6,9 +6,9 @@
 
 #include "rgbled_utility.h"
 
-/// <summary>
+///  @brief 
 ///     Maximum number of managed LEDs.
-/// </summary>
+/// 
 #define MAX_LED_COUNT 4
 
 static const char *colorNames[] = {"white", "blue",   "cyan",    "green",

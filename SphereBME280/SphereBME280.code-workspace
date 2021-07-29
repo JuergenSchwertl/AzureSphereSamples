@@ -8,7 +8,9 @@
 		"files.associations": {
 			"prov_client_const.h": "c",
 			"const_defines.h": "c",
-			"prov_security_factory.h": "c"
+			"prov_security_factory.h": "c",
+			"iothub.h": "c",
+			"iothub_device_client_ll.h": "c"
 		}
 	},
 }
