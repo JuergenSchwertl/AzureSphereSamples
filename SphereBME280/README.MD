@@ -32,7 +32,7 @@ If you want to get rolling within minutes, follow the steps to [Import IoT Centr
 dashboard manually, follow the steps layed out in [Manual IoT Central setup](#Manual-IoT-Central-setup).
 
 #### Import IoT Central Application Template
-Just click here to [import Azure Sphere with BME 280 Template](https://apps.azureiotcentral.com/build/new/4485e1a2-63ab-439e-af6d-948c9ccb49b3),
+Just click here to [import Azure Sphere with BME 280 Template (IoT PnP enabled)](https://apps.azureiotcentral.com/build/new/c11cdb9a-987f-4e16-822b-9131cf602197),
 and then select the type of IoT Central application you like. There is a free version available that allows to test your application for 7 days.
 
 Since IoT Central uses Azure IoT Hub and Azure IoT Hub Device Provisioning Service under the hood, you need to setup the certificate chain 
@@ -51,12 +51,13 @@ Apart from creating the IoT Central application itself, the remaining steps will
 Setting up the certificate chain for Azure IoT Hub DPS inside Azure IoT Central.
 
 To setup the telemetry, commands and properties for this sample you can import an Azure IoT PnP device template from the provided json here: 
-[*Azure Sphere with BME280 Lab.json*](./Azure%20Sphere%20with%20BME280%20Lab.json).
+[*Azure Sphere with BME280 Lab DTDL v2*](./IoT-PnP.dtdl-v2/README.MD).
 
 To do this, open your IoT Central application and under *App settings* go to *Device Templates* -> *+New* and under 
 *Create a custom device template* select "IoT Device" and press [Next:Review], give it a name and hit [Create] .
 
-On the device template page you can now *Import capabililty model* and import the [*Azure Sphere with BME280 Lab.json*](./Azure%20Sphere%20with%20BME280%20Lab.json) .
+On the device template page you can now *Import capabililty model* and import the [*Azure Sphere with BME280 Lab DTDL v2*](./IoT-PnP.dtdl-v2/README.MD) .
+>**Note** : once accepted, Azure IoT PnP should have the schema definitions in the public repository...
 
 ### Create a Device
 You could just start this lab and fire up the SphereBME280 application. If you have everything setup correctly with IoT Central, it would autmatically 

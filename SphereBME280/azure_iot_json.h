@@ -25,7 +25,7 @@ JSON_Value* AzureIoTJson_FromPayload(const unsigned char* pbPayload, size_t nPay
 * @param    pnResponseSize      OUT parameter: address of size variable
 * @return   IOTHUB_CLIENT_RESULT IOTHUB_CLIENT_OK on successful serialisation
 */
-IOTHUB_CLIENT_RESULT AzureIoTJson_ToPayload(JSON_Value* jsonValue, char** ppbResponse, size_t* pnResponseSize);
+IOTHUB_CLIENT_RESULT AzureIoTJson_ToPayload(const JSON_Value* jsonValue, char** ppbResponse, size_t* pnResponseSize);
 
 /** 
 *  @brief   Creates and enqueues a json message to be delivered the IoT Hub. The message is not actually
@@ -34,7 +34,7 @@ IOTHUB_CLIENT_RESULT AzureIoTJson_ToPayload(JSON_Value* jsonValue, char** ppbRes
 * @param    jsonPayload     The json payload of the message to send.
 * @return   IOTHUB_CLIENT_RESULT IOTHUB_CLIENT_OK on success
 */
-IOTHUB_CLIENT_RESULT AzureIoTJson_SendMessage(JSON_Value* jsonPayload);
+IOTHUB_CLIENT_RESULT AzureIoTJson_SendMessage(const JSON_Value* jsonPayload);
 
 
 /**

@@ -27,7 +27,6 @@
 
 #define MODULE "[IOT] "
 
-
 static int directMethodCallback(
     const char* methodName, 
     const unsigned char* payload, size_t payloadSize,
@@ -39,7 +38,7 @@ static void deviceTwinUpdateCallback(
     const unsigned char* payLoad, size_t payLoadSize,
     void* userContextCallback);
 
-static void sendMessageCallback(
+static void sendMessageConfirmationCallback(
     IOTHUB_CLIENT_CONFIRMATION_RESULT result, 
     void* context);
 
@@ -51,7 +50,6 @@ static void hubConnectionStatusCallback(
     IOTHUB_CLIENT_CONNECTION_STATUS result,
     IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason,
     void* userContextCallback);
-
 
 
 /// @brief   Turn Azure IoT tracing on/off
@@ -205,7 +203,10 @@ static const char cstrAzureIoTCertificates[] =
 ;
 #endif
 
-MU_DEFINE_ENUM_STRINGS_WITHOUT_INVALID(IOTHUB_CLIENT_RESULT, IOTHUB_CLIENT_RESULT_VALUE);
+MU_DEFINE_ENUM_STRINGS_WITHOUT_INVALID(IOTHUB_CLIENT_RESULT, IOTHUB_CLIENT_RESULT_VALUES);
+MU_DEFINE_ENUM_STRINGS_WITHOUT_INVALID(IOTHUB_CLIENT_CONFIRMATION_RESULT, IOTHUB_CLIENT_CONFIRMATION_RESULT_VALUES);
+
+
 
 
 /**
@@ -319,7 +320,7 @@ char * AzureIoT_GetStringFromPayload(const char* cstrPayload, size_t nPayloadSiz
     }
     memcpy(str, cstrPayload, nPayloadSize);
     str[nPayloadSize] = '\0';
-
+    
     return str;
 }
 
@@ -449,11 +450,6 @@ IOTHUB_MESSAGE_HANDLE AzureIoT_CreateIoTHubMessage(const char* cstrMessage, cons
         return NULL;
     }
 
-    // Set Message properties: for MessageId, use a running message count value.
-    char szMessageId[16];
-    snprintf(szMessageId, sizeof(szMessageId), "%d", uMessageId++);
-    (void)IoTHubMessage_SetMessageId(hMessage, szMessageId);
-
     if( NULL != cstrContentType ){
         (void)IoTHubMessage_SetContentTypeSystemProperty(hMessage, cstrContentType);
     }
@@ -477,14 +473,21 @@ IOTHUB_CLIENT_RESULT AzureIoT_SendIoTHubMessage(IOTHUB_MESSAGE_HANDLE hMessage)
         return IOTHUB_CLIENT_INVALID_ARG;
     }
 
-    IOTHUB_CLIENT_RESULT result = IoTHubDeviceClient_LL_SendEventAsync(hIoTHubClient, hMessage, sendMessageCallback,
-        /*&callback_param*/ 0);
+    // Set MessageId as running message count value. Keep heap allocated buffer until confirmation!
+    #define MESSAGE_ID_SIZE  16
+    char *pszMessageId = (char *)malloc(MESSAGE_ID_SIZE);
+    snprintf(pszMessageId, MESSAGE_ID_SIZE, "%d", uMessageId++);
+    (void)IoTHubMessage_SetMessageId(hMessage, pszMessageId);
+    
+    IOTHUB_CLIENT_RESULT result = IoTHubDeviceClient_LL_SendEventAsync(hIoTHubClient, hMessage, 
+        sendMessageConfirmationCallback, /*&callback_param*/ pszMessageId);
 
     if ( IOTHUB_CLIENT_OK != result) {
         Log_Debug(MODULE "ERROR: _LL_SendEvent returns %s\n",IOTHUB_CLIENT_RESULTStrings(result));
     }
     else {
-        Log_Debug(MODULE "IoTHubClient accepted the message for delivery\n");
+        Log_Debug(MODULE "IoTHubClient accepted message id '%s' with payload '%s'\n", 
+            IoTHubMessage_GetMessageId(hMessage), IoTHubMessage_GetString(hMessage));
     }
 
     IoTHubMessage_Destroy(hMessage);
@@ -517,11 +520,17 @@ IOTHUB_CLIENT_RESULT AzureIoT_SendPlainTextMessage(const char *cstrMessage)
 * @param    result      Message delivery status
 * @param    context     User specified context
 */
-static void sendMessageCallback(IOTHUB_CLIENT_CONFIRMATION_RESULT result, void* context)
+static void sendMessageConfirmationCallback(IOTHUB_CLIENT_CONFIRMATION_RESULT result, void* context)
 {
-    Log_Debug(MODULE "Message received by IoT Hub. Result is: %d\n", result);
+    Log_Debug(MODULE "IoTHub confirmed message id '%s' with: %s\n", 
+        (char *) context, IOTHUB_CLIENT_CONFIRMATION_RESULTStrings(result));
+
     if (fnMessageDeliveryConfirmationHandler) {
         fnMessageDeliveryConfirmationHandler(result == IOTHUB_CLIENT_CONFIRMATION_OK);
+    }
+    //cleanup heap memory for context
+    if (NULL != context){
+        free(context);
     }
 }
 

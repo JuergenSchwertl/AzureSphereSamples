@@ -126,6 +126,8 @@ IOTHUB_MESSAGE_HANDLE AzureIoT_CreateIoTHubMessage(const char* cstrMessage, cons
 
 /**
  * @brief Enqueues the IoT Hub message (will be sent to IoT Hub on next DoWork event)
+ * The message will be assigned a running number as message id string that needs to
+ * be confirmed by IoT Hub @see sendMessageConfirmationCallback()
  * 
  * @param hMessage Message handle
  */

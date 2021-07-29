@@ -74,7 +74,7 @@ static int jsonDirectMethodCallback(const char* methodName, const unsigned char*
             }
             if (jsonResponse != NULL) {
                 AzureIoTJson_ToPayload(jsonResponse, (char**)response, responseSize);
-                Log_Debug("Command Response HTTP: %d '%s' (%d bytes)\n", result, *response, *responseSize);
+                Log_Debug(MODULE "Command Response HTTP: %d '%s' (%d bytes)\n", result, *response, *responseSize);
                 json_value_free(jsonResponse);
             }
             return result;
@@ -129,7 +129,7 @@ JSON_Value* AzureIoTJson_FromPayload(const unsigned char* pbPayload, size_t nPay
 {
     char* pszPayloadString = malloc(nPayloadSize + 1); // +1 to store null char at the end.
     if (pszPayloadString == NULL) {
-        Log_Debug( MODULE "ERROR: Not enough memory");
+        Log_Debug( MODULE "ERROR: Not enough memory\n");
         abort();
     }
     memcpy(pszPayloadString, pbPayload, nPayloadSize);
@@ -143,7 +143,7 @@ JSON_Value* AzureIoTJson_FromPayload(const unsigned char* pbPayload, size_t nPay
     return jsonRootValue;
 }
 
-IOTHUB_CLIENT_RESULT AzureIoTJson_ToPayload(JSON_Value* jsonValue, char** ppbResponse, size_t* pnResponseSize)
+IOTHUB_CLIENT_RESULT AzureIoTJson_ToPayload(const JSON_Value* jsonValue, char** ppbResponse, size_t* pnResponseSize)
 {
     if ((ppbResponse == NULL) || (pnResponseSize == NULL)){
         return IOTHUB_CLIENT_INVALID_ARG;
@@ -155,7 +155,7 @@ IOTHUB_CLIENT_RESULT AzureIoTJson_ToPayload(JSON_Value* jsonValue, char** ppbRes
     if ((jsonValue == NULL) || ((nPayloadSize = json_serialization_size(jsonValue)) == 0)) {
         *ppbResponse = NULL;
         *pnResponseSize = 0;
-        return IOTHUB_CLIENT_OK; // nothing to report
+        return IOTHUB_CLIENT_INVALID_ARG; // nothing to report
     }
 
     if ((pszPayload = (char*)malloc(nPayloadSize)) == NULL) {
@@ -165,8 +165,11 @@ IOTHUB_CLIENT_RESULT AzureIoTJson_ToPayload(JSON_Value* jsonValue, char** ppbRes
 
     if (json_serialize_to_buffer(jsonValue, pszPayload, nPayloadSize) == JSONFailure) {
         Log_Debug( MODULE "ERROR: Invalid json\n");
+        free(pszPayload);
         return IOTHUB_CLIENT_INVALID_ARG;
     }
+
+    //Log_Debug(MODULE "Payload to transmit %s\n", pszPayload);
 
     // exclude NULL terminator in responseSize as some json de-serializers don't like trailling NULL character
     *pnResponseSize = nPayloadSize-1; 
@@ -175,16 +178,14 @@ IOTHUB_CLIENT_RESULT AzureIoTJson_ToPayload(JSON_Value* jsonValue, char** ppbRes
 }
 
 
-IOTHUB_CLIENT_RESULT AzureIoTJson_SendMessage(JSON_Value* jsonPayload)
+IOTHUB_CLIENT_RESULT AzureIoTJson_SendMessage(const JSON_Value* jsonPayload)
 {
-    char* pszMessagePayload = 0;
-    size_t nMessageSize = 0;
+    char* pszPayload = 0;
+    size_t nPayloadSize = 0;
     IOTHUB_CLIENT_RESULT result = IOTHUB_CLIENT_ERROR;
-    if (AzureIoTJson_ToPayload(jsonPayload, &pszMessagePayload, &nMessageSize) == IOTHUB_CLIENT_OK) {
-        if (pszMessagePayload != NULL) {
-            result = AzureIoT_SendMessageWithContentType(pszMessagePayload, ContentType.Application_JSON, ContentEncoding.UTF_8);
-            free(pszMessagePayload);
-        }
+    if (IOTHUB_CLIENT_OK == AzureIoTJson_ToPayload(jsonPayload, &pszPayload, &nPayloadSize) ) {
+        result = AzureIoT_SendMessageWithContentType(pszPayload, ContentType.Application_JSON, ContentEncoding.UTF_8);
+        free(pszPayload);
     }
     return result;
 }
@@ -192,26 +193,13 @@ IOTHUB_CLIENT_RESULT AzureIoTJson_SendMessage(JSON_Value* jsonPayload)
 
 IOTHUB_CLIENT_RESULT AzureIoTJson_TwinReportState(const JSON_Value* jsonState)
 {
+    char* pszPayload = 0;
+    size_t nPayloadSize = 0;
     IOTHUB_CLIENT_RESULT result = IOTHUB_CLIENT_ERROR;
-    size_t nBufSize = 0;
-    unsigned char* pBuf = NULL;
-
-    if ((jsonState == NULL) || ((nBufSize = json_serialization_size(jsonState)) == 0)) {
-        return IOTHUB_CLIENT_OK; // nothing to report
+    if (IOTHUB_CLIENT_OK == AzureIoTJson_ToPayload(jsonState, &pszPayload, &nPayloadSize)) {
+        result = AzureIoT_TwinReportState(pszPayload, nPayloadSize);
+        free(pszPayload);
     }
-
-    if ((pBuf = (char*)malloc(nBufSize)) == NULL) {
-        Log_Debug("[IoT] ERROR: not enough memory.\n");
-        abort();
-    }
-
-    if (json_serialize_to_buffer(jsonState, pBuf, nBufSize) == JSONFailure) {
-        Log_Debug("[IoT] ERROR: Invalid json\n");
-        result = IOTHUB_CLIENT_INVALID_ARG;
-    } else {
-        result = AzureIoT_TwinReportState(pBuf, nBufSize);
-    }
-    free( pBuf );
     return result;
 }
 
