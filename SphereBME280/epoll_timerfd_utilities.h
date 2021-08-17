@@ -11,19 +11,15 @@ struct EventData;
 ///  @param eventData The provided event data
 typedef void (*EventHandler)(struct EventData *eventData);
 
-///  @brief 
-/// @param Contains context data for epoll events.
-/// @param When an event is registered with RegisterEventHandlerToEpoll, supply
-/// a pointer to an instance of this struct.  The pointer must remain valid
-/// for as long as the event is active.
-/// 
-/// @see RegisterEventHandlerToEpoll 
+///  @brief Contains persistent context data for epoll events. When an event is registered with 
+/// RegisterEventHandlerToEpoll, supply a pointer to an instance of this struct.  
+/// The pointer must remain valid for as long as the event is active.
 typedef struct EventData {
     ///  @brief Function which is called when the event occurs.
     EventHandler eventHandler;
     ///  @brief  The file descriptor that generated the event.
     int fd;
-    /// @brief  timer specific context
+    /// @brief  Event specific context
     void * context;
 } EventData;
 
@@ -51,8 +47,12 @@ int RegisterEventHandlerToEpoll(int fdEpoll, int eventFd, EventData *persistentE
 /// @return 0 on success, or -1 on failure
 int UnregisterEventHandlerFromEpoll(int fdEpoll, int eventFd);
 
-///  @brief 
-///     Sets the period of a timer.
+/// @brief Disarms a timer (setting .it_interval and .it_value to null period)
+///
+/// @param timerFd Timer file descriptor
+int DisarmTimerFd(int timerFd);
+
+///  @brief  Sets the period of a timer (sets .it_interval).
 /// 
 /// @param timerFd Timer file descriptor
 /// @param period The new period
