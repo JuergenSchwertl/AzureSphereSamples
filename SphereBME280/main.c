@@ -26,6 +26,7 @@
 #include "rgbled_utility.h"
 #include "epoll_timerfd_utilities.h"
 #include "azure_iot.h"
+#include "azure_iot_dps.h"
 #include "azure_iot_json.h"
 #include "azure_iot_pnp.h"
 
@@ -441,7 +442,7 @@ static void SendEventMessage(const char * cstrComponent, const char * cstrEvent,
         json_object_set_string(jsonRootObject, cstrEvent, cstrMessage);
 
 		// Send a message
-		AzureIoTPnP_SendJsonMessage(jsonRootValue, cstrComponent);
+		AzureIoT_PnP_SendJsonMessage(jsonRootValue, cstrComponent);
 
         json_value_free(jsonRootValue);
 
@@ -475,7 +476,7 @@ static void SendTelemetryMessage(void)
             json_object_set_number(jsonRootObject, cstrPressureProperty, bmeData.pressure);
             json_object_set_number(jsonRootObject, cstrHumidityProperty, bmeData.humidity);
             
-            AzureIoTPnP_SendJsonMessage(jsonRootValue, cstrBME280Component);
+            AzureIoT_PnP_SendJsonMessage(jsonRootValue, cstrBME280Component);
 		}
 #endif
 
@@ -509,7 +510,7 @@ static void SendTelemetryMessage(void)
             json_object_set_number(jsonRootObject, cstrDevHealthTotalMemoryUsed, nTotalMemUsed);
             json_object_set_number(jsonRootObject, cstrDevHealthUserMemoryUsed, nUserMemUsed);
     
-            AzureIoTPnP_SendJsonMessage(jsonRootValue, cstrDevHealthComponent);
+            AzureIoT_PnP_SendJsonMessage(jsonRootValue, cstrDevHealthComponent);
             json_value_free(jsonRootValue);
         }
 
@@ -864,11 +865,11 @@ void ResetTimerHandler(EventData* eventData)
     }
 }
 
-///  @brief 
-///     Initialize peripherals, termination handler, and Azure IoT
-/// 
-/// <returns>0 on success, or -1 on failure</returns>
-int InitPeripheralsAndHandlers(void)
+///  @brief  Initialize peripherals, termination handler, and Azure IoT
+/// @param  argc command line argument count
+/// @param  argv command line argument vector
+/// @returns 0 on success, or -1 on failure
+int InitPeripheralsAndHandlers()
 {
     // Register a SIGTERM handler for termination requests
     struct sigaction action;
@@ -916,18 +917,6 @@ int InitPeripheralsAndHandlers(void)
     }
 #endif
 
-    // Initialize the Azure IoT SDK
-    if (!AzureIoT_Initialize()) {
-        Log_Debug("ERROR: Cannot initialize Azure IoT Hub SDK.\n");
-        return -1;
-    }
-
-    // Set the Azure IoT hub related callbacks
-    AzureIoT_SetMessageReceivedHandler( &MessageReceived );
-    AzureIoTJson_SetDeviceTwinUpdateHandler( &DeviceTwinUpdate );
-    AzureIoTJson_RegisterDirectMethodHandlers( &clstDirectMethods[0] );
-    AzureIoT_SetConnectionStatusCallback( &IoTHubConnectionStatusChanged );
-
     // Display the currently connected WiFi connection.
     DebugPrintCurrentlyConnectedWiFiNetwork();
 
@@ -936,8 +925,20 @@ int InitPeripheralsAndHandlers(void)
         return -1;
     }
 
+    // Initialize the Azure IoT SDK
+    if (AzureIoT_DPS_Initialize(fdEpoll, cstrPnPModelId) < 0) {
+        Log_Debug("ERROR: Cannot initialize Azure IoT Hub SDK.\n");
+        return -1;
+    }
+
+    // Set Azure IoT client related callbacks
+    AzureIoT_SetMessageReceivedHandler( &MessageReceived );
+    AzureIoTJson_SetDeviceTwinUpdateHandler( &DeviceTwinUpdate );
+    AzureIoTJson_RegisterDirectMethodHandlers( &clstDirectMethods[0] );
+    AzureIoT_SetConnectionStatusCallback( &IoTHubConnectionStatusChanged );
+
     // this sets up IoT Client and starts the do-work timer loop
-    AzureIoT_SetupDoWorkHandler(fdEpoll);
+    AzureIoT_DPS_StartConnection();
 
 
     // Set up a timer for LED1 blinking
@@ -1005,8 +1006,7 @@ void ClosePeripheralsAndHandlers(void)
     RgbLedUtility_CloseLeds(rgbLeds, nLedCount);
 
     // Destroy the IoT Hub client
-    AzureIoT_DestroyClient();
-    AzureIoT_Deinitialize();
+    AzureIoT_DPS_DeInitialize();
 }
 
 ///  @brief 
@@ -1016,14 +1016,8 @@ int main(int argc, char *argv[])
 {
     Log_Debug("INFO: SphereBME280 application starting.\n");
 
-    AzureIoTPnP_SetModelId( cstrPnPModelId );
-    
-    // app_manifest.json:"CmdArgs" 1st parameter should be DPS Scope ID
-    if (argc > 1)
-	{
-		AzureIoT_SetDPSScopeID(argv[1]);
-	}
-
+	AzureIoT_DPS_Options(argc, argv);
+ 
     int initResult = InitPeripheralsAndHandlers();
     if (initResult != 0) {
         terminationRequired = true;

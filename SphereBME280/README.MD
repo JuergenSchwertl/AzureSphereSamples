@@ -1,20 +1,22 @@
-## Connecting an I2C sensor (Bosch BME280) and send telemetry to Azure IoT Central
+## E2E "Office Climate IoT Solution" with industry grade I2C sensor, Azure IoT PnP  and Azure IoT Central
+In this example we will connect an industrial grade I2C based sensor and send telemetry data using **Azure IoT Plug-and-Play** 
+to an **Azure IoT Central** application. 
 
->**Note:** New since 21.07 release: In this example we will connect an I2C based sensor and send telemetry data using **Azure IoT PnP** data models to **Azure IoT Central**. In this example it is the 
-Bosch BME280 temperature/humidity/pressure sensor.
+In this example it is the  Bosch BME280 temperature/humidity/pressure sensor (or BMP280 with temperature/pressure accordingly). For this sensor, 
+Bosch Sensortec provides a platform independent libraries on GitHub ([BME280_driver](https://github.com/BoschSensortec/BME280_driver) 
+or [BMP2-Sensor-API](https://github.com/BoschSensortec/BMP2-Sensor-API/) respectively.
+The sensor itself offers I2C as well as SPI connectivety options and depending on your module it may offer either or both of them.
+As all modules I have at hand offer I2C and this has some cost saving advantages over SPI (i.e. less wiring, multiple sensors on I2C bus) this examples is using I2C.
 
-The BMP280 sensor is e.g. available as [Seeed Groove BME280 sensor board](http://wiki.seeedstudio.com/Grove-Barometer_Sensor-BME280/) amongst other suppliers.
+The BMP280 sensor is e.g. available as [Seeed Groove BME280 sensor board](http://wiki.seeedstudio.com/Grove-Barometer_Sensor-BME280/) 
+amongst many other suppliers.
 
-Bosch Sensortec has device independant libraries for both the BME280 (temperature-, humidity- and pressure-sensor) on GitHub as [BME280 driver](https://github.com/BoschSensortec/BME280_driver) and 
-for the BMP280 (temperature- and pressure-sensor) [BMP2-Sensor-API](https://github.com/BoschSensortec/BMP2-Sensor-API/).
-The *BME280* and *BMP280* library directories contain wrapper libraries adding the Azure Sphere specific I2C functions.
+>**New:** With the 21.07 release I've updated the sample to fully implement **Azure IoT Plug-and-Play** data models,
+>with a publicly available model id and updated the **Azure IoT Central** application template accordingly. 
+>Since I accidentally picked the BM**P**280 instead of the BM**E**280 for one of the bootcamps I had the sample adapted to work with either of the two sensors.
 
->**Note:**
->In case you want to use a Bosch BM**P**280 instead of the BM**E**280, the wiring is identical, you just need to change the
->`SENSOR_TYPE` variable in [*CMakeLists.txt* afterLine 8](./CMakeLists.txt#L7).
->Since I accidentally picked the BMP280 for one of the bootcamps I had the sample adapted to work with any of the two sensors.
 
-### Wiring the BME280 sensor
+### Wiring the I2C sensor
 
 There are multiple sensor boards for the BME280 available (the Seeed Grove BME280 mentioned above looks slightly different but offers to use a Grove connector cable)
 but essentially they all have the necessary power supply V(in) & GND and the I2C Pins *SDA* for data and *SCL* for clock called out on the printout.
@@ -29,8 +31,8 @@ but essentially they all have the necessary power supply V(in) & GND and the I2C
 ![MT3620RDB with connected I2C sensor BMW280](./Images/lab-bme280.png)
 
 >**Note:**
->In case you want to use a Bosch BM**P**280 instead of the BM**E**280, the wiring is identical, but don't forget to change the
->`SENSOR_TYPE` variable in [*CMakeLists.txt* after Line 8](./CMakeLists.txt#L7)
+>In case you want to use a Bosch BM**P**280 instead of the BM**E**280, the wiring is identical, you just need to change the
+>`SENSOR_TYPE` variable in [*CMakeLists.txt* afterLine 8](./CMakeLists.txt#L7).
 
 
 ## Seting up Azure IoT Central
@@ -78,11 +80,11 @@ To have devices enlisted with a more human readable names upfront you can do a p
 *Devices* and press the *"+"* button to open the add device dialog and add your Azure Sphere device id **in lower case characters**. 
 To get the device id in lower case, you can start Powershell in the Azure Sphere Developer Command Prompt and run
 ```powershell
- (azsphere dev show-attached)[0].Split(":")[1].Trim().ToLower()
+ (azsphere device show-attached)[0].Split(":")[1].Trim().ToLower()
 ```
 or in a Bash shell
 ```bash
-azsphere dev show-attached | tr '[:upper:]' '[:lower:]'
+azsphere device show-attached | tr '[:upper:]' '[:lower:]'
 ```
 
 

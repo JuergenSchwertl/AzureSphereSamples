@@ -8,14 +8,22 @@
 #ifndef __AZURE_IOT_H__
 #define __AZURE_IOT_H__
 
-#define MAX_HUB_URI_LENGTH (512)
-#define MAX_SCOPEID_LENGTH (32)
 #define MAX_MODELID_LENGTH (512)
 
 #include <stdbool.h>
 #include <azureiot/iothub_client_core_common.h>
 //#include <applibs/networking.h>
 #include "parson.h"
+
+typedef enum {
+    AZURE_IOT_CLIENT_CONNECTION_FAILED = -1,
+    AZURE_IOT_CLIENT_CONNECTION_OK = 0,
+    AZURE_IOT_CLIENT_CONNECTION_NETWORK_NOT_READY,
+    AZURE_IOT_CLIENT_CONNECTION_DPS_CONNECTING,
+    AZURE_IOT_CLIENT_CONNECTION_HUB_CONNECTING,
+} AZURE_IOT_CLIENT_CONNECTION_STATUS;
+
+typedef void (* AZURE_IOT_CLIENT_CONNECTION_CALLBACK )(AZURE_IOT_CLIENT_CONNECTION_STATUS status, const char* iothub_uri);
 
 /// @brief HTTP_STATUS_CODE enumeration
 typedef enum  {
@@ -312,15 +320,41 @@ typedef void (*ConnectionStatusFnType)(bool connected, const char *statusText);
 */
 void AzureIoT_SetConnectionStatusCallback(ConnectionStatusFnType callback);
 
+/// @brief high-level callback functions for IoT Client (not IoT Hub)
+typedef struct iotclient_callbacks_s {
+    /// @brief    Handler to be invoked on Device Twin Updates
+    TwinUpdateFnType DeviceTwinUpdateHandler;
+    /// @brief    Handler to be invoked on Device Twin delivery is confirmed
+    DeviceTwinDeliveryConfirmationFnType DeviceTwinDeliveryConfirmationHandler;
+    /// @brief    Low level handler addres to be invoked on C2D Message Received
+    MessageReceivedFnType MessageReceivedHandler;
+    /// @brief    Handler addres to be invoked when message delivery is confirmed
+    MessageDeliveryConfirmationFnType MessageDeliveryConfirmationHandler;
+    /// @brief    Handler addres to be invoked Direct Method
+    DirectMethodCallFnType DirectMethodHandler;
+    /// @brief    Handler address to be invoked to indicate connection status
+    ConnectionStatusFnType ConnectionStatusHandler;
+} iotclient_callbacks_t;
 
-/**
-* @brief    Keeps IoT Hub Client alive by exchanging data with the Azure IoT Hub.
-*
-* When using low level samples (iothub_ll_*), the IoTHubDeviceClient_LL_DoWork function must be called regularly
-* (eg. every 100 milliseconds) for the IoT device client to work properly.
-* <a href="https://github.com/Azure/azure-iot-sdk-c/blob/1c1b2c1a3a00bc445165dde44eb3e58ca999ec23/iothub_client/samples/readme.md#note" />
-*/
-void AzureIoT_DoPeriodicTasks(void);
+
+/// @brief low-level callback functions for IoT Hub
+typedef struct iothub_LL_callbacks_s {
+    /// @brief    Low level handler addres to be invoked on Device Twin Updates
+    ///           void OnDeviceTwinUpdate(DEVICE_TWIN_UPDATE_STATE update_state, const unsigned char* payLoad, size_t size, void* userContextCallback);
+    IOTHUB_CLIENT_DEVICE_TWIN_CALLBACK DeviceTwinUpdateHandler;
+    /// @brief    Low level handler addres to be invoked on C2D Message Received
+    ///           IOTHUBMESSAGE_DISPOSITION_RESULT OnMessageReceived(IOTHUB_MESSAGE_HANDLE message, void* userContextCallback);
+    IOTHUB_CLIENT_MESSAGE_CALLBACK_ASYNC MessageReceivedHandler;
+    /// @brief    Low level handler addres to be invoked Direct Method
+    ///           int OnDirectMethod(const char* method_name, const unsigned char* payload, size_t size, unsigned char** response, size_t* response_size, void* userContextCallback);
+    IOTHUB_CLIENT_DEVICE_METHOD_CALLBACK_ASYNC DirectMethodHandler;
+    /// @brief    void OnConnectionStatusChanged(IOTHUB_CLIENT_CONNECTION_STATUS result, IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason, void* userContextCallback);
+    IOTHUB_CLIENT_CONNECTION_STATUS_CALLBACK ConnectionStatusChangedHandler;
+    /// @brief    void OnReportedStateConfirmed(int status_code, void* userContextCallback);
+    IOTHUB_CLIENT_REPORTED_STATE_CALLBACK ReportedStateHandler;
+    /// @brief    void OnMessageConfirmation(IOTHUB_CLIENT_CONFIRMATION_RESULT result, void* userContextCallback);
+    IOTHUB_CLIENT_EVENT_CONFIRMATION_CALLBACK  MessageConfirmationHandler;
+} iothub_LL_callbacks_t;
 
 
 
@@ -349,36 +383,31 @@ void AzureIoT_DoPeriodicTasks(void);
 */
 bool AzureIoT_SetupClient(void);
 
-/**
- * @brief Adds the Azure IoT Do-Work handler
- *
- * @param fdEpoll epoll file descriptor
- * @return 0 on success, <0 for error
- */
-int AzureIoT_SetupDoWorkHandler(int fdEpoll);
+// /**
+//  * @brief Adds the Azure IoT Do-Work handler
+//  *
+//  * @param fdEpoll epoll file descriptor
+//  * @return 0 on success, <0 for error
+//  */
+// int AzureIoT_SetupDoWorkHandler(int fdEpoll);
 
-/**
-* @brief    Initializes the Azure IoT Hub SDK.
-*
-* @return 'true' if initialization has been successful.
-*/
-bool AzureIoT_Initialize(void);
+// /**
+// * @brief    Initializes the Azure IoT Hub SDK.
+// *
+// * @return 'true' if initialization has been successful.
+// */
+// bool AzureIoT_Initialize(void);
 
-/**
-* @brief    Deinitializes the Azure IoT Hub SDK.
-*/
-void AzureIoT_Deinitialize(void);
+// /**
+// * @brief    Deinitializes the Azure IoT Hub SDK.
+// */
+// void AzureIoT_Deinitialize(void);
 
-/**
-* @brief    Destroys the Azure IoT Hub client.
-*/
-void AzureIoT_DestroyClient(void);
+// /**
+// * @brief    Destroys the Azure IoT Hub client.
+// */
+// void AzureIoT_DestroyClient(void);
 
-/**
-* @brief    Sets the DPS Scope ID.
-*
-* @param    cstrID      The Scope ID string (typically from command line)
-*/
-void AzureIoT_SetDPSScopeID(const char* cstrID);
+
 
 #endif // __AZURE_IOT_H__

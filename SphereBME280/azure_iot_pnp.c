@@ -31,7 +31,7 @@
 extern IOTHUB_DEVICE_CLIENT_LL_HANDLE hIoTHubClient; 
 extern char strPnPModelId[MAX_MODELID_LENGTH];
 
-/* 
+/** 
 * @brief    Creates and enqueues a plain text message to be delivered to the IoT Hub. The message is not actually
 *           sent immediately, but it is sent on the next invocation of AzureIoT_DoPeriodicTasks().
 *           Since standard C doesn't allow lambda functions and Azure IoT PnP requires the "$.sub" property, 
@@ -40,7 +40,7 @@ extern char strPnPModelId[MAX_MODELID_LENGTH];
 * @param    cstrMessage         The payload of the message to send.
 * @param    cstrPnPComponent    The component name in the DTDL schema
 */
-IOTHUB_CLIENT_RESULT AzureIoTPnP_SendMessage(const char* cstrMessage, const char * cstrPnPComponent)
+IOTHUB_CLIENT_RESULT AzureIoT_PnP_SendMessage(const char* cstrMessage, const char * cstrPnPComponent)
 {
     IOTHUB_MESSAGE_HANDLE hIoTHubMessage = NULL;
     hIoTHubMessage = AzureIoT_CreateIoTHubMessage(cstrMessage, ContentType.Application_JSON, ContentEncoding.UTF_8);
@@ -69,14 +69,14 @@ IOTHUB_CLIENT_RESULT AzureIoTPnP_SendMessage(const char* cstrMessage, const char
 * @param    jsonPayload         The json payload of the message to sent
 * @param    cstrPnPComponent    The component name in the DTDL schema
 */
-IOTHUB_CLIENT_RESULT AzureIoTPnP_SendJsonMessage(JSON_Value* jsonPayload, const char * cstrPnPComponent)
+IOTHUB_CLIENT_RESULT AzureIoT_PnP_SendJsonMessage(JSON_Value* jsonPayload, const char * cstrPnPComponent)
 {
     char* pszMessagePayload = 0;
     size_t nMessageSize = 0;
     IOTHUB_CLIENT_RESULT result = IOTHUB_CLIENT_ERROR;
     if (AzureIoTJson_ToPayload(jsonPayload, &pszMessagePayload, &nMessageSize) == IOTHUB_CLIENT_OK) {
         if (pszMessagePayload != NULL) {
-            result = AzureIoTPnP_SendMessage(pszMessagePayload, cstrPnPComponent);
+            result = AzureIoT_PnP_SendMessage(pszMessagePayload, cstrPnPComponent);
             free(pszMessagePayload);
         }
     }
@@ -88,7 +88,7 @@ IOTHUB_CLIENT_RESULT AzureIoTPnP_SendJsonMessage(JSON_Value* jsonPayload, const 
 *
 * @param    cstrModelID  Model Id string
 */
-void AzureIoTPnP_SetModelId(const char* cstrModelId)
+void AzureIoT_PnP_SetModelId(const char* cstrModelId)
 {
     if (NULL != cstrModelId) {
         strncpy(strPnPModelId, cstrModelId, sizeof(strPnPModelId));

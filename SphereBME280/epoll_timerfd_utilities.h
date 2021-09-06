@@ -47,7 +47,7 @@ int RegisterEventHandlerToEpoll(int fdEpoll, int eventFd, EventData *persistentE
 /// @return 0 on success, or -1 on failure
 int UnregisterEventHandlerFromEpoll(int fdEpoll, int eventFd);
 
-/// @brief Disarms a timer (setting .it_interval and .it_value to null period)
+/// @brief Disarms a timer (setting .it_value to null period)
 ///
 /// @param timerFd Timer file descriptor
 int DisarmTimerFd(int timerFd);
@@ -59,7 +59,7 @@ int DisarmTimerFd(int timerFd);
 /// @returns 0 on success, or -1 on failure
 int SetTimerFdToPeriod(int timerFd, const struct timespec *period);
 
-///  @brief  Sets a timer to fire once only, after a duration specified in milliseconds.
+///  @brief  Sets a timer to fire once only, after a duration specified in seconds/nanoseconds.
 /// 
 /// @param timerFd Timer file descriptor
 /// @param expiry The time elapsed before it expires once

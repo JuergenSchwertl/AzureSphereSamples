@@ -16,8 +16,17 @@ azsphere_configure_api(TARGET_API_SET "10")
 # Add the Bosch sensor lib
 Add_SUBDIRECTORY(${SENSOR_TYPE})
 
+set( SOURCE_FILES 
+    epoll_timerfd_utilities.c 
+    parson.c 
+    azure_iot.c 
+    azure_iot_dps.c 
+    azure_iot_json.c 
+    azure_iot_pnp.c 
+    rgbled_utility.c main.c)
+
 # Create executable
-ADD_EXECUTABLE(${PROJECT_NAME} epoll_timerfd_utilities.c parson.c azure_iot.c azure_iot_json.c azure_iot_pnp.c rgbled_utility.c main.c )
+ADD_EXECUTABLE(${PROJECT_NAME} ${SOURCE_FILES} )
 
 TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PUBLIC ${SENSOR_TYPE})
 

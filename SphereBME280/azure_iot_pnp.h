@@ -19,7 +19,7 @@
 * @param    cstrMessage         The payload of the message to send.
 * @param    cstrPnPComponent    The component name in the DTDL schema
 */
-IOTHUB_CLIENT_RESULT AzureIoTPnP_SendMessage(const char* cstrMessage, const char * cstrPnPComponent);
+IOTHUB_CLIENT_RESULT AzureIoT_PnP_SendMessage(const char* cstrMessage, const char * cstrPnPComponent);
 
 /* 
 *  @brief   Creates and enqueues a json message to be delivered the IoT Hub. The message is not actually
@@ -28,7 +28,7 @@ IOTHUB_CLIENT_RESULT AzureIoTPnP_SendMessage(const char* cstrMessage, const char
 * @param    jsonPayload     The json payload of the message to send.
 * @param    cstrPnPComponent    The component name in the DTDL schema
 */
-IOTHUB_CLIENT_RESULT AzureIoTPnP_SendJsonMessage(JSON_Value* jsonPayload, const char * cstrPnPComponent);
+IOTHUB_CLIENT_RESULT AzureIoT_PnP_SendJsonMessage(JSON_Value* jsonPayload, const char * cstrPnPComponent);
 
 
 /*
@@ -36,7 +36,7 @@ IOTHUB_CLIENT_RESULT AzureIoTPnP_SendJsonMessage(JSON_Value* jsonPayload, const 
 *
 * @param    cstrModelID  Model Id string
 */
-void AzureIoTPnP_SetModelId(const char* cstrModelId);
+void AzureIoT_PnP_SetModelId(const char* cstrModelId);
 
 
 #endif // __AZURE_IOT_PNP_H__

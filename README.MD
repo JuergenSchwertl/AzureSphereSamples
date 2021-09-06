@@ -1,4 +1,4 @@
-# AzureSphereSamples for 21.04 Azure Sphere SDK Version
+# AzureSphereSamples for 21.07 Azure Sphere SDK Version
 
 This repo contains sources and links for Azure Sphere Bootcamp labs, amongst other Azure Sphere Samples for 
 connected MCUs, sensors and other peripherals.
@@ -78,12 +78,18 @@ Please follow the steps as outlined in [Mt3620DirectDHT](./Mt3620DirectDHT/READM
 to connect the DHT sensor and send telemetry data. It also contains hints to extend the ePoll event_data_t structure to enable event 
 context handling and shows some of the intricacies of running time-sensitive bit-banging protocols in a high-level (POSIX) app.
 
-### Lab #4: Connecting an I2C sensor (Bosch BME280) and send telemetry to Azure IoT Central
-In this example we will connect an I2C based sensor and send telemetry data to **Azure IoT Central**. In this example it is the 
-Bosch BME280 temperature/humidity/pressure sensor. For this sensor, Bosch provides a platform independent library on the
-[Bosch Sensortec GitHub](https://github.com/BoschSensortec/BME280_driver) .
-This sensor offer I2C as well as SPI connectivety options and depending on your module it may or may not offer both of them. As all modules I 
-have at hand offer I2C and this has some cost saving advantages over SPI (i.e. less wiring, multiple sensors on I2C bus) this examples is using I2C.
+### Lab #4: E2E "Office Climate IoT Solution" with industry grade I2C sensor, Azure IoT PnP  and Azure IoT Central
+In this example we will connect an industrial grade I2C based sensor and send telemetry data using **Azure IoT Plug-and-Play** 
+to an **Azure IoT Central** application. 
+
+In this example it is the  Bosch BME280 temperature/humidity/pressure sensor (or BMP280 with temperature/pressure accordingly). For this sensor, 
+Bosch Sensortec provides a platform independent libraries on GitHub ([BME280_driver](https://github.com/BoschSensortec/BME280_driver) 
+or [BMP2-Sensor-API](https://github.com/BoschSensortec/BMP2-Sensor-API/) respectively.
+The sensor itself offers I2C as well as SPI connectivety options and depending on your module it may offer either or both of them.
+As all modules I have at hand offer I2C and this has some cost saving advantages over SPI (i.e. less wiring, multiple sensors on I2C bus) this examples is using I2C.
+
+>**New:** With the 21.07 release I've updated the sample to fully implement **Azure IoT Plug-and-Play** data models,
+>with a publicly available model id and updated the **Azure IoT Central** application template accordingly. 
 
 Please follow the steps as outlined in [SphereBME280](./SphereBME280/README.MD) to run this example.
 

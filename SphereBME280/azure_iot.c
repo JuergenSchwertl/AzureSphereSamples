@@ -15,17 +15,16 @@
 #include <azureiot/iothub.h>
 #include <azureiot/azure_sphere_provisioning.h>
 #include <azure_c_shared_utility/shared_util_options.h>
-#include <azure_prov_client/prov_device_ll_client.h>
 #include <azure_prov_client/iothub_security_factory.h>
-#include <azure_prov_client/prov_security_factory.h>
-#include <azure_prov_client/prov_transport_mqtt_client.h>
+
 
 #include <applibs/log.h>
-#include <applibs/networking.h>
 #include "epoll_timerfd_utilities.h"
 #include "azure_iot.h"
+#include "azure_iot_dps.h"
 
 #define MODULE "[IOT] "
+#define MSEC_TO_NSEC(ms) (ms*1000*1000)
 
 static int directMethodCallback(
     const char* methodName, 
@@ -46,77 +45,31 @@ static IOTHUBMESSAGE_DISPOSITION_RESULT receiveMessageCallback(
     IOTHUB_MESSAGE_HANDLE message,
     void* context);
 
-static void hubConnectionStatusCallback(
+static void hubConnectionStatusChangedHandler(
     IOTHUB_CLIENT_CONNECTION_STATUS result,
     IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason,
     void* userContextCallback);
 
+/// @brief    List of low level IoT Hub callbacks
+iothub_LL_callbacks_t lstIotHubCallbacks = {
+    .DeviceTwinUpdateHandler = deviceTwinUpdateCallback,
+    .MessageReceivedHandler = receiveMessageCallback,
+    .DirectMethodHandler = directMethodCallback,
+    .ConnectionStatusChangedHandler = hubConnectionStatusChangedHandler
+};
 
-/// @brief   Turn Azure IoT tracing on/off
-bool bTraceOn = true;
-
-/// @brief timer file descriptor
-static int fdAzureIoTWorkerTimer = -1;
-
-// Azure IoT poll periods
-static const int AzureIoTDefaultPollPeriodSeconds = 5;
-static const int AzureIoTMinReconnectPeriodSeconds = 10;
-static const int AzureIoTMaxReconnectPeriodSeconds = 10 * 60;
-
-static int azureIoTPollPeriodSeconds = AzureIoTDefaultPollPeriodSeconds;
-
-
-/// @brief    Buffer for DPS Scope ID. Filled on app start via command line parameter
-static char strDPSSopeId[MAX_SCOPEID_LENGTH] = ""; 
-
-/// @brief    Buffer for  Azure IoT PnP Model Id
-char strPnPModelId[MAX_MODELID_LENGTH] = ""; 
-
-static IOTHUB_CLIENT_DEVICE_TWIN_CALLBACK fn_LL_DeviceTwinUpdateHandler = deviceTwinUpdateCallback;
-
-static IOTHUB_CLIENT_MESSAGE_CALLBACK_ASYNC fn_LL_MessageReceivedHandler = receiveMessageCallback;
-
-static IOTHUB_CLIENT_DEVICE_METHOD_CALLBACK_ASYNC fn_LL_DirectMethodHandler = directMethodCallback;
-
-/// @brief    Function invoked to provide the result of the Device Twin reported properties delivery
-static DeviceTwinDeliveryConfirmationFnType fnDeviceTwinConfirmationHandler = 0;
-
-/// @brief    Function invoked whenever a Direct Method call is received from the IoT Hub
-static DirectMethodCallFnType fnDirectMethodHandler = 0;
-
-/// @brief    Function invoked whenever a Device Twin update is received from the IoT Hub
-static TwinUpdateFnType fnTwinUpdateHandler = 0;
-
-/// @brief    Function invoked whenever the connection status to the IoT Hub changes
-static ConnectionStatusFnType fnConnectionStatusChangedHandler = 0;
-
-/// @brief    Function invoked whenever a message is received from the IoT Hub
-static MessageReceivedFnType fnMessageReceivedHandler = 0;
-
-/// @brief    Function invoked to report the delivery confirmation of a message sent to the IoT Hub
-static MessageDeliveryConfirmationFnType fnMessageDeliveryConfirmationHandler = 0;
-
-/// @brief    The handle to the IoT Hub client used for communication with the hub
-static IOTHUB_DEVICE_CLIENT_LL_HANDLE hIoTHubClient = NULL;
-
-/// @brief    The status of the authentication to the hub. When 'false' a connection and authentication to the hub will be attempted
-static bool bIoTHubAuthenticated = false;
-
-/// @brief    Used to set the keepalive period over MQTT to 20 seconds
-static int iKeepalivePeriodSeconds = 20;
-
-/// @brief    Message Id system property
+/// @brief    Message Id counter (for system property)
 static unsigned int uMessageId = 0;
 
-void doWorkHandler(EventData* eventData);
+/// @brief IoT Hub Client Handle is kept in azure_iot_dps.c/_hub.c/_edge.c 
+IOTHUB_DEVICE_CLIENT_LL_HANDLE hIoTHubClient = NULL;
 
-static EventData evtdataAzureIoTWorker = { .eventHandler = &doWorkHandler };
-
+/// @brief    List of high level IoT Client callbacks
+static iotclient_callbacks_t lstIoTClientCallbacks = {};
 
 /// @brief    re-usable error and warning strings
-const char cstrErrorOutOfMemory[] = "[IoT] ERROR: out of memory.\n";
-const char cstrWarnNotInitialized[] = "[IoT] WARNING: IoT Hub client not initialized\n";
-
+const char cstrErrorOutOfMemory[] = MODULE  "ERROR: out of memory.\n";
+const char cstrWarnNotInitialized[] = MODULE  "WARNING: IoT Hub client not initialized\n";
 
 /// @brief   Content encoding strings for message properties
 content_encoding_t ContentEncoding = { 
@@ -205,110 +158,8 @@ static const char cstrAzureIoTCertificates[] =
 
 MU_DEFINE_ENUM_STRINGS_WITHOUT_INVALID(IOTHUB_CLIENT_RESULT, IOTHUB_CLIENT_RESULT_VALUES);
 MU_DEFINE_ENUM_STRINGS_WITHOUT_INVALID(IOTHUB_CLIENT_CONFIRMATION_RESULT, IOTHUB_CLIENT_CONFIRMATION_RESULT_VALUES);
+MU_DEFINE_ENUM_STRINGS_WITHOUT_INVALID(IOTHUB_CLIENT_CONNECTION_STATUS_REASON, IOTHUB_CLIENT_CONNECTION_STATUS_REASON_VALUES);
 
-
-
-
-/**
-* @brief Converts the IoT Hub connection status reason to a string.
-* 
-* @param    reason  Connection change status reason
-*
-* @return Connection status as string
-*/
-static const char *getReasonString(IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason)
-{
-    switch (reason) {
-        case IOTHUB_CLIENT_CONNECTION_EXPIRED_SAS_TOKEN:
-            return "IOTHUB_CLIENT_CONNECTION_EXPIRED_SAS_TOKEN";
-        case IOTHUB_CLIENT_CONNECTION_DEVICE_DISABLED:
-            return "IOTHUB_CLIENT_CONNECTION_DEVICE_DISABLED";
-        case IOTHUB_CLIENT_CONNECTION_BAD_CREDENTIAL:
-            return "IOTHUB_CLIENT_CONNECTION_BAD_CREDENTIAL";
-        case IOTHUB_CLIENT_CONNECTION_RETRY_EXPIRED:
-            return "IOTHUB_CLIENT_CONNECTION_RETRY_EXPIRED";
-        case IOTHUB_CLIENT_CONNECTION_NO_NETWORK:
-            return "IOTHUB_CLIENT_CONNECTION_NO_NETWORK";
-        case IOTHUB_CLIENT_CONNECTION_COMMUNICATION_ERROR:
-            return "IOTHUB_CLIENT_CONNECTION_COMMUNICATION_ERROR";
-        case IOTHUB_CLIENT_CONNECTION_OK:
-            return "IOTHUB_CLIENT_CONNECTION_OK";
-        case IOTHUB_CLIENT_CONNECTION_NO_PING_RESPONSE:
-            return "IOTHUB_CLIENT_CONNECTION_NO_PING_RESPONSE";
-    }
-    return "unknown IOTHUB_CLIENT_CONNECTION_STATUS_REASON";
-}
-
-/**
-* @brief Converts AZURE_SPHERE_PROV_RETURN_VALUE to a string.
-* 
-* @param    provisioningResult  result of provisioning phase
-* @return   Provisioning result string
-*/
-static char *getAzureSphereProvisioningResultString(
-    AZURE_SPHERE_PROV_RETURN_VALUE provisioningResult)
-{
-    switch (provisioningResult.result) {
-    case AZURE_SPHERE_PROV_RESULT_OK:
-        return "AZURE_SPHERE_PROV_RESULT_OK";
-    case AZURE_SPHERE_PROV_RESULT_INVALID_PARAM:
-        return "AZURE_SPHERE_PROV_RESULT_INVALID_PARAM";
-    case AZURE_SPHERE_PROV_RESULT_NETWORK_NOT_READY:
-        return "AZURE_SPHERE_PROV_RESULT_NETWORK_NOT_READY";
-    case AZURE_SPHERE_PROV_RESULT_DEVICEAUTH_NOT_READY:
-        return "AZURE_SPHERE_PROV_RESULT_DEVICEAUTH_NOT_READY";
-    case AZURE_SPHERE_PROV_RESULT_PROV_DEVICE_ERROR:
-        switch (provisioningResult.prov_device_error) {
-            case PROV_DEVICE_RESULT_INVALID_ARG:
-                return "PROV_DEVICE_RESULT_INVALID_ARG";
-            case PROV_DEVICE_RESULT_SUCCESS:
-                return "PROV_DEVICE_RESULT_SUCCESS";
-            case PROV_DEVICE_RESULT_MEMORY:
-                return "PROV_DEVICE_RESULT_MEMORY";
-            case PROV_DEVICE_RESULT_PARSING:
-                return "PROV_DEVICE_RESULT_PARSING";
-            case PROV_DEVICE_RESULT_TRANSPORT:
-                return "PROV_DEVICE_RESULT_TRANSPORT";
-            case PROV_DEVICE_RESULT_INVALID_STATE:
-                return "PROV_DEVICE_RESULT_INVALID_STATE";
-            case PROV_DEVICE_RESULT_DEV_AUTH_ERROR:
-                return "PROV_DEVICE_RESULT_DEV_AUTH_ERROR";
-            case PROV_DEVICE_RESULT_TIMEOUT:
-                return "PROV_DEVICE_RESULT_TIMEOUT";
-            case PROV_DEVICE_RESULT_KEY_ERROR:
-                return "PROV_DEVICE_RESULT_KEY_ERROR";
-            case PROV_DEVICE_RESULT_ERROR:
-                return "PROV_DEVICE_RESULT_ERROR";
-            case PROV_DEVICE_RESULT_HUB_NOT_SPECIFIED:
-                return "PROV_DEVICE_RESULT_HUB_NOT_SPECIFIED";
-            case PROV_DEVICE_RESULT_UNAUTHORIZED:
-                return "PROV_DEVICE_RESULT_UNAUTHORIZED";
-            case PROV_DEVICE_RESULT_DISABLED:
-                return "PROV_DEVICE_RESULT_DISABLED";
-            case PROV_DEVICE_RESULT_OK:
-                break;
-        }
-        return "AZURE_SPHERE_PROV_RESULT_PROV_DEVICE_ERROR";
-    case AZURE_SPHERE_PROV_RESULT_IOTHUB_CLIENT_ERROR:
-        switch (provisioningResult.iothub_client_error) {
-            case IOTHUB_CLIENT_INVALID_ARG:
-                return "IOTHUB_CLIENT_INVALID_ARG";
-            case IOTHUB_CLIENT_ERROR:
-                return "IOTHUB_CLIENT_ERROR";
-            case IOTHUB_CLIENT_INVALID_SIZE:
-                return "IOTHUB_CLIENT_INVALID_SIZE";
-            case IOTHUB_CLIENT_INDEFINITE_TIME:
-                return "IOTHUB_CLIENT_INDEFINITE_TIME";
-            case IOTHUB_CLIENT_OK:
-                break;
-            }
-        return "AZURE_SPHERE_PROV_RESULT_IOTHUB_CLIENT_ERROR";
-    case AZURE_SPHERE_PROV_RESULT_GENERIC_ERROR:
-        return "AZURE_SPHERE_PROV_RESULT_GENERIC_ERROR";
-    default:
-        return "UNKNOWN_RETURN_VALUE";
-    }
-}
 
 char * AzureIoT_GetStringFromPayload(const char* cstrPayload, size_t nPayloadSize)
 {
@@ -324,108 +175,32 @@ char * AzureIoT_GetStringFromPayload(const char* cstrPayload, size_t nPayloadSiz
     return str;
 }
 
+
 /**
- * @brief Hand over control periodically to the Azure IoT SDK's DoWork.
- * 
- * @param eventData 
- */
-void doWorkHandler(EventData *eventData)
-{
-    if (ConsumeTimerFdEvent(fdAzureIoTWorkerTimer) != 0) {
-        return;
-    }
-
-    bool bNetworkReady = false;
-    Networking_IsNetworkingReady(&bNetworkReady);
-    // if no network available check again after default Polling time
-    if (!bNetworkReady)
-    {
-        azureIoTPollPeriodSeconds = AzureIoTDefaultPollPeriodSeconds;
-        struct timespec azureTelemetryPeriod = { azureIoTPollPeriodSeconds, 0 };
-        SetTimerFdToPeriod(fdAzureIoTWorkerTimer, &azureTelemetryPeriod);
-        return;
-    }
-
-    // Set up the connection to the IoT Hub client.
-    // Notes it is safe to call this function even if the client has already been set up, as in
-    //   this case it would have no effect
-    if (AzureIoT_SetupClient()) {
-        if (azureIoTPollPeriodSeconds != AzureIoTDefaultPollPeriodSeconds) {
-            azureIoTPollPeriodSeconds = AzureIoTDefaultPollPeriodSeconds;
-
-            struct timespec azureTelemetryPeriod = {azureIoTPollPeriodSeconds, 0};
-            SetTimerFdToPeriod(fdAzureIoTWorkerTimer, &azureTelemetryPeriod);
-        }
-
-        // AzureIoT_DoPeriodicTasks() needs to be called frequently in order to keep active
-        // the flow of data with the Azure IoT Hub
-        AzureIoT_DoPeriodicTasks();
-    } else {
-        // If we fail to connect, reduce the polling frequency, starting at
-        // AzureIoTMinReconnectPeriodSeconds and with a backoff up to
-        // AzureIoTMaxReconnectPeriodSeconds
-        if (azureIoTPollPeriodSeconds == AzureIoTDefaultPollPeriodSeconds) {
-            azureIoTPollPeriodSeconds = AzureIoTMinReconnectPeriodSeconds;
-        } else {
-            azureIoTPollPeriodSeconds *= 2;
-            if (azureIoTPollPeriodSeconds > AzureIoTMaxReconnectPeriodSeconds) {
-                azureIoTPollPeriodSeconds = AzureIoTMaxReconnectPeriodSeconds;
-            }
-        }
-
-        struct timespec azureTelemetryPeriod = {azureIoTPollPeriodSeconds, 0};
-        SetTimerFdToPeriod(fdAzureIoTWorkerTimer, &azureTelemetryPeriod);
-
-        Log_Debug( MODULE "ERROR: Failed to connect to IoT Hub; will retry in %i seconds\n",
-                  azureIoTPollPeriodSeconds);
-    }
-}
-
-/*
-* @brief    Periodically outputs a provided format string with a variable number of arguments.
+* @brief    Internal Callback function invoked whenever the connection status to IoT Hub changes.
 * 
-* @param    lastInvokedTime">Pointer where to store the 'last time this function has been
-* invoked' information
-* @param    periodInSeconds">The desired period of the output
-* @param    format  The format string
+* @param    result              Current authentication status
+* @param    reason              result's specific reason
+* @param    userContextCallback User specified context
 */
-static void periodicLogVarArgs(time_t *lastInvokedTime, time_t periodInSeconds, const char *format,
-                               ...)
+static void hubConnectionStatusChangedHandler(IOTHUB_CLIENT_CONNECTION_STATUS result,
+                                        IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason,
+                                        void *userContextCallback)
 {
-    struct timespec ts;
-    int timeOk = timespec_get(&ts, TIME_UTC);
-    if (!timeOk) {
-        return;
+    bool bIoTHubAuthenticated = (result == IOTHUB_CLIENT_CONNECTION_AUTHENTICATED);
+    const char* reasonString = IOTHUB_CLIENT_CONNECTION_STATUS_REASONStrings(reason);
+
+    if (!bIoTHubAuthenticated) {
+        Log_Debug("[IoT] IoT Hub disconnected with %s\n", reasonString);
+    } else {
+        Log_Debug("[IoT] IoT Hub authenticated (%s).\n", reasonString);
     }
 
-    if (ts.tv_sec > *lastInvokedTime + periodInSeconds) {
-        va_list args;
-        va_start(args, format);
-        Log_DebugVarArgs(format, args);
-        va_end(args);
-        *lastInvokedTime = ts.tv_sec;
+    if (lstIoTClientCallbacks.ConnectionStatusHandler) {
+        lstIoTClientCallbacks.ConnectionStatusHandler(bIoTHubAuthenticated, reasonString);
     }
 }
 
-/*
-* @brief    Keeps IoT Hub Client alive by exchanging data with the Azure IoT Hub.
-*
-* When using low level samples (iothub_ll_*), the IoTHubDeviceClient_LL_DoWork function must be called regularly 
-* (eg. every 100 milliseconds) for the IoT device client to work properly.
-* <a href="https://github.com/Azure/azure-iot-sdk-c/blob/1c1b2c1a3a00bc445165dde44eb3e58ca999ec23/iothub_client/samples/readme.md#note" />
-*/
-void AzureIoT_DoPeriodicTasks(void)
-{
-    static time_t lastTimeLogged = 0;
-
-    if (bIoTHubAuthenticated) {
-        periodicLogVarArgs(&lastTimeLogged, 5,  MODULE "%s calls in progress...\n", __func__);
-
-        // DoWork - send some of the buffered events to the IoT Hub, and receive some of the
-        // buffered events from the IoT Hub.
-        IoTHubDeviceClient_LL_DoWork(hIoTHubClient);
-    }
-}
 
 
 /********************************************
@@ -525,8 +300,8 @@ static void sendMessageConfirmationCallback(IOTHUB_CLIENT_CONFIRMATION_RESULT re
     Log_Debug(MODULE "IoTHub confirmed message id '%s' with: %s\n", 
         (char *) context, IOTHUB_CLIENT_CONFIRMATION_RESULTStrings(result));
 
-    if (fnMessageDeliveryConfirmationHandler) {
-        fnMessageDeliveryConfirmationHandler(result == IOTHUB_CLIENT_CONFIRMATION_OK);
+    if (lstIoTClientCallbacks.MessageDeliveryConfirmationHandler) {
+        lstIoTClientCallbacks.MessageDeliveryConfirmationHandler(result == IOTHUB_CLIENT_CONFIRMATION_OK);
     }
     //cleanup heap memory for context
     if (NULL != context){
@@ -557,8 +332,8 @@ static IOTHUBMESSAGE_DISPOSITION_RESULT receiveMessageCallback(IOTHUB_MESSAGE_HA
 
     Log_Debug("[IoT] Received message '%s' from IoT Hub\n", strMessage);
 
-    if (fnMessageReceivedHandler != 0) {
-        fnMessageReceivedHandler( strMessage );
+    if (lstIoTClientCallbacks.MessageReceivedHandler != 0) {
+        lstIoTClientCallbacks.MessageReceivedHandler( strMessage );
     }
     else {
         Log_Debug( MODULE "WARNING: no MessageReceived handler registered'\n");
@@ -571,23 +346,23 @@ static IOTHUBMESSAGE_DISPOSITION_RESULT receiveMessageCallback(IOTHUB_MESSAGE_HA
 
 void AzureIoT_SetMessageReceivedCallback(IOTHUB_CLIENT_MESSAGE_CALLBACK_ASYNC callback)
 {
-    fn_LL_MessageReceivedHandler = callback;
+    lstIotHubCallbacks.MessageReceivedHandler = callback;
     if (NULL != hIoTHubClient)
     {
-        IoTHubDeviceClient_LL_SetMessageCallback(hIoTHubClient, fn_LL_MessageReceivedHandler, NULL);
+        IoTHubDeviceClient_LL_SetMessageCallback(hIoTHubClient, lstIotHubCallbacks.MessageReceivedHandler, NULL);
     }
 }
 
 void AzureIoT_SetMessageReceivedHandler(MessageReceivedFnType handler)
 {
-    fnMessageReceivedHandler = handler;
+    lstIoTClientCallbacks.MessageReceivedHandler = handler;
     AzureIoT_SetMessageReceivedCallback(&receiveMessageCallback);
 }
 
 
 void AzureIoT_SetMessageConfirmationCallback(MessageDeliveryConfirmationFnType callback)
 {
-    fnMessageDeliveryConfirmationHandler = callback;
+    lstIoTClientCallbacks.MessageDeliveryConfirmationHandler = callback;
 }
 
 
@@ -609,8 +384,8 @@ static void reportStatusCallback(int iStatus, void* pContextCallback)
 {
     Log_Debug(MODULE "Device Twin reported properties update result: HTTP status code %d\n",
         iStatus);
-    if (fnDeviceTwinConfirmationHandler)
-        fnDeviceTwinConfirmationHandler(iStatus);
+    if (lstIoTClientCallbacks.DeviceTwinDeliveryConfirmationHandler)
+        lstIoTClientCallbacks.DeviceTwinDeliveryConfirmationHandler(iStatus);
 }
 
 
@@ -647,7 +422,7 @@ IOTHUB_CLIENT_RESULT AzureIoT_TwinReportState(
 static void deviceTwinUpdateCallback(DEVICE_TWIN_UPDATE_STATE updateState, const unsigned char *payLoad,
                          size_t payLoadSize, void *userContextCallback)
 {
-    if (fnTwinUpdateHandler == NULL) {
+    if (lstIoTClientCallbacks.DeviceTwinUpdateHandler == NULL) {
         Log_Debug( MODULE "WARNING: Received device twin update but no handler available.");
         return;
     }
@@ -655,7 +430,7 @@ static void deviceTwinUpdateCallback(DEVICE_TWIN_UPDATE_STATE updateState, const
     char* strProperties = AzureIoT_GetStringFromPayload(payLoad, payLoadSize);
 
     // Call the provided string based Twin Device Update handler
-    fnTwinUpdateHandler(strProperties);
+    lstIoTClientCallbacks.DeviceTwinUpdateHandler(strProperties);
 
     free(strProperties);
 }
@@ -667,9 +442,9 @@ static void deviceTwinUpdateCallback(DEVICE_TWIN_UPDATE_STATE updateState, const
 */
 void AzureIoT_SetDeviceTwinUpdateCallback(IOTHUB_CLIENT_DEVICE_TWIN_CALLBACK callback)
 {
-    fn_LL_DeviceTwinUpdateHandler = callback;
+    lstIotHubCallbacks.DeviceTwinUpdateHandler = callback;
     if (NULL != hIoTHubClient) {
-        IoTHubDeviceClient_LL_SetDeviceTwinCallback(hIoTHubClient, fn_LL_DeviceTwinUpdateHandler, NULL);
+        IoTHubDeviceClient_LL_SetDeviceTwinCallback(hIoTHubClient, lstIotHubCallbacks.DeviceTwinUpdateHandler, NULL);
     }
 }
 
@@ -681,7 +456,7 @@ void AzureIoT_SetDeviceTwinUpdateCallback(IOTHUB_CLIENT_DEVICE_TWIN_CALLBACK cal
 void AzureIoT_SetDeviceTwinUpdateHandler(TwinUpdateFnType handler)
 {
     AzureIoT_SetDeviceTwinUpdateCallback(&deviceTwinUpdateCallback);
-    fnTwinUpdateHandler = handler;
+    lstIoTClientCallbacks.DeviceTwinUpdateHandler = handler;
 }
 
 /*
@@ -692,7 +467,7 @@ void AzureIoT_SetDeviceTwinUpdateHandler(TwinUpdateFnType handler)
 void AzureIoT_SetDeviceTwinDeliveryConfirmationCallback(
     DeviceTwinDeliveryConfirmationFnType callback)
 {
-    fnDeviceTwinConfirmationHandler = callback;
+    lstIoTClientCallbacks.DeviceTwinDeliveryConfirmationHandler = callback;
 }
 
 
@@ -711,14 +486,14 @@ static int directMethodCallback(const char* methodName, const unsigned char* pay
     unsigned char** response, size_t* responseSize,
     void* userContextCallback)
 {
-    if (NULL == fnDirectMethodHandler) {
+    if (NULL == lstIoTClientCallbacks.DirectMethodHandler) {
         Log_Debug(MODULE "Received direct method %s but no handler found\n", methodName);
         return HTTP_NOT_FOUND;
     }
 
     const char* strPayload = AzureIoT_GetStringFromPayload(payload, payloadSize);
     char* strResponse = NULL;
-    int result = fnDirectMethodHandler(methodName, strPayload, &strResponse);
+    int result = lstIoTClientCallbacks.DirectMethodHandler(methodName, strPayload, &strResponse);
     if (NULL != strResponse) {
         *response = (unsigned char*) strResponse;
         *responseSize = strlen(strResponse) - 1;
@@ -735,9 +510,9 @@ static int directMethodCallback(const char* methodName, const unsigned char* pay
 */
 void AzureIoT_SetDirectMethodCallback(IOTHUB_CLIENT_DEVICE_METHOD_CALLBACK_ASYNC callback)
 {
-    fn_LL_DirectMethodHandler = callback;
+    lstIotHubCallbacks.DirectMethodHandler = callback;
     if (NULL != hIoTHubClient) {
-        IoTHubDeviceClient_LL_SetDeviceMethodCallback(hIoTHubClient, fn_LL_DirectMethodHandler, NULL);
+        IoTHubDeviceClient_LL_SetDeviceMethodCallback(hIoTHubClient, lstIotHubCallbacks.DirectMethodHandler, NULL);
     }
 }
 
@@ -749,7 +524,7 @@ void AzureIoT_SetDirectMethodCallback(IOTHUB_CLIENT_DEVICE_METHOD_CALLBACK_ASYNC
 */
 void AzureIoT_SetDirectMethodHandler(DirectMethodCallFnType handler)
 {
-    fnDirectMethodHandler = handler;
+    lstIoTClientCallbacks.DirectMethodHandler = handler;
     AzureIoT_SetDirectMethodCallback(&directMethodCallback);
 }
 
@@ -763,28 +538,7 @@ void AzureIoT_SetDirectMethodHandler(DirectMethodCallFnType handler)
 *
 *********************************************/
 
-/*
-* @brief    Internal Callback function invoked whenever the connection status to IoT Hub changes.
-* 
-* @param    result              Current authentication status
-* @param    reason              result's specific reason
-* @param    userContextCallback User specified context
-*/
-static void hubConnectionStatusCallback(IOTHUB_CLIENT_CONNECTION_STATUS result,
-                                        IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason,
-                                        void *userContextCallback)
-{
-    bIoTHubAuthenticated = (result == IOTHUB_CLIENT_CONNECTION_AUTHENTICATED);
-    const char* reasonString = getReasonString(reason);
-    if (fnConnectionStatusChangedHandler) {
-        fnConnectionStatusChangedHandler(bIoTHubAuthenticated, reasonString);
-    }
-    if (!bIoTHubAuthenticated) {
-        Log_Debug("[IoT] IoT Hub connection is down (%s), retrying connection...\n", reasonString);
-    } else {
-        Log_Debug("[IoT] connection to the IoT Hub has been established (%s).\n", reasonString);
-    }
-}
+
 
 /*
 * @brief    Sets the function to be invoked whenever the connection status to the IoT Hub changes.
@@ -794,168 +548,6 @@ static void hubConnectionStatusCallback(IOTHUB_CLIENT_CONNECTION_STATUS result,
 */
 void AzureIoT_SetConnectionStatusCallback(ConnectionStatusFnType callback)
 {
-    fnConnectionStatusChangedHandler = callback;
+    lstIoTClientCallbacks.ConnectionStatusHandler = callback;
 }
-
-
-
-/********************************************
-*
-*
-* Setup/cleanup/configuration functions
-*
-*
-*********************************************/
-
-bool AzureIoT_SetupClient(void)
-{
-    if (bIoTHubAuthenticated && (hIoTHubClient != NULL))
-        return true;
-
-    if (hIoTHubClient != NULL)
-        IoTHubDeviceClient_LL_Destroy(hIoTHubClient);
-
-    AZURE_SPHERE_PROV_RETURN_VALUE provResult =
-        IoTHubDeviceClient_LL_CreateWithAzureSphereDeviceAuthProvisioning(strDPSSopeId, 10000,
-            &hIoTHubClient);
-    Log_Debug(MODULE "...AzureSphereDeviceAuthProvisioning returned '%s'.\n",
-        getAzureSphereProvisioningResultString(provResult));
-
-    if ((hIoTHubClient == NULL) || (provResult.result != AZURE_SPHERE_PROV_RESULT_OK)) {
-        return false;
-    }
-
-    // Provisioning and authentication succeeded.
-    bIoTHubAuthenticated = true;
-
-#if defined(USE_AZURE_CLOUD_ECC_CERT)
-    if (IOTHUB_CLIENT_OK !=
-        IoTHubDeviceClient_LL_SetOption(hIoTHubClient, "TrustedCerts", cstrAzureIoTCertificates))
-    {
-        Log_Debug("[IoT] ERROR: failure to set option \"TrustedCerts\"\n");
-        return false;
-    }
-#endif
-
-    if (IOTHUB_CLIENT_OK !=
-        IoTHubDeviceClient_LL_SetOption(hIoTHubClient, OPTION_LOG_TRACE, &bTraceOn))
-    {
-        Log_Debug(MODULE "ERROR: failure setting option \"%s\"\n", OPTION_LOG_TRACE);
-        return false;
-    }
-
-    static bool bUrlAutoEncodeDecode = true;
-    if (IOTHUB_CLIENT_OK !=
-        IoTHubDeviceClient_LL_SetOption(hIoTHubClient, OPTION_AUTO_URL_ENCODE_DECODE, &bUrlAutoEncodeDecode))
-    {
-        Log_Debug(MODULE "ERROR: failure setting option \"%s\"\n", OPTION_AUTO_URL_ENCODE_DECODE);
-        return false;
-    }
-
-    // Sets Azure IoT PnP Model ID on IoT Hub Client
-    if (IOTHUB_CLIENT_OK !=
-        IoTHubDeviceClient_LL_SetOption(hIoTHubClient, OPTION_MODEL_ID, strPnPModelId))
-    {
-        Log_Debug(MODULE "ERROR: failure setting option \"%s\"\n", OPTION_MODEL_ID);
-        return false;
-    }
-
-    if (IOTHUB_CLIENT_OK !=
-        IoTHubDeviceClient_LL_SetOption(hIoTHubClient, OPTION_KEEP_ALIVE, &iKeepalivePeriodSeconds))
-    {
-        Log_Debug(MODULE "ERROR: failure setting option \"%s\"\n", OPTION_KEEP_ALIVE);
-        return false;
-    }
-
-    if (IOTHUB_CLIENT_OK !=
-        IoTHubDeviceClient_LL_SetRetryPolicy(hIoTHubClient, IOTHUB_CLIENT_RETRY_EXPONENTIAL_BACKOFF_WITH_JITTER, 240))
-    {
-        Log_Debug(MODULE "ERROR: failure setting retry option: ...CLIENT_RETRY_EXPONENTIAL_BACKOFF_WITH_JITTER \n");
-        return false;
-    }
-
-
-    // Set callbacks for Message, MethodCall and Device Twin features.
-    IoTHubDeviceClient_LL_SetMessageCallback(hIoTHubClient, fn_LL_MessageReceivedHandler, NULL);
-    IoTHubDeviceClient_LL_SetDeviceMethodCallback(hIoTHubClient, fn_LL_DirectMethodHandler, NULL);
-    IoTHubDeviceClient_LL_SetDeviceTwinCallback(hIoTHubClient, fn_LL_DeviceTwinUpdateHandler, NULL);
-
-    // Set callbacks for connection status related events.
-    if (IoTHubDeviceClient_LL_SetConnectionStatusCallback(
-        hIoTHubClient, hubConnectionStatusCallback, NULL) != IOTHUB_CLIENT_OK) {
-        Log_Debug(MODULE "ERROR: failure setting callback\n");
-        return false;
-    }
-
-    return true;
-}
-
-
-int AzureIoT_SetupDoWorkHandler(int fdEpoll)
-{
-    // Set up a timer for Azure IoT SDK DoWork execution.
-    azureIoTPollPeriodSeconds = AzureIoTDefaultPollPeriodSeconds;
-    struct timespec tsAzureIoTWorkerInterval = { azureIoTPollPeriodSeconds, 0 };
-    fdAzureIoTWorkerTimer =
-        CreateTimerFdAndAddToEpoll(fdEpoll, &tsAzureIoTWorkerInterval, &evtdataAzureIoTWorker, EPOLLIN);
-    if (fdAzureIoTWorkerTimer < 0) {
-        return -1;
-    }
-
-    return 0;
-}
-
-/*
-* @brief    Initializes the Azure IoT Hub SDK.
-* 
-* @return 'true' if initialization has been successful.
-*/
-bool AzureIoT_Initialize(void)
-{
-    if (IoTHub_Init() != 0) {
-        Log_Debug(MODULE "ERROR: failed initializing platform.\n");
-        return false;
-    }
-
-    return true;
-}
-
-/*
-* @brief    Deinitializes the Azure IoT Hub SDK.
-*/
-void AzureIoT_Deinitialize(void)
-{
-    CloseFdAndPrintError(fdAzureIoTWorkerTimer, "IoTWorkerTimer");
-    IoTHub_Deinit();
-}
-
-/*
-* @brief    Destroys the Azure IoT Hub client.
-*/
-void AzureIoT_DestroyClient(void)
-{
-    if (hIoTHubClient != NULL) {
-        IoTHubDeviceClient_LL_Destroy(hIoTHubClient);
-        hIoTHubClient = NULL;
-    }
-}
-
-/*
-* @brief    Sets the DPS Scope ID.
-*
-* @param    cstrID      The Scope ID string (typically from command line)
-*/
-void AzureIoT_SetDPSScopeID(const char* cstrId)
-{
-    if (NULL != cstrId) {
-        strncpy(strDPSSopeId, cstrId, sizeof(strDPSSopeId));
-        Log_Debug(MODULE "Initializing with DPS Scope Id %s.\n", cstrId);
-    }
-    else {
-        strDPSSopeId[0] = '\0';
-        Log_Debug(MODULE "WARNING: DPS Scope Id is missing.\n");
-    }
-}
-
-
 
