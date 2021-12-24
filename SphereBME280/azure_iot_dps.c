@@ -1,3 +1,5 @@
+
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -226,7 +228,7 @@ static void dpsTimeoutHandler(EventData* eventData)
  */
 static void dpsRegisterDeviceStatusCallback(PROV_DEVICE_REG_STATUS reg_status, void* user_context)
 {
-    Log_Debug(MODULE "INFO: DPS registration status %s ...\n", PROV_DEVICE_REG_STATUSStrings(reg_status));
+    Log_Debug(MODULE "INFO: DPS register device status %s ...\n", PROV_DEVICE_REG_STATUSStrings(reg_status));
 }
 
 
@@ -248,7 +250,7 @@ static void dpsRegisterDeviceCallback(PROV_DEVICE_RESULT registerResult, const c
         if( MAX_HUB_URI_LENGTH > strnlen(iothub_uri, MAX_HUB_URI_LENGTH) )
         {
             strcpy( strIotHubUri, iothub_uri );
-            Log_Debug(MODULE "INFO: DPS device registration succeeded. IoT Hub is %s\n", iothub_uri);
+            Log_Debug(MODULE "INFO: DPS  register device succeeded. IoT Hub is %s\n", iothub_uri);
             dpsRegisterStatus = AZURE_IOT_DPS_COMPLETED;
             return;
         } else {
@@ -256,7 +258,7 @@ static void dpsRegisterDeviceCallback(PROV_DEVICE_RESULT registerResult, const c
         }
     }
     dpsRegisterStatus = AZURE_IOT_DPS_FAILED;
-    Log_Debug(MODULE "ERROR: DPS device registration failed with %s\n", PROV_DEVICE_RESULTStrings(registerResult));
+    Log_Debug(MODULE "ERROR: DPS  register device failed with %s\n", PROV_DEVICE_RESULTStrings(registerResult));
 }
 
 /**
@@ -357,7 +359,7 @@ cleanup:
 /// @brief closes ProvisioningDevice if active and disarms DPS connection timers 
 void  dpsCleanup( void )
 {
-    Log_Debug(MODULE "INFO: DPS client de-init.");
+    Log_Debug(MODULE "INFO: DPS client de-init.\n");
     if (hProvDevice != NULL) {
         Prov_Device_LL_Destroy(hProvDevice);
         hProvDevice = NULL;
@@ -376,6 +378,13 @@ void  dpsCleanup( void )
     }
 
 
+/**
+ * @brief hubInitialize() initializes teh IoT Hub client and security factory and 
+ * starts authentication with IoT Hub 
+ * 
+ * @return true on success
+ * @return false on gailure
+ */
 bool hubInitialize( void )
 {
     IOTHUB_CLIENT_RESULT result = IOTHUB_CLIENT_INVALID_ARG;
@@ -393,7 +402,7 @@ bool hubInitialize( void )
     }
 
     // Create Azure Iot Hub client handle
-    Log_Debug(MODULE "INFO: Connecting to IoT Hub %s", strIotHubUri);
+    Log_Debug(MODULE "INFO: Connecting to IoT Hub %s\n", strIotHubUri);
     hIoTHubClient = IoTHubDeviceClient_LL_CreateWithAzureSphereFromDeviceAuth(strIotHubUri, MQTT_Protocol);
     if (NULL ==  hIoTHubClient) 
     {
@@ -457,7 +466,7 @@ cleanup:
 /// @brief closes IoT Hub Device Client if active, de-initializes security factory and IoT Hub SDK 
 void hubCleanup( void )
 {
-    Log_Debug(MODULE "INFO: IoT Hub client de-init.");
+    Log_Debug(MODULE "INFO: IoT Hub client de-init.\n");
 
     if (hIoTHubClient != NULL) {
         IoTHubDeviceClient_LL_Destroy(hIoTHubClient);
@@ -468,6 +477,14 @@ void hubCleanup( void )
 }
 
 
+/**
+ * @brief connectionTimerHandler() is the watchdog timer for the IoT Hub connection.
+ * it runs on a 100ms period (per IoT Hub SDK recommendation), first checking on network connectivety,
+ * then initiating DPS device registration and checking IoT Hub connection.
+ * On connection failure it also handles the backoff schedule to reconnect via DPS to IoT Hub. 
+ * 
+ * @param eventData 
+ */
 static void connectionTimerHandler(EventData *eventData)
 {
     if (ConsumeTimerFdEvent(eventData->fd) != 0) {

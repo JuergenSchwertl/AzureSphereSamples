@@ -120,7 +120,7 @@ Enter the ID Scope from the IoT Central App (Administration | Device connection)
 > <b>**Your DPS scope ID from Administration -> Device Connection ***</b><br />
 Find and modify the CmdArgs, AllowedConnections and DeviceAuthentication lines in your app_manifest.json so each includes the 
 content from the below:
-<b>"CmdArgs": [ "--ConnectionType DPS", "--ScopeID 0ne000A5318" ],
+<b>"CmdArgs": [ "--ScopeID", <b>"0ne000A5318"</b> ],
 "Capabilities": {
     "AllowedConnections": [ "global.azure-devices-provisioning.net",
     "<b>iotc-d51104e7-3071-4dbe-b068-48fbd28598ad.azure-devices.net</b>"],
@@ -137,18 +137,19 @@ Obtain your Azure Sphere Tenant ID by opening an Azure Sphere Developer Command 
 
 ## Reviewing the code
 
->**Note:** Withe version 21.07 and the addition of **Azure IoT PnP** I have refactored the *azure_iot_utilities.c* library 
+>**Note:** With version 21.07 and the addition of **Azure IoT PnP** I have refactored the *azure_iot_utilities.c* library 
 >since it had organically grown over the months to cover different use cases: 
 >
->They are now separated into *azure_iot.c* containing the core low level wrapper functions for the Azure IoT C SDK,
->*azure_iot_json.c* mirroring the data-bound APIs to use json-objects (using the *parson.c* library) and 
->*azure_iot_pnp.c* that adds Azure IoT PnP specific APIs for message handling. 
+>They are now separated into *azure_iot.c* containing the core low level wrapper functions for the Azure IoT Hub using the standard Azure IoT Hub C SDK,
+>*azure_iot_dps.c* implements a *non-blocking* variant for device provisioning using the level Azure IoT Hub Device Provisioning Service api's.
+>*azure_iot_json.c* mirrors (in lieu of C++ overloading capability) the data-bound APIs using json-objects (using the *parson.c* library) and 
+>*azure_iot_pnp.c* adds Azure IoT PnP specific helper function implementations. 
 
 To stretch your brain a bit, look at the source code of [*main.c*](./main.c) to see what telemetry
-it implements, what events, and what properties it supports (pls. note the different
+it implements, what (Azure IoT Central) events, and what properties it supports (pls. note the different
 format of the Device Twin desired property). A couple hints:
 
-Looking at `SendTelemetryMessage()` [*main.c* Line 347](./main.c#L461) you can likely deduct the schema for the telemetry data looking like: 
+Looking at `SendTelemetryMessage()` [*main.c* Line 347](./main.c#L461) you can likely deduct the schema for the BMP280 sensor telemetry data looking like: 
 ```json
 {
  "temperature" : 36.34,
@@ -157,7 +158,7 @@ Looking at `SendTelemetryMessage()` [*main.c* Line 347](./main.c#L461) you can l
 }
 ```
 
-and looking around the `SendEventMessage()` [*main.c* Line 433](./main.c#L433)
+Looking around the `SendEventMessage()` [*main.c* Line 433](./main.c#L433)
 you see how we raise events with Azure IoT Central: you need to send a device-to-cloud message with 
 the event-name as property-name and provide some arbitrary value; i.e. to raise 
 the `buttonA`-event the json needs to look like: 
@@ -169,18 +170,18 @@ and to raise the `buttonB`-event, the json would be
 { "buttonB" : "pressed" }
 ```
 
-You'll also note that this introduces `AzureIoT`**`PnP`**`_SendJsonMessage()`. 
+You'll also note that both introduce `AzureIoT`**`PnP`**`_SendJsonMessage()` using Azure IoT PnP component names accordingly. 
 
 
-#### Azure IoT PnP Telemetry
+### Azure IoT PnP Telemetry
 
 Azure IoT PnP uses the [*Digital Twins Definition Language (DTDL v2)*](https://github.com/Azure/opendigitaltwins-dtdl/blob/master/DTDL/v2/dtdlv2.md)
 to define the data schema used by the application.
 
 The application at the beginning reported its Azure PnP model id  as `"dtmi:azsphere:SphereTTT:SphereBME280;1"`
-(if you chose to use the BM**P**280 sensor instead it's `"dtmi:azsphere:SphereTTT:SphereBMP280;1"`) to IoT Hub.
-The Azure IoT PnP schema for *SphereBME280* you can find in the *iot-plugandplay-models* repository fork as 
-[*spherebme280-1.json**](https://github.com/JuergenSchwertl/iot-plugandplay-models/blob/main/dtmi/azsphere/spherettt/spherebme280-1.json)) 
+(if you chose to use the BM**P**280 sensor instead it's `"dtmi:azsphere:SphereTTT:SphereBMP280;1"`) to DPS and IoT Hub respectively.
+The Azure IoT PnP schema for *SphereBME280* you can find in the *iot-plugandplay-models* repository as 
+[*spherebme280-1.json**](https://github.com/Azure/iot-plugandplay-models/blob/main/dtmi/azsphere/spherettt/spherebme280-1.json)) 
 
 
 It uses *Components* to structure the data into functional parts; for the BME280 sensor it contains the "bme280" component
@@ -194,15 +195,18 @@ referring to jet another schema definition for it.
 },
 ```
 Per [PnP naming conventions](https://github.com/Azure/iot-plugandplay-models/blob/main/pr-reqs.md#model-file-names) 
-the schema for component `"dtmi:azsphere:SphereTTT:BME280;1"` is located in 
-[*dtmi/azsphere/spherettt/bme280-1.json*](https://github.com/JuergenSchwertl/iot-plugandplay-models/blob/main/dtmi/azsphere/spherettt/bme280-1.json)
+the public schema definition for the BME280 sensor: `"dtmi:azsphere:SphereTTT:BME280;1"` is defined in *[Azure/iot-plugandplay-models/**dtmi**/**azsphere**/**spherettt**/**bme280**-**1**.json](https://github.com/Azure/iot-plugandplay-models/blob/main/dtmi/azsphere/spherettt/bme280-1.json)*.
+
+If you like to create your own schema definition, just follow the steps described in [Azure IoT PnP : **Submit a model**](https://github.com/Azure/iot-plugandplay-models/#submit-a-model), **fork** the [*public GitHub repo **Azure/iot-plugandplay-models** *](https://github.com/Azure/iot-plugandplay-models) and start adding your own path and json definitions, like I did with my fork on  
+[*JuergenSchwertl/iot-plugandplay-models*](https://github.com/JuergenSchwertl/iot-plugandplay-models/).
+
 
 With the device telemetry just containing the *temperature*, *humidity* (and *pressure* in case of BM**E**280) where does the component name go ?
 
 It's attached to the message as a message property, named `"$.sub"` with the component name as value 
-using [*azure_iot_pnp.c:*`IoTHubMessage_SetProperty(hIoTHubMessage, "$.sub", cstrPnPComponent);`](./azure_iot_pnp.c#L58).
+using [*azure_iot_pnp.c* : `IoTHubMessage_SetProperty(hIoTHubMessage, "$.sub", cstrPnPComponent);`](./azure_iot_pnp.c#L58).
 
-#### Azure IoT PnP (writable) Properties
+### Azure IoT PnP (writable) Properties
 
 Based on IoT Hub, Azure IoT Central also supports properties based on Azure IoT Hub Device Twin. Azure IoT PnP also has a schema for this.  
 
@@ -217,7 +221,7 @@ Based on IoT Hub, Azure IoT Central also supports properties based on Azure IoT 
 >With the move to DTDL v2 mid July 2020 this has now changed again using a mirrored *reported property* with acknowledgement metadata.
 >See [Azure IoT Central: Writeable property types](https://docs.microsoft.com/en-us/azure/iot-central/core/concepts-telemetry-properties-commands#writable-property-types) 
 
-Our `"blinkRateProperty"` is part of the [`RGBLed`-Component in *rgbled-1.json*](https://github.com/JuergenSchwertl/iot-plugandplay-models/blob/main/dtmi/azsphere/spherettt/rgbled-1.json#L90)
+Our `"blinkRateProperty"` is part of the [`RGBLed`-Component in *rgbled-1.json*](https://github.com/Azure/iot-plugandplay-models/blob/main/dtmi/azsphere/spherettt/rgbled-1.json#L90)
 and being a writable property it still needs to confirm receipt of the property change.
 We'll get the DeviceTwinUpdate with a desiredProperties-json like
 ```json
@@ -230,10 +234,10 @@ We'll get the DeviceTwinUpdate with a desiredProperties-json like
 }
 ```
 where `"__t"` is a marker indicating that `"rgbLed"` is a Component. Azure IoT Hub device twin adds the versioning system property `"$version"`.
-[*main.c*:`DeviceTwinUpdate()`](./main.c#L540) extracts the property value and device twin version to report it back.
+[*main.c* : `DeviceTwinUpdate()`](./main.c#L540) extracts the property value and device twin version to report it back.
 
 
-[*main.c*:`CreateBlinkRatePropertyJson()`](./main.c#L362) creates the needed *reportedProperty* response:
+[*main.c* : `CreateBlinkRatePropertyJson()`](./main.c#L362) creates the needed *reportedProperty* response:
 ```json
 { 
   "rgbLed" : {                # component name

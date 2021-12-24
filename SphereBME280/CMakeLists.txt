@@ -5,13 +5,13 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
 PROJECT(SphereBME280 C)
 
 # set the used sensor type (uncomment the line as appropriate)
-SET(SENSOR_TYPE BME280)
-#SET(SENSOR_TYPE BMP280)
+#SET(SENSOR_TYPE BME280)
+SET(SENSOR_TYPE BMP280)
 
 message("Project ${PROJECT_NAME} with sensor ${SENSOR_TYPE}")
 
-azsphere_configure_tools(TOOLS_REVISION "21.07")
-azsphere_configure_api(TARGET_API_SET "10")
+azsphere_configure_tools(TOOLS_REVISION "21.10")
+azsphere_configure_api(TARGET_API_SET "11")
 
 # Add the Bosch sensor lib
 Add_SUBDIRECTORY(${SENSOR_TYPE})
@@ -39,4 +39,8 @@ SET(TARGET_DEFINITION "mt3620_rdb.json")
 azsphere_target_hardware_definition(${PROJECT_NAME} TARGET_DEFINITION "${TARGET_DEFINITION}")
 
 # Add MakeImage post-build command
-azsphere_target_add_image_package(${PROJECT_NAME})
+#azsphere_target_add_image_package(${PROJECT_NAME})
+
+azsphere_target_add_image_package( ${PROJECT_NAME}_1 APP_MANIFEST "app_manifest-JSchwert.json.private")
+azsphere_target_add_image_package( ${PROJECT_NAME}_2 APP_MANIFEST "app_manifest-Publish.json.private")
+
