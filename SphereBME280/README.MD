@@ -11,7 +11,7 @@ As all modules I have at hand offer I2C and this has some cost saving advantages
 The BMP280 sensor is e.g. available as [Seeed Groove BME280 sensor board](http://wiki.seeedstudio.com/Grove-Barometer_Sensor-BME280/) 
 amongst many other suppliers.
 
->**New:** With the 21.07 release I've updated the sample to fully implement **Azure IoT Plug-and-Play** data models,
+>**New:** With the 21.10 release I've updated the sample to fully implement **Azure IoT Plug-and-Play** data models,
 >with a publicly available model id and updated the **Azure IoT Central** application template accordingly. 
 >Since I accidentally picked the BM**P**280 instead of the BM**E**280 for one of the bootcamps I had the sample adapted to work with either of the two sensors.
 
@@ -58,15 +58,8 @@ The Azure Sphere Documentation has an extensive description on how to get starte
 Apart from creating the IoT Central application itself, the remaining steps will look fairly familiar: 
 Setting up the certificate chain for Azure IoT Hub DPS inside Azure IoT Central.
 
-To setup the telemetry, commands and properties for this sample you can import an Azure IoT PnP device template from the provided json here: 
-[*Azure Sphere with BME280 Lab DTDL v2*](./IoT-PnP.dtdl-v2/README.MD).
-
-To do this, open your IoT Central application and under *App settings* go to *Device Templates* -> *+New* and under 
-*Create a custom device template* select "IoT Device", press [Next:Customize] to continue to the next page, enter a name, 
-press [Next:Review] to review your inputs and finally press [Create] .
-
-On the device template page you can now *Import a model* and import the [*Azure Sphere with BME280 Lab DTDL v2*](./IoT-PnP.dtdl-v2/README.MD) .
->**Note from Aug. 3rd, 2021** : once accepted, Azure IoT PnP should have the schema definitions in the public repository...
+>**Note** : With the PnP schema publicly available on [GitHub : Azure/iot-plugandplay-models](https://github.com/Azure/iot-plugandplay-models/tree/main/dtmi/azsphere/spherettt)
+> there is no need anymore to manually import the DTDL into Azure IoT Central.
 
 ### Create a Device
 You could just start this lab and fire up the SphereBME280 application. If you have everything setup correctly with IoT Central, it would autmatically 
@@ -130,14 +123,9 @@ content from the below:
 Obtain your Azure Sphere Tenant ID by opening an Azure Sphere Developer Command Prompt/Terminal and typing the following command:
 'azsphere tenant show-selected'<br /></code></pre>
 
->**Important:** My samples are using a slightly different command line syntax, so just copy it in the form
-<pre><code>"CmdArgs": [ <b>"0ne000A5318"</b> ],</code></pre>
-
-
-
 ## Reviewing the code
 
->**Note:** With version 21.07 and the addition of **Azure IoT PnP** I have refactored the *azure_iot_utilities.c* library 
+>**Note:** With version 21.10 and the addition of **Azure IoT PnP** I have refactored the *azure_iot_utilities.c* library 
 >since it had organically grown over the months to cover different use cases: 
 >
 >They are now separated into *azure_iot.c* containing the core low level wrapper functions for the Azure IoT Hub using the standard Azure IoT Hub C SDK,
