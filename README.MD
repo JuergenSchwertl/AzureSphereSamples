@@ -1,4 +1,4 @@
-# AzureSphereSamples for 21.07 Azure Sphere SDK Version
+# AzureSphereSamples for 21.10 Azure Sphere SDK Version
 
 This repo contains sources and links for Azure Sphere Bootcamp labs, amongst other Azure Sphere Samples for 
 connected MCUs, sensors and other peripherals.
@@ -88,7 +88,7 @@ or [BMP2-Sensor-API](https://github.com/BoschSensortec/BMP2-Sensor-API/) respect
 The sensor itself offers I2C as well as SPI connectivety options and depending on your module it may offer either or both of them.
 As all modules I have at hand offer I2C and this has some cost saving advantages over SPI (i.e. less wiring, multiple sensors on I2C bus) this examples is using I2C.
 
->**New:** With the 21.07 release I've updated the sample to fully implement **Azure IoT Plug-and-Play** data models,
+>**New:** With the 21.10 release I've updated the sample to fully implement **Azure IoT Plug-and-Play** data models,
 >with a publicly available model id and updated the **Azure IoT Central** application template accordingly. 
 
 Please follow the steps as outlined in [SphereBME280](./SphereBME280/README.MD) to run this example.
@@ -164,7 +164,7 @@ is expanded to `MT3620_GPIO5`. The **RST**-pin on the Clickboard socket is conne
 ```C
 GPIO_OpenAsOutput(MT3620_GPIO2, GPIO_OutputMode_OpenDrain, GPIO_Value_Low);
 ```
-The used [`SAMPLE_NRF52_UART` in *main.c#L1´82*](https://github.com/Azure/azure-sphere-samples/blob/master/Samples/ExternalMcuUpdate/AzureSphere_HighLevelApp/main.c#L182)
+The used [`SAMPLE_NRF52_UART` in *main.c#L1ï¿½82*](https://github.com/Azure/azure-sphere-samples/blob/master/Samples/ExternalMcuUpdate/AzureSphere_HighLevelApp/main.c#L182)
 is expanded into `MT3620_ISU0_UART` which is the same ISU routed to Click socket #1 with SPI printout again.
 
 The [`SAMPLE_NRF52_DFU` in *main.c#L190*](https://github.com/Azure/azure-sphere-samples/blob/master/Samples/ExternalMcuUpdate/AzureSphere_HighLevelApp/main.c#L190)
