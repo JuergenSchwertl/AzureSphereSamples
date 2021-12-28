@@ -58,7 +58,7 @@ typedef enum  {
     HTTP_GATEWAY_TIMEOUT
 } HTTP_STATUS_CODE ;
 
-/* @brief   Content encoding strings for message properties. Comment/Uncomment as needed. */
+/// @brief   Content encoding strings for message properties. Comment/Uncomment as needed.
 typedef const struct content_type_s {
     const char * Application_OctetStream;
     const char * Application_PDF;
@@ -89,7 +89,7 @@ typedef const struct content_type_s {
 extern content_type_t ContentType;
 
 
-/* @brief   Content encoding strings for message properties. Comment/Uncomment as needed. */
+/// @brief   Content encoding strings for message properties. Comment/Uncomment as needed.
 typedef const struct content_encoding_s {
   const char * UTF_8;
   const char * UTF_16;
@@ -100,7 +100,7 @@ typedef const struct content_encoding_s {
 //   const char * Unicode;
 } content_encoding_t;
 
-/* @brief   URL-encoded content types for message properties. */
+/// @brief   URL-encoded content types for message properties.
 extern content_encoding_t ContentEncoding;
 
 /**
@@ -382,32 +382,6 @@ typedef struct iothub_LL_callbacks_s {
 * while setting up the client.
 */
 bool AzureIoT_SetupClient(void);
-
-// /**
-//  * @brief Adds the Azure IoT Do-Work handler
-//  *
-//  * @param fdEpoll epoll file descriptor
-//  * @return 0 on success, <0 for error
-//  */
-// int AzureIoT_SetupDoWorkHandler(int fdEpoll);
-
-// /**
-// * @brief    Initializes the Azure IoT Hub SDK.
-// *
-// * @return 'true' if initialization has been successful.
-// */
-// bool AzureIoT_Initialize(void);
-
-// /**
-// * @brief    Deinitializes the Azure IoT Hub SDK.
-// */
-// void AzureIoT_Deinitialize(void);
-
-// /**
-// * @brief    Destroys the Azure IoT Hub client.
-// */
-// void AzureIoT_DestroyClient(void);
-
 
 
 #endif // __AZURE_IOT_H__
