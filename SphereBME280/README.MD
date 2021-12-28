@@ -137,7 +137,7 @@ To stretch your brain a bit, look at the source code of [*main.c*](./main.c) to 
 it implements, what (Azure IoT Central) events, and what properties it supports (pls. note the different
 format of the Device Twin desired property). A couple hints:
 
-Looking at `SendTelemetryMessage()` [*main.c* Line 347](./main.c#L461) you can likely deduct the schema for the BMP280 sensor telemetry data looking like: 
+Looking at `SendTelemetryMessage()` [*main.c* Line 414](./main.c#L414) you can likely deduct the schema for the BMP280 sensor telemetry data looking like: 
 ```json
 {
  "temperature" : 36.34,
@@ -146,7 +146,7 @@ Looking at `SendTelemetryMessage()` [*main.c* Line 347](./main.c#L461) you can l
 }
 ```
 
-Looking around the `SendEventMessage()` [*main.c* Line 433](./main.c#L433)
+Looking around the `SendEventMessage()` [*main.c* Line 387](./main.c#L387)
 you see how we raise events with Azure IoT Central: you need to send a device-to-cloud message with 
 the event-name as property-name and provide some arbitrary value; i.e. to raise 
 the `buttonA`-event the json needs to look like: 
@@ -168,7 +168,7 @@ to define the data schema used by the application.
 
 The application at the beginning reported its Azure PnP model id  as `"dtmi:azsphere:SphereTTT:SphereBME280;1"`
 (if you chose to use the BM**P**280 sensor instead it's `"dtmi:azsphere:SphereTTT:SphereBMP280;1"`) to DPS and IoT Hub respectively.
-The Azure IoT PnP schema for *SphereBME280* you can find in the *iot-plugandplay-models* repository as 
+The Azure IoT PnP schema for *SphereBME280* you can find in the [*iot-plugandplay-models* repository](https://github.com/Azure/iot-plugandplay-models) as 
 [*spherebme280-1.json**](https://github.com/Azure/iot-plugandplay-models/blob/main/dtmi/azsphere/spherettt/spherebme280-1.json)) 
 
 
@@ -202,7 +202,7 @@ Based on IoT Hub, Azure IoT Central also supports properties based on Azure IoT 
 >to json-objects for properties alike: `{ "blinkRateProperty" : { "value" : 1 } }`
 >and required the property to be mirrored as reported property with additional metadata.
 >
->Over the course of time the schema was reverted back to use the shortform notation  `{ "propertyname" : 1, "$version" : 7 }` . 
+>Over the course of time the schema was reverted back to use the shortform notation  `{ "propertyname" : 1, "$version" : 7 }` 
 >but for a *desired property*, you needed to indicate the successful receipt to Azure Iot Central in the form of of 
 >an acknowledgement *message*: `{ "blinkRateProperty" : { "value": 1, "ac": 200, "av": 7, *"ad": "completed"* } }`.
 >
@@ -222,10 +222,10 @@ We'll get the DeviceTwinUpdate with a desiredProperties-json like
 }
 ```
 where `"__t"` is a marker, indicating that `"rgbLed"` is a PnP component. Azure IoT Hub device twin adds the versioning system property `"$version"`.
-[*main.c* : `DeviceTwinUpdate()`](./main.c#L540) extracts the property value and device twin version to report it back.
+[*main.c* : `DeviceTwinUpdate()`](./main.c#L491) extracts the property value and device twin version to report it back.
 
 
-[*main.c* : `CreateBlinkRateResponseJson()`](./main.c#L362) creates the needed *acknowledgement message* response:
+[*azure_iot_central.c* : `AzureIoTCentral_AckComponentPropertyChange()`](./azure_iot_central.c#L206) creates the needed *acknowledgement reported property* response:
 ```json
 { 
   "rgbLed" : {                # component name
