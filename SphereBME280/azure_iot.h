@@ -1,4 +1,4 @@
-﻿/*
+﻿/**
 * @file azure_iot.h
 * @brief This header defines a sample interface for performing basic operations with an
 * Azure IoT Hub using the low-level API layer provided by the IoTHubClient library

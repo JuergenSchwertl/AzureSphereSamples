@@ -17,19 +17,14 @@ that has examples on how to frame your messages/properties correctly.
 ### Azure IoT Central 
 > **Note:** Azure IoT Central does fully support Azure IoT Plug&Play, but it requires some secial handling:
 
-For **properties**, the *desired property* in Azure IoT Central needs to be aknowledged 
+For **properties**, the writeable property (*desired property*) in Azure IoT Central needs to be aknowledged 
 using a mirrored *reported property* with acknowledgement metadata.
-See [Azure IoT Central: Writeable property types](https://docs.microsoft.com/-us/azure/iot-central/core/ncepts-telemetry-properties-commands#writable-property-types) 
+See [Azure IoT Central: Writeable property types](https://docs.microsoft.com/en-us/azure/iot-central/core/concepts-telemetry-properties-commands#writable-property-types) 
 
-For localizable text, DTDL v2 allows be either in string format 
-```json
-    "displayName" : "display text"
-``` 
-or in object format 
+For localizable text, Azure IoT Central requires all localizable properties to be in object notation:
 ```json
     "displayName" : {
         "en" : "english display name",
         "de" : "deutscher Anzeigename"
     }
 ``` 
-Azure IoT Central requires all localizable properties to be in object notation.

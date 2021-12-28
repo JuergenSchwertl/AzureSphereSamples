@@ -5,8 +5,8 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
 PROJECT(SphereBME280 C)
 
 # set the used sensor type (uncomment the line as appropriate)
-#SET(SENSOR_TYPE BME280)
-SET(SENSOR_TYPE BMP280)
+SET(SENSOR_TYPE BME280)
+#SET(SENSOR_TYPE BMP280)
 
 message("Project ${PROJECT_NAME} with sensor ${SENSOR_TYPE}")
 
@@ -23,6 +23,7 @@ set( SOURCE_FILES
     azure_iot_dps.c 
     azure_iot_json.c 
     azure_iot_pnp.c 
+    azure_iot_central.c
     rgbled_utility.c main.c)
 
 # Create executable
@@ -39,8 +40,8 @@ SET(TARGET_DEFINITION "mt3620_rdb.json")
 azsphere_target_hardware_definition(${PROJECT_NAME} TARGET_DEFINITION "${TARGET_DEFINITION}")
 
 # Add MakeImage post-build command
-#azsphere_target_add_image_package(${PROJECT_NAME})
+azsphere_target_add_image_package(${PROJECT_NAME})
 
-azsphere_target_add_image_package( ${PROJECT_NAME}_1 APP_MANIFEST "app_manifest-JSchwert.json.private")
-azsphere_target_add_image_package( ${PROJECT_NAME}_2 APP_MANIFEST "app_manifest-Publish.json.private")
+#azsphere_target_add_image_package( ${PROJECT_NAME} APP_MANIFEST "app_manifest-JSchwert.json.private")
+#azsphere_target_add_image_package( ${PROJECT_NAME} APP_MANIFEST "app_manifest-Publish.json.private")
 

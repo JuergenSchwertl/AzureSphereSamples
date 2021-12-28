@@ -16,7 +16,8 @@
 			"eventloop.h": "c",
 			"stdarg.h": "c",
 			"time.h": "c",
-			"stdio.h": "c"
+			"stdio.h": "c",
+			"azure_iot.h": "c"
 		}
 	},
 }

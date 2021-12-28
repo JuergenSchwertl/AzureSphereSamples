@@ -1,4 +1,57 @@
-﻿#include <errno.h>
+﻿/**
+ * @file main.c
+ * @author Juergen Schwertl (jschwert@microsoft.com)
+ * @brief This sample C application for a MT3620 Reference Development Board (Azure Sphere) demonstrates how to
+ * connect an Azure Sphere device to Azure IoT Central. To use this sample, you must first
+ * run the ShowIoTCentralConfig.exe from <see href="https://github.com/Azure/azure-sphere-samples/tree/master/Samples/AzureIoT/Tools" />
+ * which outputs the required "CmdArgs" with the DPS scope id and "AllowedConnections" properties 
+ * for the Manifest (app_manifest.json) .
+ * You will also need to update the "DeviceAuthentication" property in the manifest 
+ * with your Azure Sphere TenantID. To find your TenantId, i.e. run the Azure Sphere Command line
+ *		azsphere tenant show-selected
+ *
+ * The sample leverages these functionalities of the Azure IoT SDK C together with Azure IoT Central:
+ * - Device to cloud messages;
+ * - Cloud to device messages;
+ * - Direct Method invocation;
+ * - Device Twin management;
+ *
+ * A description of the sample follows:
+ * - LED 1 blinks constantly.
+ * - Pressing button A toggles the rate at which LED 1 blinks between three values.
+ * - Pressing button B triggers reading sensor data and sending a message to the IoT Hub.
+ * - LED 2 flashes red when a message is sent and flashes yellow when a message is received.
+ * - NETWORK LED indicates whether network connection to the Azure IoT Hub has been
+ *   established (Red:No Network, Green:WiFi, Blue:IoT Hub connected).
+ *
+ * Direct Method related notes:
+ * - Invoking the method named "RgbLed*setColorMethod" with a payload containing '{"color":"red"}'
+ *   will set the color of blinking LED 1 to red.
+ * - Invoking the method named "DeviceHealth*resetMethod" with a payload containing '{"resetTimer":5}'
+ *   will arm a reset-timer to reboot the device after # seconds.
+ *
+ * Device Twin related notes:
+ * - Setting blinkRateProperty in the Device Twin to a value from 0 to 2 causes the sample to
+ *   update the blink rate of LED 1 accordingly, e.g '{"blinkRateProperty": 2 }';
+ * - Upon receipt of the blinkRateProperty desired value from the IoT hub, the sample updates
+ *   the device twin on the IoT hub with the new value for blinkRateProperty.
+ * - Pressing button A causes the sample to report the blink rate to the device
+ *   twin on the IoT Hub.
+ *
+ * This sample uses the API for the following Azure Sphere application libraries:
+ * - i2c (serial port for BME280 sensor);
+ * - gpio (digital input for button);
+ * - log (messages shown in Visual Studio's Device Output window during debugging);
+ * - wificonfig (configure WiFi settings);
+ * - azureiot (interaction with Azure IoT services)
+ * @version 21.10
+ * @date 2021-12-27
+ * 
+ * @copyright Copyright (c) 2021
+ * 
+ */
+
+#include <errno.h>
 #include <signal.h>
 #include <stdio.h>
 #include <time.h>
@@ -29,51 +82,10 @@
 #include "azure_iot_dps.h"
 #include "azure_iot_json.h"
 #include "azure_iot_pnp.h"
+#include "azure_iot_central.h"
 
 
-// This sample C application for a MT3620 Reference Development Board (Azure Sphere) demonstrates how to
-// connect an Azure Sphere device to Azure IoT Central. To use this sample, you must first
-// run the ShowIoTCentralConfig.exe from <see href="https://github.com/Azure/azure-sphere-samples/tree/master/Samples/AzureIoT/Tools" />
-// which outputs the required "CmdArgs" with the DPS scope id and "AllowedConnections" properties 
-// for the Manifest (app_manifest.json) .
-// You will also need to update the "DeviceAuthentication" property in the manifest 
-// with your Azure Sphere TenantID. To find your TenantId, i.e. run the Azure Sphere Command line
-//		azsphere tenant show-selected
-//
-// The sample leverages these functionalities of the Azure IoT SDK C together with Azure IoT Central:
-// - Device to cloud messages;
-// - Cloud to device messages;
-// - Direct Method invocation;
-// - Device Twin management;
-//
-// A description of the sample follows:
-// - LED 1 blinks constantly.
-// - Pressing button A toggles the rate at which LED 1 blinks between three values.
-// - Pressing button B triggers reading sensor data and sending a message to the IoT Hub.
-// - LED 2 flashes red when a message is sent and flashes yellow when a message is received.
-// - NETWORK LED indicates whether network connection to the Azure IoT Hub has been
-//   established (Red:No Network, Green:WiFi, Blue:IoT Hub connected).
-//
-// Direct Method related notes:
-// - Invoking the method named "RgbLed*setColorMethod" with a payload containing '{"color":"red"}'
-//   will set the color of blinking LED 1 to red.
-// - Invoking the method named "DeviceHealth*resetMethod" with a payload containing '{"resetTimer":5}'
-//   will arm a reset-timer to reboot the device after # seconds.
-//
-// Device Twin related notes:
-// - Setting blinkRateProperty in the Device Twin to a value from 0 to 2 causes the sample to
-//   update the blink rate of LED 1 accordingly, e.g '{"blinkRateProperty": 2 }';
-// - Upon receipt of the blinkRateProperty desired value from the IoT hub, the sample updates
-//   the device twin on the IoT hub with the new value for blinkRateProperty.
-// - Pressing button A causes the sample to report the blink rate to the device
-//   twin on the IoT Hub.
 
-// This sample uses the API for the following Azure Sphere application libraries:
-// - i2c (serial port for BME280 sensor);
-// - gpio (digital input for button);
-// - log (messages shown in Visual Studio's Device Output window during debugging);
-// - wificonfig (configure WiFi settings);
-// - azureiot (interaction with Azure IoT services)
 
 // An array defining the RGB GPIOs for each LED on the device
 static const GPIO_Id gpioLedPins[3][3] = {
@@ -87,7 +99,7 @@ static RgbLedUtility_Colors colBlinkingLedColor = RgbLedUtility_Colors_Blue;
 static const struct timespec atsBlinkingIntervals[] = {{0, 125000000}, {0, 250000000}, {0, 500000000}};
 static const size_t nBlinkingIntervalsCount = sizeof(atsBlinkingIntervals) / sizeof(*atsBlinkingIntervals);
 
-// @brief File descriptors - initialized to invalid value
+/// @brief File descriptors - initialized to invalid value
 static int fdEpoll = -1;
 static int fdBlinkRateButtonGpio = -1;
 static int fdSendMessageButtonGpio = -1;
@@ -120,13 +132,6 @@ static const char cstrPnPModelId[] = "dtmi:azsphere:SphereTTT:SphereBME280;1";
 static const char cstrPnPModelId[] = "dtmi:azsphere:SphereTTT:SphereBMP280;1"; 
 #endif
 
-/// @brief With Azure IoT PnP, components need to be published alike
-/// "componentname" : { 
-///    "__t" : "c", 
-///    #component properties 
-/// } 
-static const char cstrPnpComponentProperty[] = "__t";
-static const char cstrPnPComponentValue[] = "c";
 
 /// @brief Azure IoT PnP component "dtmi:azsphere:SphereTTT:buttons;1"  
 static const char cstrButtonsComponent[] = "buttons";
@@ -141,12 +146,9 @@ static const char cstrColorResponseMsg[] = "LED color set to %s";
 static const char cstrColorProperty[] = "color";
 static const char cstrBlinkRateProperty[] = "blinkRateProperty";
 static const char cstrBlinkRatePropertyPath[] = "rgbLed.blinkRateProperty";
-static const char cstrValueProperty[] = "value";
-static const char cstrVersionProperty[] = "av";
-static const char cstrStatusProperty[] = "ac";
-static const char cstrStatusDescriptionProperty[] = "ad";
+
 static const char cstrSysVersionProperty[] = "$version";
-static const char cstrStatusComplete[] = "complete";
+//static const char cstrStatusComplete[] = "complete";
 
 #ifdef BME280
 /// @brief Azure IoT PnP component "dtmi:azsphere:SphereTTT:bme280;1"  
@@ -272,11 +274,6 @@ static const char* pstrConnectionStatus = cstrMsgApplicationStarted;
 static size_t nBlinkRateValue = 0;
 
 ///  @brief 
-/// desired property blinkRateProperty version
-/// 
-static unsigned int nBlinkRateVersion = 1;
-
-///  @brief 
 /// Termination state
 /// 
 static volatile sig_atomic_t terminationRequired = false;
@@ -295,9 +292,10 @@ static void TerminationHandler(int signalNumber)
 ///  @brief 
 ///     Allocates and formats a string message on the heap.
 /// 
-/// <param name="messageFormat">The format of the message</param>
-/// <param name="maxLength">The maximum length of the formatted message string</param>
-/// <returns>The pointer to the heap allocated memory.</returns>
+/// @param messageFormatThe format of the message
+/// @param maxLengthThe maximum length of the formatted message string
+/// @returns The pointer to the heap allocated memory.
+
 static void* SetupHeapMessage(const char* messageFormat, size_t maxLength, ...)
 {
     char* message = malloc(maxLength + 1); // Ensure there is space for the null terminator put by vsnprintf.
@@ -345,9 +343,11 @@ static void BlinkLed2Once( RgbLedUtility_Colors color )
 ///  @brief 
 ///     Helper function to open a file descriptor for the given GPIO as input mode.
 /// 
-/// <param name="gpioId">The GPIO to open.</param>
-/// <param name="outGpioFd">File descriptor of the opened GPIO.</param>
-/// <returns>True if successful, false if an error occurred.</return>
+/// @param  gpioId      The GPIO to open.
+/// @param  outGpioFd   File descriptor of the opened GPIO.
+/// @returns    
+///     True    if successful
+///     false   if an error occurred.
 static bool OpenGpioFdAsInput(GPIO_Id gpioId, int *outGpioFd)
 {
     *outGpioFd = GPIO_OpenAsInput(gpioId);
@@ -360,77 +360,30 @@ static bool OpenGpioFdAsInput(GPIO_Id gpioId, int *outGpioFd)
 }
 
 
-static JSON_Value * CreateBlinkRatePropertyJson( size_t nValue, unsigned int nVersion, unsigned int nStatus, const char * strStatus )
+
+
+/// @brief Toggles the blink speed of the blink LED between 3 values.
+/// @param nValue       new Blink rate (index into timespec table)
+/// @returns actual blink rate set (in bounds)
+static size_t SetLedRate(size_t nValue)
 {
-    nBlinkRateValue = nValue;
-    nBlinkRateVersion = nVersion;
-
-    // For DTDL v2, writeable property schema with multiple components is 
-    // { "rgbLed" : {                   # component 
-    //      "__t" : "c",                # component moniker
-    //      "blinkRateProperty" : {     # property
-    //          "value" : 21.00,        # property value
-    //          "av" : 1,               # property version
-    //          "ac" : 200,             # status
-    //          "ad" : "complete" } } } }
-    // <seealso href="https://docs.microsoft.com/en-us/azure/iot-develop/concepts-convention#sample-multiple-components-writable-property" /> 
-    // <seealso href="https://docs.microsoft.com/en-us/azure/iot-central/core/concepts-telemetry-properties-commands#properties" />
-    //
-
-    JSON_Value  *jsonRootValue = json_value_init_object();
-    JSON_Object *jsonRootObject = json_value_get_object( jsonRootValue );
-    JSON_Value  *jsonComponentValue = json_value_init_object();
-    JSON_Object *jsonComponentObject = json_value_get_object( jsonComponentValue );
-    JSON_Value  *jsonPropertyValue = json_value_init_object();
-    JSON_Object *jsonPropertyObject = json_value_get_object( jsonPropertyValue );
-
-    json_object_set_string(jsonComponentObject, cstrPnpComponentProperty, cstrPnPComponentValue);
-    
-    json_object_set_number(jsonPropertyObject, cstrValueProperty, (double)nValue);
-    json_object_set_number(jsonPropertyObject, cstrStatusProperty, (double)nStatus );
-    json_object_set_number(jsonPropertyObject, cstrVersionProperty, (double)nVersion );
-    json_object_set_string(jsonPropertyObject, cstrStatusDescriptionProperty, strStatus );
-
-    json_object_set_value( jsonComponentObject, cstrBlinkRateProperty, jsonPropertyValue);
-
-    json_object_set_value( jsonRootObject, cstrRgbledComponent, jsonComponentValue);
-
-    return jsonRootValue;
-}
-
-///  @brief 
-///     Toggles the blink speed of the blink LED between 3 values.
-/// 
-/// <param name="nValue">new Blink rate (index into timespec table)</param>
-/// <param name="nVersion">new version to report to IoT Hub</param>
-static void SetLedRate(size_t nValue, unsigned int nVersion)
-{
-    nBlinkRateValue = nValue;
-    const struct timespec * pBlinkRate = &atsBlinkingIntervals[nValue];
+    nBlinkRateValue = (nValue >= nBlinkingIntervalsCount) ? 0 : nValue; //clamp to array size 
+    const struct timespec * pBlinkRate = &atsBlinkingIntervals[nBlinkRateValue];
 
     if (SetTimerFdToPeriod(fdLed1BlinkTimer, pBlinkRate) != 0) {
         Log_Debug("ERROR: could not set the period of the LED.\n");
         terminationRequired = true;
-        return;
+        return 0;
     }
 
-    // report changed blink rate as property to IoT Central
-    if (connectedToIoTHub) {
-
-        JSON_Value  *jsonValue = CreateBlinkRatePropertyJson( nValue, nVersion, 200, cstrStatusComplete);
-        
-        // Report the current state to the Device Twin on the IoT Hub.
-        AzureIoTJson_TwinReportState(jsonValue);
-
-        json_value_free(jsonValue);
-    }
+    return nBlinkRateValue;
 }
 
-///  @brief 
-/// Sends an event to Azure IoT Central
+
+///  @brief Sends an event to Azure IoT Central
 /// 
-/// <param name="cstrEvent">event name</param>
-/// <param name="pstrMessage">event message</param>
+/// @param cstrEventevent name
+/// @param pstrMessageevent message
 static void SendEventMessage(const char * cstrComponent, const char * cstrEvent, const char * cstrMessage)
 {
 	if (connectedToIoTHub) {
@@ -456,8 +409,7 @@ static void SendEventMessage(const char * cstrComponent, const char * cstrEvent,
 	}
 }
 
-///  @brief 
-///     Sends a telemetry message to Azure IoT Central.
+/// @brief Sends a telemetry message to Azure IoT Central.
 /// 
 static void SendTelemetryMessage(void)
 {
@@ -490,7 +442,7 @@ static void SendTelemetryMessage(void)
             json_object_set_number(jsonRootObject, cstrTemperatureProperty, bmpData.temperature);
             json_object_set_number(jsonRootObject, cstrPressureProperty, bmpData.pressure);
             
-            AzureIoTPnP_SendJsonMessage(jsonRootValue, cstrBMP280Component);
+            AzureIoT_PnP_SendJsonMessage(jsonRootValue, cstrBMP280Component);
         }
 #endif
         json_value_free( jsonRootValue );
@@ -522,10 +474,8 @@ static void SendTelemetryMessage(void)
 	}
 }
 
-///  @brief 
-///     MessageReceived callback function, called when a message is received from the Azure IoT Hub.
-/// 
-/// <param name="payload">The payload of the received message.</param>
+/// @brief MessageReceived callback function, called when a message is received from the Azure IoT Hub.
+/// @param payloadThe payload of the received message.
 static void MessageReceived(const char *payload)
 {
     // Set the send/receive LED2 to blink once immediately to indicate a message has been received.
@@ -536,19 +486,23 @@ static void MessageReceived(const char *payload)
 ///     Device Twin update callback function, called when an update is received from the Azure IoT
 ///     Hub.
 /// 
-/// <param name="desiredProperties">The JSON root object containing the desired Device Twin
-/// properties received from the Azure IoT Hub.</param>
+/// @param desiredPropertiesThe JSON root object containing the desired Device Twin
+/// properties received from the Azure IoT Hub.
 static void DeviceTwinUpdate(const JSON_Object *desiredProperties)
 {
 	if (json_object_dothas_value_of_type(desiredProperties, cstrBlinkRatePropertyPath, JSONNumber))
 	{
-        unsigned int desiredVersion = (unsigned int)json_object_get_number(desiredProperties, cstrSysVersionProperty);
-		double desiredBlinkRate = json_object_dotget_number(desiredProperties, cstrBlinkRatePropertyPath);
+        unsigned int nDesiredVersion = (unsigned int)json_object_get_number(desiredProperties, cstrSysVersionProperty);
+		double fDesiredBlinkRate = json_object_dotget_number(desiredProperties, cstrBlinkRatePropertyPath);
 
-		Log_Debug("[DeviceTwinUpdate] Received desired value %f for blinkRateProperty, setting it to %zu.\n",
-			desiredBlinkRate, ((size_t) desiredBlinkRate) % nBlinkingIntervalsCount);
+		Log_Debug("[DeviceTwinUpdate] Received desired value %f for blinkRateProperty.\n", fDesiredBlinkRate);
 
-		SetLedRate(((size_t) desiredBlinkRate) % nBlinkingIntervalsCount, desiredVersion);
+		double fActualBlinkRate = (double) SetLedRate( (size_t) fDesiredBlinkRate );
+        
+        unsigned int nStatus = (fActualBlinkRate == fDesiredBlinkRate) ? HTTP_OK : HTTP_BAD_REQUEST;
+
+        // Acknowlede receipt of property back to Azure IoT Central 
+        AzureIoTCentral_AckComponentPropertyChange( cstrRgbledComponent, cstrBlinkRateProperty, &fActualBlinkRate, JSONNumber, nDesiredVersion, nStatus);
 
 		BlinkLed2Once(RgbLedUtility_Colors_Blue);
 	} else {
@@ -561,9 +515,9 @@ static void DeviceTwinUpdate(const JSON_Object *desiredProperties)
 /// @brief 
 /// setColor-Method takes payload in form of { "color": "red" } to set LED blink color
 ///
-/// <param name="jsonParameters">json message payload</param>
-/// <param name="jsonResponseAddress">address of response message payload</param>
-/// <returns>HTTP status return value.</returns>
+/// @param jsonParametersjson message payload
+/// @param jsonResponseAddressaddress of response message payload
+/// @returns HTTP status return value.
 static HTTP_STATUS_CODE SetColorMethod(JSON_Value * jsonParameters, JSON_Value** jsonResponseAddress)
 {
     Log_Debug("[SetColorMethod]: Invoked.\n");
@@ -609,9 +563,9 @@ static HTTP_STATUS_CODE SetColorMethod(JSON_Value * jsonParameters, JSON_Value**
 /// @brief 
 /// reset-Method arms the reset counter 
 ///
-/// <param name="jsonParameters">json message payload</param>
-/// <param name="jsonResponseAddress">address of response message payload</param>
-/// <returns>HTTP status return value.</returns>
+/// @param jsonParametersjson message payload
+/// @param jsonResponseAddressaddress of response message payload
+/// @returns HTTP status return value.
 static HTTP_STATUS_CODE ResetMethod(JSON_Value* jsonParameters, JSON_Value** jsonResponseAddress)
 {
     Log_Debug("[ResetMethod]: Invoked.\n");
@@ -654,14 +608,12 @@ static HTTP_STATUS_CODE ResetMethod(JSON_Value* jsonParameters, JSON_Value** jso
 static void ReportAllProperties(void)
 {
     JSON_Value* jsonRoot = json_value_init_object();
-    JSON_Object *jsonRootObject = json_value_get_object(jsonRoot);
+    JSON_Value* jsonValue = NULL;
     JSON_Value* jsonComponentValue = NULL;
     JSON_Object *jsonObject = NULL;
 
-    jsonComponentValue = json_value_init_object();
-    jsonObject = json_value_get_object( jsonComponentValue );
-    json_object_set_string(jsonObject, cstrPnpComponentProperty, cstrPnPComponentValue);
-
+    jsonValue = json_value_init_object();
+    jsonObject = json_value_get_object( jsonValue );
     json_object_set_string(jsonObject, cstrDevInfoManufacturerProperty, cstrDevInfoManufacturerValue);
     json_object_set_string(jsonObject, cstrDevInfoModelProperty, cstrDevInfoModelValue);
     json_object_set_string(jsonObject, cstrDevInfoSWVersionProperty, cstrDevInfoSWVersionValue);
@@ -670,16 +622,15 @@ static void ReportAllProperties(void)
     json_object_set_string(jsonObject, cstrDevInfoProcMfgrProperty, cstrDevInfoProcMfgrValue);
     json_object_set_number(jsonObject, cstrDevInfoStorageProperty, (double) ciDevInfoStorageValue);
     json_object_set_number(jsonObject, cstrDevInfoMemoryProperty, (double) ciDevInfoMemoryValue);
+    
+    AzureIoT_PnP_CreateComponentPropertyJson( jsonRoot, cstrDevInfoComponent, jsonValue);
 
-    json_object_set_value( jsonRootObject, cstrDevInfoComponent, jsonComponentValue);
 
-    jsonComponentValue = json_value_init_object();
+    jsonValue = json_value_init_object();
     jsonObject = json_value_get_object( jsonComponentValue );
-    json_object_set_string(jsonObject, cstrPnpComponentProperty, cstrPnPComponentValue);
-
     json_object_set_number(jsonObject, cstrBlinkRateProperty, (double) nBlinkRateValue);
 
-    json_object_set_value( jsonRootObject, cstrRgbledComponent, jsonComponentValue);
+    AzureIoT_PnP_CreateComponentPropertyJson( jsonRoot, cstrRgbledComponent, jsonValue);
 
     AzureIoTJson_TwinReportState(jsonRoot);
 
@@ -689,8 +640,8 @@ static void ReportAllProperties(void)
 ///  @brief 
 ///     IoT Hub connection status callback function.
 /// 
-/// <param name="connected">'true' when the connection to the IoT Hub is established.</param>
-/// <param name="statusText">connect/disconnect reason</param>
+/// @param connected'true' when the connection to the IoT Hub is established.
+/// @param statusTextconnect/disconnect reason
 static void IoTHubConnectionStatusChanged(bool connected, const char *statusText)
 {
     connectedToIoTHub = connected;
@@ -749,9 +700,9 @@ static void Led2UpdateHandler(EventData *eventData)
 ///  @brief 
 ///     Check whether a given button has just been pressed.
 /// 
-/// <param name="fd">The button file descriptor</param>
-/// <param name="oldState">Old state of the button (pressed or released)</param>
-/// <returns>true if pressed, false otherwise</returns>
+/// @param fdThe button file descriptor
+/// @param oldStateOld state of the button (pressed or released)
+/// @returns true if pressed, false otherwise
 static bool IsButtonPressed(int fd, GPIO_Value_Type *oldState)
 {
     bool isButtonPressed = false;
@@ -804,9 +755,14 @@ void ButtonPollTimerHandler(EventData *eventData)
     // If the button A is pressed, change the LED blink interval, update the Device Twin and send a buttonA event message.
     static GPIO_Value_Type blinkButtonState;
     if (IsButtonPressed(fdBlinkRateButtonGpio, &blinkButtonState)) {
-        SetLedRate((nBlinkRateValue + 1) % nBlinkingIntervalsCount, nBlinkRateVersion+1 );
+        SetLedRate( nBlinkRateValue + 1 );
 
         if (connectedToIoTHub) {
+            JSON_Value * jsonValue = json_value_init_object();
+            JSON_Object * jsonObject = json_value_get_object( jsonValue );
+            json_object_set_number(jsonObject, cstrBlinkRateProperty, (double) nBlinkRateValue);
+            AzureIoT_PnP_ReportComponentProperty( cstrRgbledComponent, jsonValue);
+
             SendEventMessage(cstrButtonsComponent, cstrEvtButtonA, cstrMsgPressed);
         }
         else {

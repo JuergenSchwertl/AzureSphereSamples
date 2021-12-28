@@ -40,7 +40,7 @@ If you want to get rolling within minutes, follow the steps to [Import IoT Centr
 dashboard manually, follow the steps layed out in [Manual IoT Central setup](#Manual-IoT-Central-setup).
 
 #### Import IoT Central Application Template
-Just click here to [import Azure Sphere with BME 280 Template (IoT PnP enabled)](https://apps.azureiotcentral.com/build/new/c11cdb9a-987f-4e16-822b-9131cf602197),
+Just click here to [import Azure Sphere with BME 280 Template (IoT PnP enabled)](https://apps.azureiotcentral.com/build/new/bc82e494-2521-40e4-8bca-593aea4ccdb2),
 and then select the type of IoT Central application you like. There is a free version available that allows to test your application for 7 days.
 
 Since IoT Central uses Azure IoT Hub and Azure IoT Hub Device Provisioning Service under the hood, you need to setup the certificate chain 
@@ -216,9 +216,9 @@ Based on IoT Hub, Azure IoT Central also supports properties based on Azure IoT 
 >
 >Over the course of time the schema was reverted back to use the shortform notation  `{ "propertyname" : 1, "$version" : 7 }` . 
 >but for a *desired property*, you needed to indicate the successful receipt to Azure Iot Central in the form of of 
->an *acknowledgment telemetry message*: `{ "blinkRateProperty" : { "value": 1, "ac": 200, "ad": "completed", "av": 7 } }`.
->>
->With the move to DTDL v2 mid July 2020 this has now changed again using a mirrored *reported property* with acknowledgement metadata.
+>an acknowledgement *message*: `{ "blinkRateProperty" : { "value": 1, "ac": 200, "av": 7, *"ad": "completed"* } }`.
+>
+>With the move to DTDL v2 mid July 2020 this has now changed again using a mirrored *reported property* in object notation with acknowledgement metadata.
 >See [Azure IoT Central: Writeable property types](https://docs.microsoft.com/en-us/azure/iot-central/core/concepts-telemetry-properties-commands#writable-property-types) 
 
 Our `"blinkRateProperty"` is part of the [`RGBLed`-Component in *rgbled-1.json*](https://github.com/Azure/iot-plugandplay-models/blob/main/dtmi/azsphere/spherettt/rgbled-1.json#L90)
@@ -227,27 +227,27 @@ We'll get the DeviceTwinUpdate with a desiredProperties-json like
 ```json
 {
   "rgbLed" : {	
-    "__t" : "c",
-    "blinkRateProperty" : 1
+    "blinkRateProperty" : 2,
+    "__t" : "c"
   },
   "$version" : 3
 }
 ```
-where `"__t"` is a marker indicating that `"rgbLed"` is a Component. Azure IoT Hub device twin adds the versioning system property `"$version"`.
+where `"__t"` is a marker, indicating that `"rgbLed"` is a PnP component. Azure IoT Hub device twin adds the versioning system property `"$version"`.
 [*main.c* : `DeviceTwinUpdate()`](./main.c#L540) extracts the property value and device twin version to report it back.
 
 
-[*main.c* : `CreateBlinkRatePropertyJson()`](./main.c#L362) creates the needed *reportedProperty* response:
+[*main.c* : `CreateBlinkRateResponseJson()`](./main.c#L362) creates the needed *acknowledgement message* response:
 ```json
 { 
   "rgbLed" : {                # component name
-    "__t" : "c",              # component marker
     "blinkRateProperty" : {   # property name
-      "value" : 21.00,        # property value
+      "value" : 2,            # property value
       "av" : 1,               # property version
       "ac" : 200,             # status
-      "ad" : "complete" 
-    }
+      "ad" : "complete"       # optional
+    },
+    "__t" : "c"               # component marker
   } 
 }
 ```
