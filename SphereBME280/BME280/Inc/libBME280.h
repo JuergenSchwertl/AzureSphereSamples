@@ -13,19 +13,17 @@ typedef struct BME280_DATA {
 } bme280_data_t;
 
 
-///<summary>
-///Initialize BME280 sensor at device address
-///</summary>
-///<param name="i2cInterfaceFd">Interface Id of Azure Sphere I2C ISU block</param>
-///<param name="onPrimaryI2CAddress">use primary I2C bus address of BME 280 sensor</param>
-///<returns>true if successful, false if error</returns>
+/// @brief Initialize BME280 sensor at device address
+///
+/// @param i2cInterfaceFd Interface Id of Azure Sphere I2C ISU block
+/// @param onPrimaryI2CAddress use primary I2C bus address of BME 280 sensor
+/// @return true if successful, false if error
 bool BME280_Init(int i2cInterfaceFd, bool onPrimaryI2CAddress);
 
-///<summary>
-/// Reads temperature [°C], pressure [Pa] and humidity [%] from BME280 sensor
-///</summary>
-///<param name="pData">pointer to <see href="bme280_data_t">bme280_data_t</see> structure receiving output</param>
-///<returns>0 if successful, -1 if error</returns>
+/// @brief Reads temperature [°C], pressure [Pa] and humidity [%] from BME280 sensor
+///
+/// @param pData">pointer to @see bme280_data_t structure receiving output
+/// @returns 0 if successful, -1 if error
 int BME280_GetSensorData(bme280_data_t *pData);
 
 

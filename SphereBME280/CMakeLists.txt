@@ -10,14 +10,24 @@ SET(SENSOR_TYPE BME280)
 
 message("Project ${PROJECT_NAME} with sensor ${SENSOR_TYPE}")
 
-azsphere_configure_tools(TOOLS_REVISION "21.04")
-azsphere_configure_api(TARGET_API_SET "9")
+azsphere_configure_tools(TOOLS_REVISION "21.10")
+azsphere_configure_api(TARGET_API_SET "11")
 
 # Add the Bosch sensor lib
 Add_SUBDIRECTORY(${SENSOR_TYPE})
 
+set( SOURCE_FILES 
+    epoll_timerfd_utilities.c 
+    parson.c 
+    azure_iot.c 
+    azure_iot_dps.c 
+    azure_iot_json.c 
+    azure_iot_pnp.c 
+    azure_iot_central.c
+    rgbled_utility.c main.c)
+
 # Create executable
-ADD_EXECUTABLE(${PROJECT_NAME} main.c azure_iot_utilities.c epoll_timerfd_utilities.c rgbled_utility.c parson.c)
+ADD_EXECUTABLE(${PROJECT_NAME} ${SOURCE_FILES} )
 
 TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PUBLIC ${SENSOR_TYPE})
 
@@ -31,3 +41,7 @@ azsphere_target_hardware_definition(${PROJECT_NAME} TARGET_DEFINITION "${TARGET_
 
 # Add MakeImage post-build command
 azsphere_target_add_image_package(${PROJECT_NAME})
+
+#azsphere_target_add_image_package( ${PROJECT_NAME} APP_MANIFEST "app_manifest-JSchwert.json.private")
+#azsphere_target_add_image_package( ${PROJECT_NAME} APP_MANIFEST "app_manifest-Publish.json.private")
+

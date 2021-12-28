@@ -11,30 +11,24 @@
 
 //#define VERBOSE 1
 
-///<summary>
-/// This is an Azure Sphere wrapper library for the Bosch BME280 
+/// @brief This is an Azure Sphere wrapper library for the Bosch BME280 
 /// temperature-, humidity- and pressure-sensor
-/// <see href="https://github.com/BoschSensortec/BME280_driver" />
+/// @see https://github.com/BoschSensortec/BME280_driver
 /// connected to Azure Sphere via I2C (i.e. the Seeed Groove BME280 sensor board)
-/// <see href="http://wiki.seeedstudio.com/Grove-Barometer_Sensor-BME280/" />
-///</summary>
+/// @see http://wiki.seeedstudio.com/Grove-Barometer_Sensor-BME280/
+///
 
-///<summary>
-/// forward declarations of platform dependent helper functions for the Bosch BME280 driver
-///</summary>
-int8_t user_i2c_read(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len);
-void user_delay_ms(uint32_t period);
-int8_t user_i2c_write(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len);
+/// @brief forward declarations of platform dependent helper functions for the Bosch BME280 driver
+///
+static int8_t user_i2c_read(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len);
+static void user_delay_ms(uint32_t period);
+static int8_t user_i2c_write(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len);
 
 
-///<summary>
-/// File descriptor for I2C ISU block
-///</summary>
+/// @brief File descriptor for I2C ISU block
 static int i2cFd = -1;
 
-///<summary>
-/// <see href="bme280_dev">bme280_dev</see> structure with platform dependent callbacks, calibration data and settings
-///</summary>
+/// @brief @see bme280_dev structure with platform dependent callbacks, calibration data and settings
 struct bme280_dev dev = {
 		chip_id:0,
 		dev_id : BME280_I2C_ADDR_PRIM,
@@ -52,11 +46,8 @@ struct bme280_dev dev = {
 		}
 };
 
-///<summary>
-/// platform dependant helper functions for bme280
-///</sdummary>
-
-int8_t user_i2c_read(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len)
+/// @brief platform dependant helper functions for bme280
+static int8_t user_i2c_read(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len)
 {
 	ssize_t rslt = I2CMaster_WriteThenRead(i2cFd, (I2C_DeviceAddress) (dev.dev_id), &reg_addr, 1, data, len);
 
@@ -72,13 +63,13 @@ int8_t user_i2c_read(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len)
 	return (rslt != -1) ? BME280_OK : BME280_E_COMM_FAIL;
 }
 
-void user_delay_ms(uint32_t period)
+static void user_delay_ms(uint32_t period)
 {
 	struct timespec t = { 0, (long)period * 1000l * 1000l};
 	nanosleep(&t, NULL);
 }
 
-int8_t user_i2c_write(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len)
+static int8_t user_i2c_write(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len)
 {
 	ssize_t rslt = -1;
 	size_t len2 = (size_t)len + 1;
@@ -108,7 +99,7 @@ int8_t user_i2c_write(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len)
 
 
 
-void print_sensor_data(struct bme280_data *comp_data)
+static void print_sensor_data(struct bme280_data *comp_data)
 {
 #ifdef DEBUG
 #ifdef BME280_FLOAT_ENABLE
@@ -121,12 +112,6 @@ void print_sensor_data(struct bme280_data *comp_data)
 #endif
 }
 
-///<summary>
-///Initialize BME280 sensor at device address
-///</summary>
-///<param name="i2cInterfaceFd">Interface Id of Azure Sphere I2C ISU block</param>
-///<param name="onPrimaryI2CAddress">use primary I2C bus address of BME 280 sensor</param>
-///<returns>true if successful, false if error</returns>
 bool BME280_Init(int i2cInterfaceFd, bool onPrimaryI2CAddress)
 {
 	int8_t rslt = BME280_OK;
@@ -157,11 +142,6 @@ bool BME280_Init(int i2cInterfaceFd, bool onPrimaryI2CAddress)
 	return true;
 }
 
-///<summary>
-/// Reads temperature [°C], pressure [Pa] and humidity [%] from BME280 sensor
-///</summary>
-///<param name="pData">pointer to <see href="bme280_data_t">bme280_data_t</see> structure receiving output</param>
-///<returns>0 if successful, -1 if error</returns>
 int BME280_GetSensorData(bme280_data_t *pData) {
 	int8_t rslt = BME280_OK;
 	struct bme280_data comp_data;

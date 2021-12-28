@@ -4,4 +4,20 @@
 			"path": "."
 		}
 	],
+	"settings": {
+		"files.associations": {
+			"prov_client_const.h": "c",
+			"const_defines.h": "c",
+			"prov_security_factory.h": "c",
+			"iothub.h": "c",
+			"iothub_device_client_ll.h": "c",
+			"string.h": "c",
+			"prov_device_ll_client.h": "c",
+			"eventloop.h": "c",
+			"stdarg.h": "c",
+			"time.h": "c",
+			"stdio.h": "c",
+			"azure_iot.h": "c"
+		}
+	},
 }

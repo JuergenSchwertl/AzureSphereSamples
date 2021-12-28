@@ -4,7 +4,7 @@
   "ApplicationType": "Default",
   "ComponentId": "82a16cf9-d4e1-4235-a6e5-14ed23c4cc18",
   "EntryPoint": "/bin/app",
-  "CmdArgs": [ "**your Azure IoT Central DPS Scope ID**" ],
+  "CmdArgs": [ "--ScopeId", "**your Azure IoT Central DPS Scope ID**" ],
   "Capabilities": {
     "AllowedConnections": [
       "global.azure-devices-provisioning.net",
