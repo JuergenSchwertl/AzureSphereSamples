@@ -15,7 +15,7 @@ For further info on how to implement a DTDL v2 schema in your code please refer 
 that has examples on how to frame your messages/properties correctly. 
 
 ### Azure IoT Central 
-> **Note:** Azure IoT Central does fully support Azure IoT Plug&Play, but it requires some secial handling:
+> **Note:** Azure IoT Central does fully support Azure IoT Plug&Play, but it requires some special handling:
 
 For **properties**, the writeable property (*desired property*) in Azure IoT Central needs to be aknowledged 
 using a mirrored *reported property* with acknowledgement metadata.
