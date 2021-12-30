@@ -68,7 +68,7 @@ connect and create a device therein. The only caveat with that is that the devic
 You can rename the device afterwards though: open the device dashboard (Devices -> click the id under "Device name"). Above the device path you should see an
 [Manage device v] menu and therein "Rename".
 
-To have devices enlisted with a more human readable names upfront you can do a pre-setup of the device entry. Navigate to <img href="../images/iotc_devices.svg" width="16" height="16"/> 
+To have devices enlisted with a more human readable names upfront you can do a pre-setup of the device entry. Navigate to <img href="../Images/iotc_devices.svg" width="16" height="16"/> 
 *Devices* and press the *"+"* button to open the add device dialog and add your Azure Sphere device id **in lower case characters**. 
 To get the device id in lower case, you can start Powershell in the Azure Sphere Developer Command Prompt and run
 ```powershell
