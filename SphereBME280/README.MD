@@ -3,7 +3,7 @@ In this example we will connect an industrial grade I2C based sensor and send te
 to an **Azure IoT Central** application. 
 
 In this example it is the  Bosch BME280 temperature/humidity/pressure sensor (or BMP280 with temperature/pressure accordingly). For this sensor, 
-Bosch Sensortec provides a platform independent libraries on GitHub ([BME280_driver](https://github.com/BoschSensortec/BME280_driver) 
+Bosch Sensortec provides platform independent libraries on GitHub ([BME280_driver](https://github.com/BoschSensortec/BME280_driver) 
 or [BMP2-Sensor-API](https://github.com/BoschSensortec/BMP2-Sensor-API/) respectively.
 The sensor itself offers I2C as well as SPI connectivety options and depending on your module it may offer either or both of them.
 As all modules I have at hand offer I2C and this has some cost saving advantages over SPI (i.e. less wiring, multiple sensors on I2C bus) this examples is using I2C.
@@ -32,7 +32,7 @@ but essentially they all have the necessary power supply V(in) & GND and the I2C
 
 >**Note:**
 >In case you want to use a Bosch BM**P**280 instead of the BM**E**280, the wiring is identical, you just need to change the
->`SENSOR_TYPE` variable in [*CMakeLists.txt* afterLine 8](./CMakeLists.txt#L7).
+>`SENSOR_TYPE` variable in [*CMakeLists.txt* after Line 8](./CMakeLists.txt#L7) (i.e. comment/uncomment the lines accordingly).
 
 
 ## Seting up Azure IoT Central
@@ -68,9 +68,8 @@ connect and create a device therein. The only caveat with that is that the devic
 You can rename the device afterwards though: open the device dashboard (Devices -> click the id under "Device name"). Above the device path you should see an
 [Manage device v] menu and therein "Rename".
 
-To have devices enlisted with a more human readable names upfront you can do a pre-setup of the device entry. Navigate to
-<svg width="16" height="16" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M4.409 9.223l-.694-.536 3.76-2.855.536.694L4.41 9.223z" fill="var(--color-main-nav-foreground-primary)"></path><path d="M4.593 8.687h-.878v5.658h.878V8.687z" fill="var(--color-main-nav-foreground-primary)"></path><path d="M8.768 6.939a1.511 1.511 0 100-3.023 1.511 1.511 0 000 3.023z" stroke="var(--color-main-nav-foreground-primary)" stroke-miterlimit="10"></path><path fill-rule="evenodd" clip-rule="evenodd" d="M15.158 6.613l.843.465-4.45 3.26-.677-.659 4.284-3.066z" fill="var(--color-main-nav-foreground-primary)"></path><path d="M9.847 12.799a1.511 1.511 0 100-3.023 1.511 1.511 0 000 3.023z" stroke="var(--color-main-nav-foreground-primary)" stroke-miterlimit="10"></path><path d="M15.5 8a7.5 7.5 0 11-15 0 7.5 7.5 0 0115 0z" stroke="var(--color-main-nav-foreground-primary)"></path></svg> 
-*Devices* and press the *"+"* button to open the add device dialog and add your Azure Sphere device id **in lower case characters**. 
+To have devices enlisted with a more human readable names upfront you can do a pre-setup of the device entry. Navigate to <img src="./Images/iotc_devices.svg" width="16" height="16"/> 
+*Devices* and press the <img src="./Images/iotc_new.svg" width="64" height="16"/> button to open the add device dialog and add your Azure Sphere device id **in lower case characters**. 
 To get the device id in lower case, you can start Powershell in the Azure Sphere Developer Command Prompt and run
 ```powershell
  (azsphere device show-attached)[0].Split(":")[1].Trim().ToLower()

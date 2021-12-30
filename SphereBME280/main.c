@@ -185,7 +185,7 @@ static const char cstrDevInfoMemoryProperty[] = "totalMemory";
 
 static const char cstrDevInfoManufacturerValue[] = "Seeed";
 static const char cstrDevInfoModelValue[] = "MT3620 Developer Kit";
-static const char cstrDevInfoSWVersionValue[] = "SphereBME280 v21.12.28.1700";
+static const char cstrDevInfoSWVersionValue[] = "SphereBME280 v21.12.30.1300";
 static const char cstrDevInfoOSNameValue[] = "Azure Sphere IoT OS";
 static const char cstrDevInfoProcArchValue[] = "ARM Core A7,M4";
 static const char cstrDevInfoProcMfgrValue[] = "MediaTek";
@@ -272,6 +272,7 @@ static const char* pstrConnectionStatus = cstrMsgApplicationStarted;
 /// desired property blinkRateProperty 
 /// 
 static size_t nBlinkRateValue = 0;
+static size_t nBlinkrateVersion = 0;
 
 ///  @brief 
 /// Termination state
@@ -492,8 +493,8 @@ static void DeviceTwinUpdate(const JSON_Object *desiredProperties)
 {
 	if (json_object_dothas_value_of_type(desiredProperties, cstrBlinkRatePropertyPath, JSONNumber))
 	{
-        unsigned int nDesiredVersion = (unsigned int)json_object_get_number(desiredProperties, cstrSysVersionProperty);
 		double fDesiredBlinkRate = json_object_dotget_number(desiredProperties, cstrBlinkRatePropertyPath);
+        nBlinkrateVersion = (unsigned int)json_object_get_number(desiredProperties, cstrSysVersionProperty);
 
 		Log_Debug("[DeviceTwinUpdate] Received desired value %f for blinkRateProperty.\n", fDesiredBlinkRate);
 
@@ -502,7 +503,7 @@ static void DeviceTwinUpdate(const JSON_Object *desiredProperties)
         unsigned int nStatus = (fActualBlinkRate == fDesiredBlinkRate) ? HTTP_OK : HTTP_BAD_REQUEST;
 
         // Acknowlede receipt of property back to Azure IoT Central 
-        AzureIoTCentral_AckComponentPropertyChange( cstrRgbledComponent, cstrBlinkRateProperty, &fActualBlinkRate, JSONNumber, nDesiredVersion, nStatus);
+        AzureIoTCentral_AckComponentPropertyChange( cstrRgbledComponent, cstrBlinkRateProperty, &fActualBlinkRate, JSONNumber, nBlinkrateVersion, nStatus);
 
 		BlinkLed2Once(RgbLedUtility_Colors_Blue);
 	} else {
@@ -761,6 +762,7 @@ void ButtonPollTimerHandler(EventData *eventData)
             JSON_Value * jsonValue = json_value_init_object();
             JSON_Object * jsonObject = json_value_get_object( jsonValue );
             json_object_set_number(jsonObject, cstrBlinkRateProperty, (double) nBlinkRateValue);
+
             AzureIoT_PnP_ReportComponentProperty( cstrRgbledComponent, jsonValue);
 
             SendEventMessage(cstrButtonsComponent, cstrEvtButtonA, cstrMsgPressed);

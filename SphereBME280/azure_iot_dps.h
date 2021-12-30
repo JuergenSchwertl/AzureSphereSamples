@@ -28,6 +28,11 @@ typedef enum  {
     AZURE_IOT_HUB_FAILED
 } AZURE_IOT_HUB_STATUS;
 
+/**
+ * @brief 
+ * @param status AZURE_IOT_HUB_STATUS with values AZURE_IOT_HUB_CONNECTED, ...DISCONNECTED, ...AUTHENTICATING, ...FAILED
+ * @param iothub_uri IoT Hub address provisioned by DPS
+ */
 typedef void(*AZURE_IOT_DPS_REGISTRATION_CALLBACK)(AZURE_IOT_DPS_STATUS status, const char* iothub_uri);
 
 

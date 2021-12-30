@@ -10,12 +10,6 @@
 #include <azureiot/iothub.h>
 #include <azureiot/iothub_device_client_ll.h>
 #include <azureiot/azure_sphere_provisioning.h>
-//#include <azure_c_shared_utility/shared_util_options.h>
-//#include <azure_prov_client/prov_device_ll_client.h>
-//#include <azure_prov_client/iothub_security_factory.h>
-//#include <azure_prov_client/prov_security_factory.h>
-//#include <azure_prov_client/prov_transport_mqtt_client.h>
-
 
 #include <applibs/log.h>
 #include "azure_iot.h"

@@ -120,7 +120,7 @@ static IOTHUBMESSAGE_DISPOSITION_RESULT jsonMessageReceivedCallback(IOTHUB_MESSA
 
     fnJsonMessageReceivedHandler(jsonValue);
 
-    free(jsonValue);
+    json_value_free(jsonValue);
 
     return IOTHUBMESSAGE_ACCEPTED;
 }

@@ -18,6 +18,7 @@
 			"time.h": "c",
 			"stdio.h": "c",
 			"azure_iot.h": "c"
-		}
+		},
+		"svg.preview.background": "editor"
 	},
 }
