@@ -3,7 +3,7 @@ In this example we will connect an industrial grade I2C based sensor and send te
 to an **Azure IoT Central** application. 
 
 In this example it is the  Bosch BME280 temperature/humidity/pressure sensor (or BMP280 with temperature/pressure accordingly). For this sensor, 
-Bosch Sensortec provides a platform independent libraries on GitHub ([BME280_driver](https://github.com/BoschSensortec/BME280_driver) 
+Bosch Sensortec provides platform independent libraries on GitHub ([BME280_driver](https://github.com/BoschSensortec/BME280_driver) 
 or [BMP2-Sensor-API](https://github.com/BoschSensortec/BMP2-Sensor-API/) respectively.
 The sensor itself offers I2C as well as SPI connectivety options and depending on your module it may offer either or both of them.
 As all modules I have at hand offer I2C and this has some cost saving advantages over SPI (i.e. less wiring, multiple sensors on I2C bus) this examples is using I2C.
@@ -32,7 +32,7 @@ but essentially they all have the necessary power supply V(in) & GND and the I2C
 
 >**Note:**
 >In case you want to use a Bosch BM**P**280 instead of the BM**E**280, the wiring is identical, you just need to change the
->`SENSOR_TYPE` variable in [*CMakeLists.txt* afterLine 8](./CMakeLists.txt#L7).
+>`SENSOR_TYPE` variable in [*CMakeLists.txt* after Line 8](./CMakeLists.txt#L7) (i.e. comment/uncomment the lines accordingly).
 
 
 ## Seting up Azure IoT Central

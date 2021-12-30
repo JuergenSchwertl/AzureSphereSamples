@@ -123,11 +123,11 @@ char * AzureIoT_GetStringFromPayload(const char* cstrPayload, size_t nPayloadSiz
 
 /**
  * @brief creates an IoT Hub message, sets content-type and encoding properties and assigns a message Id.
- *        call @see AzureIoT_SendIoTHubMessage on how to send the message
+ * see ##AzureIoT_SendIoTHubMessage on how to send the message
  * 
  * @param cstrMessage           Message payload text (zero terminated)
  * @param cstrContentType       URL-encoded content type. E.g. "application/json" as "application%2Fjson" 
- * @param cstrContentEncoding   Content encoding header. @link ContentType
+ * @param cstrContentEncoding   Content encoding header. #ContentType 
  * @return IOTHUB_MESSAGE_HANDLE 
  */
 IOTHUB_MESSAGE_HANDLE AzureIoT_CreateIoTHubMessage(const char* cstrMessage, const char *cstrContentType, const char * cstrContentEncoding);
@@ -135,7 +135,7 @@ IOTHUB_MESSAGE_HANDLE AzureIoT_CreateIoTHubMessage(const char* cstrMessage, cons
 /**
  * @brief Enqueues the IoT Hub message (will be sent to IoT Hub on next DoWork event)
  * The message will be assigned a running number as message id string that needs to
- * be confirmed by IoT Hub @see sendMessageConfirmationCallback()
+ * be confirmed by IoT Hub. See sendMessageConfirmationCallback()
  * 
  * @param hMessage Message handle
  */
