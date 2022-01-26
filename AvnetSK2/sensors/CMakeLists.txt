@@ -8,7 +8,7 @@ message("Shared library: ${PROJECT_NAME}")
 # This project builds a static library 
 ADD_LIBRARY(${PROJECT_NAME} STATIC 
     ./lsm6dso/lsm6dso_reg.c 
-    .lps22hh/lps22hh_reg.c  
+    ./lps22hh/lps22hh_reg.c  
     lsm6dso.c
     lps22hh.c
     )

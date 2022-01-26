@@ -10,9 +10,8 @@ azsphere_configure_tools(TOOLS_REVISION "21.10")
 azsphere_configure_api(TARGET_API_SET "11")
 
 # Add the ST Micro LSM6DSO 3D Gyro and Accelerometer sensor lib
-ADD_SUBDIRECTORY(LSM6DSO)
 # Add the ST MicroLPS22HH Temp/Pressure sensor lib (connected to LSM6DSO)
-ADD_SUBDIRECTORY(LPS22HH)
+ADD_SUBDIRECTORY(sensors)
 
 # Create executable
 ADD_EXECUTABLE(${PROJECT_NAME} 
