@@ -1,0 +1,6 @@
+[submodule "AvnetSK2/sensors/lsm6dso"]
+	path = AvnetSK2/sensors/lsm6dso
+	url = https://github.com/STMicroelectronics/lsm6dso.git
+[submodule "AvnetSK2/sensors/lps22hh"]
+	path = AvnetSK2/sensors/lps22hh
+	url = https://github.com/STMicroelectronics/lps22hh.git
