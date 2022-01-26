@@ -1,23 +1,11 @@
-/*
+/**
  ******************************************************************************
- * @file    orientation_6d_4d.c
- * @author  Sensors Software Solution Team
- * @brief   This file show the simplest way to detect orientation 6D/4D event
- *      from sensor.
- *
- ******************************************************************************
- * @attention
- *
- * <h2><center>&copy; Copyright (c) 2020 STMicroelectronics.
- * All rights reserved.</center></h2>
- *
- * This software component is licensed by ST under BSD 3-Clause license,
- * the "License"; You may not use this file except in compliance with the
- * License. You may obtain a copy of the License at:
- *                        opensource.org/licenses/BSD-3-Clause
- *
- ******************************************************************************
- */
+* @file    lsm6dso.c
+* @author  jschwert@microsoft.com
+* @brief   This file show the simplest way to detect orientation 6D/4D event
+*      from sensor.
+*
+*/
 
 #define VERBOSE 1
 
@@ -27,7 +15,7 @@
 #include <time.h>
 #include <memory.h>
 
-#include "lsm6dso_reg.h"
+#include "lsm6dso/lsm6dso_reg.h"
 #include "Inc/lsm6dso.h" 
 
 #include <applibs/log.h>
@@ -156,11 +144,11 @@ bool LSM6DSO_GetTemperature(float *pfTemperature)
   return false;
 }
 
-/// <summary>
-///     Reads the acceleration vector from the LSM6DSO
-/// </summary>
-/// <param name="pvecAcceleration">pointer to 3d acceleration vector</param>
-/// <returns>true if acceleration was read successfully</returns>
+/**
+* @brief Reads the acceleration vector from the LSM6DSO
+* @param pvecAcceleration pointer to 3d acceleration vector
+* @returns true if acceleration was read successfully
+*/
 bool LSM6DSO_GetAcceleration(vector3d_t *pvecAcceleration)
 {
   uint8_t isDataAvailable;
@@ -191,7 +179,7 @@ bool LSM6DSO_GetAcceleration(vector3d_t *pvecAcceleration)
   return false;
 }
 
-/*
+/**
  * @brief  Write generic device register (platform dependent)
  *
  * @param  handle    customizable argument. In this examples is used in
@@ -233,7 +221,7 @@ static int32_t platform_write(void *handle, uint8_t reg,
   return (rslt != -1) ? 0 : -1;
 }
 
-/*
+/**
  * @brief  Read generic device register (platform dependent)
  *
  * @param  handle    customizable argument. In this examples is used in
@@ -268,7 +256,7 @@ static int32_t platform_read(void *handle, uint8_t reg, uint8_t *bufp,
 
 
 
-/*
+/**
  * @brief  platform specific delay (platform dependent)
  *
  * @param  ms        delay in ms
