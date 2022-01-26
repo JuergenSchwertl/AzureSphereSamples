@@ -29,7 +29,7 @@ bool bTraceOn = true;
 /// @brief IoT Hub Client Handle is kept in azure_iot.c
 extern IOTHUB_DEVICE_CLIENT_LL_HANDLE hIoTHubClient;
 
-/// @brief    List of low level IoT Hub callbacks is kept in azure_iot.c
+/// @brief List of low level IoT Hub callbacks is kept in azure_iot.c
 extern iothub_LL_callbacks_t lstIotHubCallbacks;
 
 
@@ -38,34 +38,34 @@ void dpsCleanup( void );
 bool hubInitialize( void );
 void  hubCleanup( void );
 
-/// DPS device registration status
+/// @brief  DPS device registration status
 static AZURE_IOT_DPS_STATUS dpsRegisterStatus = AZURE_IOT_DPS_NOT_STARTED;
 
-/// IoT Hub connection status
+/// @brief  IoT Hub connection status
 static AZURE_IOT_HUB_STATUS hubConnectionStatus = AZURE_IOT_HUB_DISCONNECTED;
-/// handlo to provisioning client
+/// @brief  handle to provisioning client
 PROV_DEVICE_LL_HANDLE hProvDevice = NULL;
 
-/// @brief    Used to set the keepalive period over MQTT to 20 seconds
+/// @brief Set the keepalive period over MQTT to 20 seconds
 static int iKeepalivePeriodSeconds = 20;
 
 
-/// max size of PnP Model Id payload "{'modelid':'dtmi:...]'}" 
+/// @brief  max size of PnP Model Id payload "{'modelid':'dtmi:...]'}" 
 #define MAX_MODEL_ID_BUFFER_SIZE (512)
 
-/// Json format for PnP Model Id payload on device registration
+/// @brief  Json format for PnP Model Id payload on device registration
 static const char cstrModelIdJsonFmt[] = "{\"modelId\":\"%s\"}";
 
-/// Azure PnP Model Id is typically hardcoded in main. Just store reference here.
+/// @brief  Azure PnP Model Id is typically hardcoded in main. Just store reference here.
 static const char *cstrPnPModelId = NULL;
 
-/// Globally unique DPS Uri "global.azure-devices-provisioning.net"
+/// @brief  Globally unique DPS Uri "global.azure-devices-provisioning.net"
 static const char cstrDpsUri[] = "global.azure-devices-provisioning.net";
 
-/// DPS device provisioning error message with one %s parameter
-static const char cstrErrorDpsProvisioningFmt[] = "[DPS] ERROR: device provisioning failed with %s "; 
+/// @brief  DPS device provisioning error message with one %s parameter
+static const char cstrErrorDpsProvisioningFmt[] = MODULE "ERROR: device provisioning failed with %s "; 
 /// IoT Hub options error  message with two %s parameters
-static const char cstrErrorIoTHubSetOptionFmt[] = MODULE "ERROR setting IoT Hub option '%s' failed with %s "; 
+static const char cstrErrorIoTHubSetOptionFmt[] = MODULE "ERROR: setting IoT Hub option '%s' failed with %s "; 
 
 /// DPS Scope ID. Filled on app start via command line parameter or static string so keep ptr only.
 static const char * cstrScopeId = NULL; 
@@ -136,9 +136,6 @@ static void periodicLogVarArgs(time_t *lastInvokedTime, time_t periodInSeconds, 
         *lastInvokedTime = ts.tv_sec;
     }
 }
-
-
-
 
 
 /**
@@ -235,7 +232,7 @@ static void dpsRegisterDeviceStatusCallback(PROV_DEVICE_REG_STATUS reg_status, v
 /**
  * @brief  Callback that gets invoked on device registration for provisioning. On successful
  *  DPS registration it sets IoT Hub Uri and immediately returns after setting _COMPLETED state.
- *  You SHOULD NOT de-initialize DPS client since this callback is called is invoked by the DPS client.
+ *  You SHOULD NOT de-initialize DPS client here since this callback is invoked by the DPS client.
  *  See dpsPollingHandler() for DPS client de-initialisation and invocation for IoT Hub connection.    
  * 
  * @param registerResult PROV_DEVICE_RESULT of device registration
@@ -250,7 +247,7 @@ static void dpsRegisterDeviceCallback(PROV_DEVICE_RESULT registerResult, const c
         if( MAX_HUB_URI_LENGTH > strnlen(iothub_uri, MAX_HUB_URI_LENGTH) )
         {
             strcpy( strIotHubUri, iothub_uri );
-            Log_Debug(MODULE "INFO: DPS  register device succeeded. IoT Hub is %s\n", iothub_uri);
+            Log_Debug(MODULE "INFO: DPS register device succeeded. IoT Hub is %s\n", iothub_uri);
             dpsRegisterStatus = AZURE_IOT_DPS_COMPLETED;
             return;
         } else {
@@ -258,7 +255,7 @@ static void dpsRegisterDeviceCallback(PROV_DEVICE_RESULT registerResult, const c
         }
     }
     dpsRegisterStatus = AZURE_IOT_DPS_FAILED;
-    Log_Debug(MODULE "ERROR: DPS  register device failed with %s\n", PROV_DEVICE_RESULTStrings(registerResult));
+    Log_Debug(MODULE "ERROR: DPS register device failed with %s\n", PROV_DEVICE_RESULTStrings(registerResult));
 }
 
 /**
