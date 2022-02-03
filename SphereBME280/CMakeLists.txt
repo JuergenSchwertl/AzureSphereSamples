@@ -24,7 +24,8 @@ set( SOURCE_FILES
     azure_iot_json.c 
     azure_iot_pnp.c 
     azure_iot_central.c
-    rgbled_utility.c main.c)
+    rgbled_utility.c 
+    main.c)
 
 # Create executable
 ADD_EXECUTABLE(${PROJECT_NAME} ${SOURCE_FILES} )

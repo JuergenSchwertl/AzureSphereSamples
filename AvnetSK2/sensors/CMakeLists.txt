@@ -11,6 +11,7 @@ ADD_LIBRARY(${PROJECT_NAME} STATIC
     ./lps22hh/lps22hh_reg.c  
     lsm6dso.c
     lps22hh.c
+    sensors.c
     )
 
 # this project contains a public header file, so the directory needs to be added to the list of include directories of parent projects

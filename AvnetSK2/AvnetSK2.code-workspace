@@ -4,7 +4,16 @@
 			"path": "."
 		}
 	],
-	"settings": {},
+    "settings": {
+        "files.associations": {
+            "avnet_mt3620_sk_rev2.h": "c",
+            "lsm6dso_internal.h": "c",
+            "log.h": "c",
+            "stdlib.h": "c",
+            "stdio.h": "c",
+            "stddef.h": "c"
+        }
+    },
 	"launch" : {
         "configurations": [{
             "name": "Launch for Azure Sphere Applications (gdb)",
