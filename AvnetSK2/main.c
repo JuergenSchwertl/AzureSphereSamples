@@ -138,8 +138,8 @@ static const char cstrBlinkRatePropertyPath[] = "rgbLed.blinkRateProperty";
 static const char cstrSysVersionProperty[] = "$version";
 //static const char cstrStatusComplete[] = "complete";
 
-/// @brief Azure IoT PnP component "dtmi:azsphere:SphereTTT:lps22hh;1"  
-static const char cstrLPS22HHComponent[] = "lps22hh";
+/// @brief Azure IoT PnP component "dtmi:azsphere:SphereTTT:EnvData;1"  
+static const char cstrEnvDataComponent[] = "EnvData";
 
 static const char cstrSuccessProperty[] = "success";
 static const char cstrMessageProperty[] = "message";
@@ -402,7 +402,13 @@ static void SendTelemetryMessage(void)
         JSON_Object * jsonRootObject = json_value_get_object( jsonRootValue );
         envdata_t dataset;
 
-        Sensors_GetEnvironmentData( &dataset );
+        if( Sensors_GetEnvironmentData( &dataset ) ){
+        Log_Debug( "[Send] Temperature: %.2f °C, Pressure: %.2f\n hPa", dataset.fTemperature, dataset.fPressure_hPa);
+
+            json_object_set_number(jsonRootObject, cstrTemperatureProperty, dataset.fTemperature);
+            json_object_set_number(jsonRootObject, cstrPressureProperty, dataset.fPressure_hPa);
+            AzureIoT_PnP_SendJsonMessage(jsonRootValue, cstrEnvDataComponent);
+        }
 
 #ifdef BME280		
 		bme280_data_t bmeData;
@@ -414,7 +420,6 @@ static void SendTelemetryMessage(void)
             json_object_set_number(jsonRootObject, cstrPressureProperty, bmeData.pressure);
             json_object_set_number(jsonRootObject, cstrHumidityProperty, bmeData.humidity);
             
-            AzureIoT_PnP_SendJsonMessage(jsonRootValue, cstrBME280Component);
 		}
 #endif
 

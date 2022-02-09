@@ -32,7 +32,7 @@ typedef struct _envdata {
 typedef struct _vector {
     float x;
     float y;
-    float z
+    float z;
 } vector_t;
 
 /**

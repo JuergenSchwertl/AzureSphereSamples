@@ -45,8 +45,8 @@ static stmdev_ctx_t lps22hh_ctx =
 
 static bool isLps22hhReady = false;
 
-static float fTemperatureLPS22HH_degC;
-static float fPressure_hPa;
+float fTemperatureLPS22HH_degC;
+float fPressure_hPa;
 
 
 /* Extern variables ----------------------------------------------------------*/

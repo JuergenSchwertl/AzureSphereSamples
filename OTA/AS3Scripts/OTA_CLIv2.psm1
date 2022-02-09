@@ -755,7 +755,7 @@ function Add-AS3Image(
 {
     Write-Verbose "[Add-AS3Image] Uploading file $FilePath..."
 
-	$result = & azsphere img add -f "$FilePath" --force
+	$result = & azsphere image add --image "$FilePath" --force
     if( $LASTEXITCODE -eq 0 )
     {
         [String] $s = $result[ $result.Length-2 ]

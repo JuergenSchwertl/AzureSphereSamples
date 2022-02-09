@@ -37,18 +37,19 @@ bool  isLsm6dsoReady = false;
 //static uint8_t whoamI, rst;
 //static uint8_t tx_buffer[1000];
 
-static float angular_rate_mdps[3];
-static float acceleration_mg[3];
-static float fTemperatureLSM6DSO_degC;
+float angular_rate_mdps[3];
+float acceleration_mg[3];
+float fTemperatureLSM6DSO_degC;
+
+stmdev_ctx_t lsm6dso_ctx = { 
+    .write_reg = platform_write,
+    .read_reg = platform_read 
+};
 
 /* Extern variables ----------------------------------------------------------*/
 
 /* Private functions ---------------------------------------------------------*/
 
-static stmdev_ctx_t lsm6dso_ctx = { 
-    .write_reg = platform_write,
-    .read_reg = platform_read 
-};
 
 
 
@@ -125,7 +126,7 @@ bool lsm6dso_read_dataset( void )
   
   if( !isLsm6dsoReady )
   {
-    if( !lsm6dso_init( lsm6dso_ctx.handle ) )
+    if( !lsm6dso_init( (int) lsm6dso_ctx.handle ) )
     {
       return false;
     }
@@ -177,7 +178,7 @@ bool lsm6dso_read_dataset( void )
 	} 
 
   lps22hh_read_dataset();
-	
+	return true;
 }
 
 /**

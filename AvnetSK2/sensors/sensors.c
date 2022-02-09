@@ -4,6 +4,11 @@
 #include "lsm6dso_internal.h"
 #include "lps22hh_internal.h"
 
+extern float angular_rate_mdps[3];
+extern float acceleration_mg[3];
+extern float fTemperatureLSM6DSO_degC;
+extern float fTemperatureLPS22HH_degC;
+extern float fPressure_hPa;
 
 /* Public Functions  ---------------------------------------------------------*/
 /**
@@ -24,6 +29,8 @@ bool Sensors_Init(int fd)
 bool Sensors_GetEnvironmentData(envdata_t *pEnvData)
 {
   lsm6dso_read_dataset();
+  pEnvData->fPressure_hPa = fPressure_hPa;
+  pEnvData->fTemperature = ((fTemperatureLSM6DSO_degC - 11.0f) + (fTemperatureLPS22HH_degC - 9.5f)) / 2.0f;
   return true;
 }
 
