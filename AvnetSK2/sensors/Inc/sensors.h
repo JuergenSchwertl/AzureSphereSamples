@@ -18,6 +18,7 @@
 
 #include <stdbool.h>
 
+
 typedef struct _vector3d {
     float x;
     float y;
@@ -35,6 +36,13 @@ typedef struct _vector {
     float z;
 } vector_t;
 
+typedef struct _sensor_data
+{
+    envdata_t envData;
+    vector3d_t acceleration;
+    vector3d_t gyro;
+} sensor_data_t;
+
 /**
  * @brief Initializes connected sensors
  * 
@@ -43,6 +51,15 @@ typedef struct _vector {
  * @return false 
  */
 bool Sensors_Init(int fd);
+
+/**
+ * @brief Reads the temperature from the LSM6DSO and temperature and pressure from LPS22HH
+ * 
+ * @param pSensorData complete data set with temperature and pressure readings
+ * @return true 
+ * @return false 
+ */
+bool Sensors_GetSensorData(sensor_data_t *pSensorData);
 
 /**
  * @brief Reads the temperature from the LSM6DSO and temperature and pressure from LPS22HH
@@ -61,5 +78,15 @@ bool Sensors_GetEnvironmentData(envdata_t *pEnvData);
  * @return false 
  */
 bool Sensors_GetAcceleration(vector3d_t *pvecAcceleration);
+
+
+/**
+ * @brief Reads the gyro vector from the LSM6DSO
+ * 
+ * @param pvecGyro pointer to 3d gyro vector
+ * @return true 
+ * @return false 
+ */
+bool Sensors_GetGyro(vector3d_t *pvecGyro);
 
 #endif //AVNET_SENSORS_H

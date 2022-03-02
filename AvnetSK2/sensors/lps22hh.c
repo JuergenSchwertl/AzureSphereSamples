@@ -71,7 +71,7 @@ bool lps22hh_init( void )
   /* Check if LPS22HH connected to Sensor Hub. */
   lps22hh_device_id_get(&lps22hh_ctx, &whoamI);
   if ( whoamI != LPS22HH_ID ){
-    Log_Debug( _MODULE_ "ERROR: lps22hh not found");
+    Log_Debug( _MODULE_ "ERROR: lps22hh not found.\n");
     return false;
   }
 
@@ -128,8 +128,8 @@ void lps22hh_read_dataset( void )
     lps22hh_temperature_raw_get(&lps22hh_ctx, &data_raw_temperature.i16bit);
     fTemperatureLPS22HH_degC = lps22hh_from_lsb_to_celsius(data_raw_temperature.i16bit);
 
-    Log_Debug( _MODULE_ "Pressure     [hPa] : %.2f\r\n", fPressure_hPa);
-    Log_Debug( _MODULE_ "Temperature  [degC]: %.2f\r\n", fTemperatureLPS22HH_degC);
+    Log_Debug( _MODULE_ "Pressure     [hPa] : %.2f\n", fPressure_hPa);
+    Log_Debug( _MODULE_ "Temperature  [degC]: %.2f\n", fTemperatureLPS22HH_degC);
   }
 }
 

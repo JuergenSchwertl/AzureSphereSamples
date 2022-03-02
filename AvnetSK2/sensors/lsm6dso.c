@@ -20,6 +20,7 @@
 #include "lps22hh/lps22hh_reg.h"
 #include "lsm6dso_internal.h"
 #include "lps22hh_internal.h"
+#include "sensors.h"
 
 #include <applibs/log.h>
 #include <applibs/i2c.h>
@@ -97,7 +98,7 @@ bool lsm6dso_init(int fd)
 	lsm6dso_gy_data_rate_set(&lsm6dso_ctx, LSM6DSO_GY_ODR_12Hz5);
 
 	 // Set full scale
-	lsm6dso_xl_full_scale_set(&lsm6dso_ctx, LSM6DSO_2g);
+	lsm6dso_xl_full_scale_set(&lsm6dso_ctx, LSM6DSO_4g);
 	lsm6dso_gy_full_scale_set(&lsm6dso_ctx, LSM6DSO_2000dps);
 
 	 // Configure filtering chain(No aux interface)
@@ -109,6 +110,13 @@ bool lsm6dso_init(int fd)
   // Enable pull up on master I2C interface.
   lsm6dso_sh_pin_mode_set(&lsm6dso_ctx, LSM6DSO_INTERNAL_PULL_UP);
   isLsm6dsoReady = true;
+  return true;
+}
+
+
+bool lsm6dso_read_acceleration( vector_3d_t pAcceleration )
+{
+
   return true;
 }
 
@@ -132,35 +140,30 @@ bool lsm6dso_read_dataset( void )
     }
   }
 
-  //Read output only if new xl value is available
-  lsm6dso_xl_flag_data_ready_get(&lsm6dso_ctx, &reg);
-  if( reg ){
-    memset(data_raw_acceleration.u8bit, 0x00, 3 * sizeof(int16_t));
-    lsm6dso_fifo_out_raw_get(&lsm6dso_ctx, data_raw_acceleration.u8bit);
-    acceleration_mg[0] = lsm6dso_from_fs2_to_mg(
+  memset(data_raw_acceleration.u8bit, 0x00, 3 * sizeof(int16_t));
+  if( lsm6dso_acceleration_raw_get(&lsm6dso_ctx, data_raw_acceleration.u8bit) == LSM6DSO_OK ){
+    acceleration_mg[0] = lsm6dso_from_fs4_to_mg(
                             data_raw_acceleration.i16bit[0]);
-    acceleration_mg[1] = lsm6dso_from_fs2_to_mg(
+    acceleration_mg[1] = lsm6dso_from_fs4_to_mg(
                             data_raw_acceleration.i16bit[1]);
-    acceleration_mg[2] = lsm6dso_from_fs2_to_mg(
+    acceleration_mg[2] = lsm6dso_from_fs4_to_mg(
                             data_raw_acceleration.i16bit[2]);
-    Log_Debug("[LSM6DSO]: Acceleration [mg]:%4.2f\t%4.2f\t%4.2f\r\n",
+    Log_Debug("[LSM6DSO]: Acceleration [mg]  :%4.2f\t%4.2f\t%4.2f\r\n",
               acceleration_mg[0],
               acceleration_mg[1],
               acceleration_mg[2] );
   }
 
-  lsm6dso_gy_flag_data_ready_get(&lsm6dso_ctx, &reg);
-	if (reg)
+  memset(data_raw_angular_rate.u8bit, 0x00, 3 * sizeof(int16_t));
+	if ( lsm6dso_angular_rate_raw_get(&lsm6dso_ctx, data_raw_angular_rate.u8bit) == LSM6DSO_OK)
 	{
-    memset(data_raw_angular_rate.u8bit, 0x00, 3 * sizeof(int16_t));
-    lsm6dso_fifo_out_raw_get(&lsm6dso_ctx, data_raw_angular_rate.u8bit);
     angular_rate_mdps[0] = lsm6dso_from_fs2000_to_mdps(
                               data_raw_angular_rate.i16bit[0]);
     angular_rate_mdps[1] = lsm6dso_from_fs2000_to_mdps(
                               data_raw_angular_rate.i16bit[1]);
     angular_rate_mdps[2] = lsm6dso_from_fs2000_to_mdps(
                               data_raw_angular_rate.i16bit[2]);
-    Log_Debug("[LSM6DSO]:Angular rate [mdps]:%4.2f\t%4.2f\t%4.2f\r\n",
+    Log_Debug("[LSM6DSO]: Angular rate [mdps]:%4.2f\t%4.2f\t%4.2f\r\n",
               angular_rate_mdps[0],
               angular_rate_mdps[1],
               angular_rate_mdps[2]);

@@ -25,6 +25,12 @@
 extern "C" {
 #endif
 
+typedef enum
+{
+  LSM6DSO_OK = 0,
+  LSM6DSO_ERROR =-1
+} _lsm6dso_status_t;
+
 /**
  * @brief check if lsm6dso is connected and operable
  * 

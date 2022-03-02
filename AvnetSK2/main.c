@@ -67,7 +67,15 @@
 #include <applibs/powermanagement.h>
 #include <applibs/applications.h>
 
+// include the appropriate AVNET Starter Kit revision header file. 
+// The #defines have the same names on both but content differes on some (i.e. GPIO port settings for named LEDs)
+#ifdef AVNETSK_REV1
 #include <hw/avnet_mt3620_sk.h>
+#endif
+#ifdef AVNETSK_REV2
+#include <hw/avnet_mt3620_sk_rev2.h>
+#endif
+
 
 #include <sensors.h>
 
@@ -114,12 +122,15 @@ static struct timespec tsResetDelay = { 5, 0 };
 
 static const char cstrErrorOutOfMemory[] = "ERROR: Out of memory.\n";
 
+// Set parson library json float serialisation format to 2 digits by default
+static const char cstrJsonFloatFormat[] = "%.2f";
+
 // telemetry event messages
 static const char cstrMsgPressed[] = "pressed";
 static const char cstrMsgApplicationStarted[] = "Application started";
 
 /// @brief The Azure IoT PnP Model Id and component property
-static const char cstrPnPModelId[] = "dtmi:azsphere:SphereTTT:AVNETSK2;1"; 
+static const char cstrPnPModelId[] = "dtmi:azsphere:SphereTTT:AVNETSK;1"; 
 
 /// @brief Azure IoT PnP component "dtmi:azsphere:SphereTTT:buttons;1"  
 static const char cstrButtonsComponent[] = "buttons";
@@ -138,8 +149,8 @@ static const char cstrBlinkRatePropertyPath[] = "rgbLed.blinkRateProperty";
 static const char cstrSysVersionProperty[] = "$version";
 //static const char cstrStatusComplete[] = "complete";
 
-/// @brief Azure IoT PnP component "dtmi:azsphere:SphereTTT:EnvData;1"  
-static const char cstrEnvDataComponent[] = "EnvData";
+/// @brief Azure IoT PnP component "dtmi:azsphere:SphereTTT:lps22hh;1"  
+static const char cstrLPS22HHComponent[] = "lps22hh";
 
 static const char cstrSuccessProperty[] = "success";
 static const char cstrMessageProperty[] = "message";
@@ -150,10 +161,10 @@ static const char cstrPressureProperty[] = "pressure";
 static const char cstrLSM6DSOComponent[] = "lsm6dso";
 
 static const char cstrGyroObject[] = "gyro";
+static const char cstrAccelerationObject[] = "acceleration";
 static const char cstrXProperty[] = "x";
 static const char cstrYProperty[] = "y";
 static const char cstrZProperty[] = "z";
-static const char cstrAccelerationObject[] = "accel";
 
 /// @brief Azure IoT PnP component "dtmi:azure:DeviceManagement:DeviceInformation;1"  
 static const char cstrDevInfoComponent[] = "deviceInformation";
@@ -167,9 +178,9 @@ static const char cstrDevInfoProcMfgrProperty[] = "processorManufacturer";
 static const char cstrDevInfoStorageProperty[] = "totalStorage";
 static const char cstrDevInfoMemoryProperty[] = "totalMemory";
 
-static const char cstrDevInfoManufacturerValue[] = "Seeed";
+static const char cstrDevInfoManufacturerValue[] = "AVNET";
 static const char cstrDevInfoModelValue[] = "AVNET Starter Kit Rev1/2";
-static const char cstrDevInfoSWVersionValue[] = "AVNETSK2 v22/01/26.1800";
+static const char cstrDevInfoSWVersionValue[] = "AVNETSK v22/03/01.1800";
 static const char cstrDevInfoOSNameValue[] = "Azure Sphere IoT OS";
 static const char cstrDevInfoProcArchValue[] = "ARM Core A7,M4";
 static const char cstrDevInfoProcMfgrValue[] = "MediaTek";
@@ -396,19 +407,50 @@ static void SendEventMessage(const char * cstrComponent, const char * cstrEvent,
 /// 
 static void SendTelemetryMessage(void)
 {
-    if (connectedToIoTHub) {
-        // initialize root object
-        JSON_Value * jsonRootValue = json_value_init_object();
-        JSON_Object * jsonRootObject = json_value_get_object( jsonRootValue );
-        envdata_t dataset;
+    JSON_Value * jsonRootValue;
+    JSON_Object * jsonRootObject;
 
+    if (connectedToIoTHub) {
+        envdata_t dataset;
         if( Sensors_GetEnvironmentData( &dataset ) ){
-        Log_Debug( "[Send] Temperature: %.2f °C, Pressure: %.2f\n hPa", dataset.fTemperature, dataset.fPressure_hPa);
+            jsonRootValue = json_value_init_object();
+            jsonRootObject = json_value_get_object( jsonRootValue );
+
+            Log_Debug( "[Send] Temperature: %.2f °C, Pressure: %.2f\n hPa", dataset.fTemperature, dataset.fPressure_hPa);
 
             json_object_set_number(jsonRootObject, cstrTemperatureProperty, dataset.fTemperature);
             json_object_set_number(jsonRootObject, cstrPressureProperty, dataset.fPressure_hPa);
-            AzureIoT_PnP_SendJsonMessage(jsonRootValue, cstrEnvDataComponent);
+            AzureIoT_PnP_SendJsonMessage(jsonRootValue, cstrLPS22HHComponent);
+
+            json_value_free( jsonRootValue );
         }
+
+        vector3d_t vector;
+        if( Sensors_GetAcceleration( &vector ) )
+        {
+            jsonRootValue = json_value_init_object();
+            jsonRootObject = json_value_get_object( jsonRootValue );
+
+            JSON_Value *jsonObjValue = json_value_init_object();
+            JSON_Object *jsonObj = json_value_get_object( jsonObjValue );
+
+
+            json_object_set_number(jsonObj, cstrXProperty, vector.x);
+            json_object_set_number(jsonObj, cstrYProperty, vector.y);
+            json_object_set_number(jsonObj, cstrZProperty, vector.z);
+
+            json_object_set_value( jsonRootObject, cstrAccelerationObject, jsonObjValue );
+
+            AzureIoT_PnP_SendJsonMessage(jsonRootValue, cstrLSM6DSOComponent);
+
+
+            json_value_free( jsonRootValue );
+
+        }
+
+
+        jsonRootValue = json_value_init_object();
+        jsonRootObject = json_value_get_object( jsonRootValue );
 
 #ifdef BME280		
 		bme280_data_t bmeData;
@@ -830,6 +872,9 @@ int InitPeripheralsAndHandlers()
     memset(&action, 0, sizeof(struct sigaction));
     action.sa_handler = TerminationHandler;
     sigaction(SIGTERM, &action, NULL);
+
+    // Set parson library json float serialisation format
+    json_set_float_serialization_format( cstrJsonFloatFormat );
 
     // Open button A
     Log_Debug("INFO: Opening AVNET_MT3620_SK_USER_BUTTON_A.\n");
