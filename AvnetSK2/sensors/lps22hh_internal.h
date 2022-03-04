@@ -16,32 +16,13 @@
 #define __NEED_uint16_t
 #define __NEED_int32_t
 #define __NEED_uint32_t
-
-
-#include <stdbool.h>
 #include <bits/alltypes.h>
+#include <stdbool.h>
+#include "Inc/sensors.h"
 
-/* useful union to manage IMU data */
-typedef union {
-  int16_t i16bit[3];
-  uint8_t u8bit[6];
-} axis3bit16_t;
-
-typedef union{
-  int16_t i16bit;
-  uint8_t u8bit[2];
-} axis1bit16_t;
-
-typedef union{
-  int32_t i32bit[3];
-  uint8_t u8bit[12];
-} axis3bit32_t;
-
-typedef union{
-  int32_t i32bit;
-  uint32_t u32bit;
-  uint8_t u8bit[4];
-} axis1bit32_t;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* useful union to manage LPS22HH data */
 typedef union {
@@ -53,7 +34,7 @@ typedef union {
 } p_and_t_byte_t;
 
 /**
- * @brief Initialise lps22hh onnected to lsm6dso
+ * @brief Initialise lps22hh connected to lsm6dso
  * 
  * @return true 
  * @return false 
@@ -62,9 +43,13 @@ bool lps22hh_init( void );
 
 /**
  * @brief Read temperature and pressure from lps22hh connected to downstream lsm6dso i2c interface.
- * 
- * @return void 
+ * @param pEnvData  address of envdata_t structure for environmental sensor data
+ * @return true on success
+ * @return false on error
  */
-void lps22hh_read_dataset( void );
+bool lps22hh_read_dataset( envdata_t *pEnvData );
 
+#ifdef __cplusplus
+}
+#endif
 #endif // LPS22HH_INTERNAL_H

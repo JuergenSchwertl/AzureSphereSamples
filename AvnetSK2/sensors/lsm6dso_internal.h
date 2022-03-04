@@ -11,15 +11,16 @@
 #ifndef LSM6DSO_INTERNAL_H
 #define LSM6DSO_INTERNAL_H
 
-#include <stdbool.h>
-
 #define __NEED_uint8_t
 #define __NEED_int16_t
 #define __NEED_uint16_t
 #define __NEED_int32_t
 #define __NEED_uint32_t
-
 #include <bits/alltypes.h>
+
+#include <stdbool.h>
+
+#include "Inc/sensors.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,6 +47,34 @@ bool lsm6dso_init(int fd);
  * @return true if command read lsm6dso dataset
  */
 bool lsm6dso_read_dataset( void );
+
+/**
+ * @brief reads acceleration vector from lsm6dso
+ * 
+ * @param pAcceleration address of 3d vector structure for x/y/z acceleration/orientation
+ * @return true on success
+ * @return false on error
+ */
+bool lsm6dso_read_acceleration( vector3d_t * pAcceleration );
+
+/**
+ * @brief reads gyro vector from lsm6dso
+ * 
+ * @param pGyro address of 3d vector structure for x/y/z angular movement indicator
+ * @return true on success
+ * @return false on error
+ */
+bool lsm6dso_read_gyro( vector3d_t * pGyro );
+
+/**
+ * @brief reads lsm6dso chip temperature
+ * 
+ * @param pTemp address of temperature variable [out]
+ * @return true on success
+ * @return false on error
+ */
+bool lsm6dso_read_chiptemp( float * pTemp );
+
 
 /**
  * @brief  Write generic device register (platform dependent)
@@ -85,10 +114,6 @@ int32_t platform_read(void *handle, uint8_t reg, uint8_t *bufp,
  */
 void platform_delay(uint32_t ms);
 
-#ifdef __cplusplus
-}
-#endif
-
 /**
  * @brief  Read lps22hh device register (used by configuration functions)
  *
@@ -117,4 +142,8 @@ int32_t lsm6dso_read_lps22hh_cx(void *ctx, uint8_t reg,
 int32_t lsm6dso_write_lps22hh_cx(void *ctx, uint8_t reg,
                                  const uint8_t *data, uint16_t len);
 
+
+#ifdef __cplusplus
+}
+#endif
 #endif /// LSM6DSO_INTERNAL_H

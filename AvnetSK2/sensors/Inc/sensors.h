@@ -1,9 +1,4 @@
 #pragma once
-#ifndef AVNET_SENSORS_H
-#define AVNET_SENSORS_H
-
-#include "stdbool.h"
-
 /**
  * @file sensors.h
  * @author Juergen Schwertl (jschwert@microsoft.com)
@@ -15,33 +10,14 @@
  * 
  */
 
+#ifndef AVNET_SENSORS_H
+#define AVNET_SENSORS_H
 
 #include <stdbool.h>
 
-
-typedef struct _vector3d {
-    float x;
-    float y;
-    float z;
-} vector3d_t;
-
-typedef struct _envdata {
-    float fTemperature;
-    float fPressure_hPa;
-} envdata_t;
-
-typedef struct _vector {
-    float x;
-    float y;
-    float z;
-} vector_t;
-
-typedef struct _sensor_data
-{
-    envdata_t envData;
-    vector3d_t acceleration;
-    vector3d_t gyro;
-} sensor_data_t;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * @brief Initializes connected sensors
@@ -51,6 +27,25 @@ typedef struct _sensor_data
  * @return false 
  */
 bool Sensors_Init(int fd);
+
+typedef struct _envdata_s {
+    float fTemperature;
+    float fPressure_hPa;
+} envdata_t;
+
+typedef struct _vector3d_s {
+    float x;
+    float y;
+    float z;
+} vector3d_t;
+
+typedef struct _sensor_data_s
+{
+    envdata_t envData;
+    vector3d_t acceleration;
+    vector3d_t gyro;
+} sensor_data_t;
+
 
 /**
  * @brief Reads the temperature from the LSM6DSO and temperature and pressure from LPS22HH
@@ -89,4 +84,7 @@ bool Sensors_GetAcceleration(vector3d_t *pvecAcceleration);
  */
 bool Sensors_GetGyro(vector3d_t *pvecGyro);
 
+#ifdef __cplusplus
+}
+#endif
 #endif //AVNET_SENSORS_H

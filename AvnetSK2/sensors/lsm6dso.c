@@ -114,74 +114,61 @@ bool lsm6dso_init(int fd)
 }
 
 
-bool lsm6dso_read_acceleration( vector_3d_t pAcceleration )
-{
-
-  return true;
-}
-
-/**
- * @brief reads the complete lsm6dso dataset with accel, gyro & (chip) temp
- * 
- */
-bool lsm6dso_read_dataset( void )
-{
-  uint8_t reg;
-  //p_and_t_byte_t data_raw_press_temp;
-  axis3bit16_t data_raw_acceleration;
-  axis3bit16_t data_raw_angular_rate;
-  axis1bit16_t data_raw_temperature;
-  
-  if( !isLsm6dsoReady )
+bool lsm6dso_read_acceleration( vector3d_t * pAcceleration )
+{ 
+  if( pAcceleration != NULL)
   {
-    if( !lsm6dso_init( (int) lsm6dso_ctx.handle ) )
-    {
-      return false;
+    int16_t data_raw_acceleration[3];
+    memset( &data_raw_acceleration, 0x00, sizeof(data_raw_acceleration));
+    if( lsm6dso_acceleration_raw_get(&lsm6dso_ctx, data_raw_acceleration) == LSM6DSO_OK ){
+
+      pAcceleration->x = lsm6dso_from_fs4_to_mg( data_raw_acceleration[0]);
+      pAcceleration->y = lsm6dso_from_fs4_to_mg( data_raw_acceleration[1]);
+      pAcceleration->z = lsm6dso_from_fs4_to_mg( data_raw_acceleration[2]);
+
+      Log_Debug("[LSM6DSO]: Acceleration [mg]  :%4.2f\t%4.2f\t%4.2f\r\n",
+                pAcceleration->x, pAcceleration->y, pAcceleration->z);
+      return true;
     }
   }
+  return false;
+}
 
-  memset(data_raw_acceleration.u8bit, 0x00, 3 * sizeof(int16_t));
-  if( lsm6dso_acceleration_raw_get(&lsm6dso_ctx, data_raw_acceleration.u8bit) == LSM6DSO_OK ){
-    acceleration_mg[0] = lsm6dso_from_fs4_to_mg(
-                            data_raw_acceleration.i16bit[0]);
-    acceleration_mg[1] = lsm6dso_from_fs4_to_mg(
-                            data_raw_acceleration.i16bit[1]);
-    acceleration_mg[2] = lsm6dso_from_fs4_to_mg(
-                            data_raw_acceleration.i16bit[2]);
-    Log_Debug("[LSM6DSO]: Acceleration [mg]  :%4.2f\t%4.2f\t%4.2f\r\n",
-              acceleration_mg[0],
-              acceleration_mg[1],
-              acceleration_mg[2] );
+bool lsm6dso_read_gyro( vector3d_t * pGyro )
+{ 
+  if( pGyro != NULL)
+  {   int16_t data_raw_angular_rate[3];
+
+    memset( &data_raw_angular_rate, 0x00, sizeof(data_raw_angular_rate));
+    if ( lsm6dso_angular_rate_raw_get(&lsm6dso_ctx, data_raw_angular_rate) == LSM6DSO_OK)
+    {
+      pGyro->x = lsm6dso_from_fs2000_to_mdps( data_raw_angular_rate[0]);
+      pGyro->x = lsm6dso_from_fs2000_to_mdps( data_raw_angular_rate[1]);
+      pGyro->x = lsm6dso_from_fs2000_to_mdps( data_raw_angular_rate[2]);
+
+      Log_Debug("[LSM6DSO]: Angular rate [mdps]:%4.2f\t%4.2f\t%4.2f\r\n",
+                pGyro->x, pGyro->y, pGyro->z);
+
+      return true;
+    }
   }
+  return false;
+}
 
-  memset(data_raw_angular_rate.u8bit, 0x00, 3 * sizeof(int16_t));
-	if ( lsm6dso_angular_rate_raw_get(&lsm6dso_ctx, data_raw_angular_rate.u8bit) == LSM6DSO_OK)
-	{
-    angular_rate_mdps[0] = lsm6dso_from_fs2000_to_mdps(
-                              data_raw_angular_rate.i16bit[0]);
-    angular_rate_mdps[1] = lsm6dso_from_fs2000_to_mdps(
-                              data_raw_angular_rate.i16bit[1]);
-    angular_rate_mdps[2] = lsm6dso_from_fs2000_to_mdps(
-                              data_raw_angular_rate.i16bit[2]);
-    Log_Debug("[LSM6DSO]: Angular rate [mdps]:%4.2f\t%4.2f\t%4.2f\r\n",
-              angular_rate_mdps[0],
-              angular_rate_mdps[1],
-              angular_rate_mdps[2]);
+bool lsm6dso_read_chiptemp( float * pTemp )
+{ 
+  if( pTemp != NULL)
+  { int16_t data_raw_temperature;
+
+	  if( lsm6dso_temperature_raw_get(&lsm6dso_ctx, &data_raw_temperature) == LSM6DSO_OK)
+    {
+		  *pTemp = lsm6dso_from_lsb_to_celsius(data_raw_temperature);
+
+      Log_Debug("[LSM6DSO]: Temperature  [degC]: %.2f\r\n", *pTemp);
+      return true;
+    }
   }
-
-  lsm6dso_temp_flag_data_ready_get(&lsm6dso_ctx, &reg);
-	if (reg)
-	{
-		// Read temperature data
-		memset(data_raw_temperature.u8bit, 0x00, sizeof(int16_t));
-		lsm6dso_temperature_raw_get(&lsm6dso_ctx, &data_raw_temperature.i16bit);
-		fTemperatureLSM6DSO_degC = lsm6dso_from_lsb_to_celsius(data_raw_temperature.i16bit);
-
-		Log_Debug("[LSM6DSO]: Temperature  [degC]: %.2f\r\n", fTemperatureLSM6DSO_degC);
-	} 
-
-  lps22hh_read_dataset();
-	return true;
+  return false;
 }
 
 /**
@@ -286,7 +273,7 @@ void platform_delay(uint32_t ms)
 int32_t lsm6dso_write_lps22hh_cx(void *ctx, uint8_t reg,
                                  const uint8_t *data, uint16_t len)
 {
-  axis3bit16_t data_raw_acceleration;
+  int16_t data_raw_acceleration[3];
   int32_t ret;
   uint8_t drdy;
   lsm6dso_status_master_t master_status;
@@ -314,7 +301,7 @@ int32_t lsm6dso_write_lps22hh_cx(void *ctx, uint8_t reg,
   /* Enable accelerometer to trigger Sensor Hub operation. */
   lsm6dso_xl_data_rate_set(&lsm6dso_ctx, LSM6DSO_XL_ODR_104Hz);
   /* Wait Sensor Hub operation flag set. */
-  lsm6dso_acceleration_raw_get(&lsm6dso_ctx, data_raw_acceleration.i16bit);
+  lsm6dso_acceleration_raw_get(&lsm6dso_ctx, data_raw_acceleration);
 
   do {
     platform_delay(20);
@@ -347,7 +334,7 @@ int32_t lsm6dso_read_lps22hh_cx(void *ctx, uint8_t reg,
                                 uint16_t len)
 {
   lsm6dso_sh_cfg_read_t sh_cfg_read;
-  axis3bit16_t data_raw_acceleration;
+  int16_t data_raw_acceleration[3];
   int32_t ret;
   uint8_t drdy;
   lsm6dso_status_master_t master_status;
@@ -365,7 +352,7 @@ int32_t lsm6dso_read_lps22hh_cx(void *ctx, uint8_t reg,
   /* Enable accelerometer to trigger Sensor Hub operation. */
   lsm6dso_xl_data_rate_set(&lsm6dso_ctx, LSM6DSO_XL_ODR_104Hz);
   /* Wait Sensor Hub operation flag set. */
-  lsm6dso_acceleration_raw_get(&lsm6dso_ctx, data_raw_acceleration.i16bit);
+  lsm6dso_acceleration_raw_get(&lsm6dso_ctx, data_raw_acceleration);
 
   do {
     platform_delay(20);

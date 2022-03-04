@@ -873,6 +873,7 @@ int InitPeripheralsAndHandlers()
     action.sa_handler = TerminationHandler;
     sigaction(SIGTERM, &action, NULL);
 
+
     // Set parson library json float serialisation format
     json_set_float_serialization_format( cstrJsonFloatFormat );
 
