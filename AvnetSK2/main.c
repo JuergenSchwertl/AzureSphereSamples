@@ -100,6 +100,9 @@ static RgbLedUtility_Colors colBlinkingLedColor = RgbLedUtility_Colors_Blue;
 static const struct timespec atsBlinkingIntervals[] = {{0, 125000000}, {0, 250000000}, {0, 500000000}};
 static const size_t nBlinkingIntervalsCount = sizeof(atsBlinkingIntervals) / sizeof(*atsBlinkingIntervals);
 
+/// @brief store last orientation to only report changes.
+static char *strLastOrientation = NULL;
+
 /// @brief File descriptors - initialized to invalid value
 static int fdEpoll = -1;
 static int fdBlinkRateButtonGpio = -1;
@@ -160,6 +163,8 @@ static const char cstrPressureProperty[] = "pressure";
 /// @brief Azure IoT PnP component "dtmi:azsphere:SphereTTT:lsm6dso;1"  
 static const char cstrLSM6DSOComponent[] = "lsm6dso";
 
+static const char cstrOrientationProperty[] = "orientation";
+
 static const char cstrGyroObject[] = "gyro";
 static const char cstrAccelerationObject[] = "acceleration";
 static const char cstrXProperty[] = "x";
@@ -180,7 +185,7 @@ static const char cstrDevInfoMemoryProperty[] = "totalMemory";
 
 static const char cstrDevInfoManufacturerValue[] = "AVNET";
 static const char cstrDevInfoModelValue[] = "AVNET Starter Kit Rev1/2";
-static const char cstrDevInfoSWVersionValue[] = "AVNETSK v22/03/01.1800";
+static const char cstrDevInfoSWVersionValue[] = "v" APPVERSION; // APPVERSION is build timestamp in CMakeLists.txt
 static const char cstrDevInfoOSNameValue[] = "Azure Sphere IoT OS";
 static const char cstrDevInfoProcArchValue[] = "ARM Core A7,M4";
 static const char cstrDevInfoProcMfgrValue[] = "MediaTek";
@@ -411,6 +416,57 @@ static void SendTelemetryMessage(void)
     JSON_Object * jsonRootObject;
 
     if (connectedToIoTHub) {
+        jsonRootValue = json_value_init_object();
+        jsonRootObject = json_value_get_object( jsonRootValue );
+        vector3d_t vector;
+        bool bHasData = false;
+
+        if( Sensors_GetAcceleration( &vector ) )
+        {
+            const char *cstrOrientation = Sensors_GetOrientation(&vector);
+            if( cstrOrientation != strLastOrientation )
+            {
+                // update "orientation" property
+                JSON_Value *jsonObjValue = json_value_init_object();
+                JSON_Object *jsonObj = json_value_get_object( jsonObjValue );
+                
+                json_object_set_string( jsonObj, cstrOrientationProperty, cstrOrientation); 
+                AzureIoT_PnP_ReportComponentProperty( cstrLSM6DSOComponent, jsonObjValue );
+
+                // create payload for "acceleration" telemetry
+                jsonObjValue = json_value_init_object();
+                jsonObj = json_value_get_object( jsonObjValue );
+
+                json_object_set_number(jsonObj, cstrXProperty, vector.x);
+                json_object_set_number(jsonObj, cstrYProperty, vector.y);
+                json_object_set_number(jsonObj, cstrZProperty, vector.z);
+                json_object_set_value( jsonRootObject, cstrAccelerationObject, jsonObjValue );
+                bHasData = true;
+            }
+        }
+
+
+        if( Sensors_GetGyro( &vector ) )
+        {
+            //[TODO] omit Gyro data until we calibrate the gyro first. lsm6dso sends strange values...
+            // JSON_Value *jsonObjValue = json_value_init_object();
+            // JSON_Object *jsonObj = json_value_get_object( jsonObjValue );
+
+            // json_object_set_number(jsonObj, cstrXProperty, vector.x);
+            // json_object_set_number(jsonObj, cstrYProperty, vector.y);
+            // json_object_set_number(jsonObj, cstrZProperty, vector.z);
+
+            // json_object_set_value( jsonRootObject, cstrGyroObject, jsonObjValue );
+            // bHasData = true;
+        }
+
+        if( bHasData )
+        {
+            AzureIoT_PnP_SendJsonMessage(jsonRootValue, cstrLSM6DSOComponent);
+        }
+        json_value_free( jsonRootValue );
+
+        // reading lps22hh resets the lsm6dso accelerometer! Reading temperature after acceleration.
         envdata_t dataset;
         if( Sensors_GetEnvironmentData( &dataset ) ){
             jsonRootValue = json_value_init_object();
@@ -420,39 +476,16 @@ static void SendTelemetryMessage(void)
 
             json_object_set_number(jsonRootObject, cstrTemperatureProperty, dataset.fTemperature);
             json_object_set_number(jsonRootObject, cstrPressureProperty, dataset.fPressure_hPa);
+            
             AzureIoT_PnP_SendJsonMessage(jsonRootValue, cstrLPS22HHComponent);
 
             json_value_free( jsonRootValue );
         }
 
-        vector3d_t vector;
-        if( Sensors_GetAcceleration( &vector ) )
-        {
-            jsonRootValue = json_value_init_object();
-            jsonRootObject = json_value_get_object( jsonRootValue );
-
-            JSON_Value *jsonObjValue = json_value_init_object();
-            JSON_Object *jsonObj = json_value_get_object( jsonObjValue );
-
-
-            json_object_set_number(jsonObj, cstrXProperty, vector.x);
-            json_object_set_number(jsonObj, cstrYProperty, vector.y);
-            json_object_set_number(jsonObj, cstrZProperty, vector.z);
-
-            json_object_set_value( jsonRootObject, cstrAccelerationObject, jsonObjValue );
-
-            AzureIoT_PnP_SendJsonMessage(jsonRootValue, cstrLSM6DSOComponent);
-
-
-            json_value_free( jsonRootValue );
-
-        }
-
-
+#ifdef BME280		
         jsonRootValue = json_value_init_object();
         jsonRootObject = json_value_get_object( jsonRootValue );
 
-#ifdef BME280		
 		bme280_data_t bmeData;
 		if (BME280_GetSensorData(&bmeData) == 0)
 		{
@@ -463,9 +496,12 @@ static void SendTelemetryMessage(void)
             json_object_set_number(jsonRootObject, cstrHumidityProperty, bmeData.humidity);
             
 		}
+        json_value_free( jsonRootValue );
 #endif
 
 #ifdef BMP280		
+        jsonRootValue = json_value_init_object();
+        jsonRootObject = json_value_get_object( jsonRootValue );
 		bmp280_data_t bmpData;
 
 		if (BMP280_GetSensorData(&bmpData) == 0)
@@ -477,8 +513,8 @@ static void SendTelemetryMessage(void)
             
             AzureIoT_PnP_SendJsonMessage(jsonRootValue, cstrBMP280Component);
         }
-#endif
         json_value_free( jsonRootValue );
+#endif
 
 
         size_t nTotalMemUsed = Applications_GetTotalMemoryUsageInKB();
@@ -664,6 +700,12 @@ static void ReportAllProperties(void)
     json_object_set_number(jsonObject, cstrBlinkRateProperty, (double) nBlinkRateValue);
 
     AzureIoT_PnP_CreateComponentPropertyJson( jsonRoot, cstrRgbledComponent, jsonValue);
+
+    jsonValue = json_value_init_object();
+    jsonObject = json_value_get_object( jsonComponentValue );
+    json_object_set_string(jsonObject, cstrOrientationProperty, strLastOrientation);
+
+    AzureIoT_PnP_CreateComponentPropertyJson( jsonRoot, cstrLSM6DSOComponent, jsonValue);
 
     AzureIoTJson_TwinReportState(jsonRoot);
 
@@ -911,6 +953,7 @@ int InitPeripheralsAndHandlers()
         return -1;
     }
     Sensors_Init( fdSensorI2c );
+    strLastOrientation = Sensors_GetOrientation( NULL );
 
     // Open file descriptors for the RGB LEDs and store them in the rgbLeds array (and in turn in
     // the ledBlink, ledMessageEventSentReceived, ledNetworkStatus variables)

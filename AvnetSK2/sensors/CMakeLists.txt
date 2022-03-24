@@ -16,3 +16,6 @@ ADD_LIBRARY(${PROJECT_NAME} STATIC
 
 # this project contains a public header file, so the directory needs to be added to the list of include directories of parent projects
 TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Inc)
+
+message("Project ${PROJECT_NAME}: adding include dir ${CMAKE_CURRENT_SOURCE_DIR}/Inc")
+

@@ -25,6 +25,17 @@
 #include <applibs/log.h>
 #include <applibs/i2c.h>
 
+#define    BOOT_TIME      10
+
+/* Self test limits. */
+#define    MIN_ST_LIMIT_mg        50.0f
+#define    MAX_ST_LIMIT_mg      1700.0f
+#define    MIN_ST_LIMIT_mdps   150000.0f
+#define    MAX_ST_LIMIT_mdps   700000.0f
+
+/* Self test results. */
+#define    ST_PASS     1U
+#define    ST_FAIL     0U
 
 /* Private macro -------------------------------------------------------------*/
 typedef struct _vector3d_uint16 {
@@ -38,24 +49,410 @@ bool  isLsm6dsoReady = false;
 //static uint8_t whoamI, rst;
 //static uint8_t tx_buffer[1000];
 
-float angular_rate_mdps[3];
-float acceleration_mg[3];
-float fTemperatureLSM6DSO_degC;
+// float angular_rate_mdps[3];
+// float acceleration_mg[3];
+// float fTemperatureLSM6DSO_degC;
 
 stmdev_ctx_t lsm6dso_ctx = { 
     .write_reg = platform_write,
     .read_reg = platform_read 
 };
 
+static const float fCos30Deg = 0.850f * 1000.0f; // normally 0.866; a bit less to allow measurement errors
+static const float fCos60Deg = 0.5 * 1000.0f;
+static const float fZero = 0.0f;
+
+
 /* Extern variables ----------------------------------------------------------*/
 
 /* Private functions ---------------------------------------------------------*/
 
+/**
+ * @brief Converts a 3D acceleration vector into textual orientation (e.g. "face up"). 
+ * 
+ * @param pVector pointer to 3D vector 
+ * @return const char* 
+ */
+const char *lsm6dso_get_orientation( vector3d_t * pVector )
+{ register float x = pVector->x;
+  register float y = pVector->y;
+  register float z = pVector->z;
+
+  // the length of the acceleration vector should be around 1.0 for a steady device 
+  float l = sqrtf( x*x + y*y + z*z);
+  if( l > 1200.0f){
+    return "accelerating";
+  }
+  if( l < 800.0f ){
+    return "falling";
+  }
+
+  // filter out the edges (less than 30° tilted in each direction)
+  if( z > fCos30Deg ) { 
+    return "face up"; 
+  } else if ( z < -fCos30Deg ){
+    return "face down";
+  } else if ( x > fCos30Deg ) {
+    return "left edge";
+  } else if ( x < -fCos30Deg ) {
+    return "right edge";
+  } else if ( y > fCos30Deg ) {
+    return "back edge";
+  } else if ( y < -fCos30Deg ) {
+    return "front edge";
+  } else if( z > fCos60Deg ) { 
+
+    // face up tilted z in 30° - 60°
+    if(  y < -fCos60Deg){
+      return "tilted forward";
+    } else if ( y > fCos60Deg ){
+      return "tilted backward";
+    } else if( x > fCos60Deg ){
+      return "tilted left";
+    } else if( x < -fCos60Deg ){
+      return "tilted right";
+    } else if( x > fZero ){
+        if( y < fZero ){
+          return "tilted left forward";
+        } else {
+          return "tilted left backward";
+        }
+    } else {
+      if( y < fZero ){
+        return "tilted right forward";
+      } else {
+        return "tilted right backward";
+      }
+    }
+
+  } else if (z > -fCos60Deg) { // z in face up 60°..90° or face down 90°..120°; x & y are less than 60°
+      if( x > fZero ){
+        if ( y < fZero ) {
+          return "front left corner";
+        } else {
+          return "back left corner";
+        }
+      } else {
+        if ( y < fZero ) {
+          return "front right corner";
+        } else {
+          return "back right corner";
+        }
+      }
+  } else if ( z > -fCos30Deg ) { 
+    
+    // z is facedown tilted 30°..60°
+   // face up tilted z in 30° - 60°
+    if(  y < -fCos60Deg){
+      return "face down tilted forward";
+    } else if ( y > fCos60Deg ){
+      return "face down tilted backward";
+    } else if( x > fCos60Deg ){
+      return "face down tilted right";
+    } else if( x < -fCos60Deg ){
+      return "face down tilted left";
+    } else if( x > fZero ){
+        if( y < fZero ){
+          return "face down tilted right forward";
+        } else {
+          return "face down tilted right backward";
+        }
+    } else {
+      if( y < fZero ){
+        return "face down tilted left forward";
+      } else {
+        return "face down tilted left backward";
+      }
+    }
+  }
+  
+  return "Oops, feeling dizzy";
+}
 
 
 
 /**
- * @brief check if lsm6dso is connected and operable
+ * @brief take a few accelerometer readings to stabilize the sensor
+ * 
+ * @return true 
+ * @return false 
+ */
+bool lsm6dso_calibrate_accelerometer( void )
+{ uint8_t drdy;
+  int16_t data_raw[3];
+
+  /* Read 10 samples to stabilize */
+  for (int i = 0; i < 10; i++) {
+    /* Check if new value available */
+    do {
+      lsm6dso_xl_flag_data_ready_get(&lsm6dso_ctx, &drdy);
+    } while (!drdy);
+
+    lsm6dso_acceleration_raw_get(&lsm6dso_ctx, data_raw);
+
+#ifdef VERBOSE
+    float x,y,z,l;
+    /* Convert to mg and normalize to 1.0 and get vector length (should be ~1.0) at some point  */
+    x = lsm6dso_from_fs4_to_mg(data_raw[0]) / 1000.0f;
+    y = lsm6dso_from_fs4_to_mg(data_raw[1]) / 1000.0f;
+    z = lsm6dso_from_fs4_to_mg(data_raw[2]) / 1000.0f;
+    l = sqrt( x*x + y*y + z*z);
+    Log_Debug( "XL startup: %5.3f  %5.3f  %5.3f Length: %5.3f\n", x,y,z,l );
+#endif
+  }
+  return true;
+}
+
+
+/**
+ * @brief initialize accelerometer for 26Hz, 5G with filters 
+ * 
+ */
+void lsm6dso_start_accelerometer( void )
+{
+  	 // Set Output Data Rate
+	lsm6dso_xl_data_rate_set(&lsm6dso_ctx, LSM6DSO_XL_ODR_26Hz);
+
+	 // Set full scale
+	lsm6dso_xl_full_scale_set(&lsm6dso_ctx, LSM6DSO_4g);
+
+	 // Configure filtering chain(No aux interface)
+	// Accelerometer - LPF1 + LPF2 path	
+	lsm6dso_xl_hp_path_on_out_set(&lsm6dso_ctx, LSM6DSO_LP_ODR_DIV_10);
+	lsm6dso_xl_filter_lp2_set(&lsm6dso_ctx, PROPERTY_ENABLE);
+
+  lsm6dso_calibrate_accelerometer();
+}
+
+/**
+ * @brief initialize gyro for 12.5 Hz bis 2000dps
+ * 
+ */
+void lsm6dso_start_gyro( void )
+{
+  	 // Set Output Data Rate
+	lsm6dso_gy_data_rate_set(&lsm6dso_ctx, LSM6DSO_GY_ODR_12Hz5);
+	 // Set full scale
+	lsm6dso_gy_full_scale_set(&lsm6dso_ctx, LSM6DSO_2000dps);
+}
+
+
+void lsm6dso_selftest( void )
+{
+  //uint8_t tx_buffer[1000];
+  int16_t data_raw[3];
+  float val_st_off[3];
+  float val_st_on[3];
+  float test_val[3];
+  uint8_t st_result;
+  uint8_t drdy;
+  uint8_t i;
+  uint8_t j;
+  /*
+   * Accelerometer Self Test
+   */
+  /* Set Output Data Rate */
+  lsm6dso_xl_data_rate_set(&lsm6dso_ctx, LSM6DSO_XL_ODR_52Hz);
+  /* Set full scale */
+  lsm6dso_xl_full_scale_set(&lsm6dso_ctx, LSM6DSO_4g);
+  /* Wait stable output */
+  platform_delay(100);
+
+  /* Check if new value available */
+  do {
+    lsm6dso_xl_flag_data_ready_get(&lsm6dso_ctx, &drdy);
+  } while (!drdy);
+
+  /* Read dummy data and discard it */
+  lsm6dso_acceleration_raw_get(&lsm6dso_ctx, data_raw);
+  /* Read 5 sample and get the average vale for each axis */
+  memset(val_st_off, 0x00, 3 * sizeof(float));
+
+  for (i = 0; i < 5; i++) {
+    /* Check if new value available */
+    do {
+      lsm6dso_xl_flag_data_ready_get(&lsm6dso_ctx, &drdy);
+    } while (!drdy);
+
+    /* Read data and accumulate the mg value */
+    lsm6dso_acceleration_raw_get(&lsm6dso_ctx, data_raw);
+
+#ifdef VERBOSE
+    Log_Debug( "XL test: %d %d %d\n", data_raw[0], data_raw[1], data_raw[2] );
+#endif
+
+    for (j = 0; j < 3; j++) {
+      val_st_off[j] += lsm6dso_from_fs4_to_mg(data_raw[j]);
+    }
+  }
+
+  /* Calculate the mg average values */
+  for (i = 0; i < 3; i++) {
+    val_st_off[i] /= 5.0f;
+  }
+
+  /* Enable Self Test positive (or negative) */
+  lsm6dso_xl_self_test_set(&lsm6dso_ctx, LSM6DSO_XL_ST_NEGATIVE);
+  //lsm6dso_xl_self_test_set(&lsm6dso_ctx, LSM6DSO_XL_ST_POSITIVE);
+  /* Wait stable output */
+  platform_delay(100);
+
+  /* Check if new value available */
+  do {
+    lsm6dso_xl_flag_data_ready_get(&lsm6dso_ctx, &drdy);
+  } while (!drdy);
+
+  /* Read dummy data and discard it */
+  lsm6dso_acceleration_raw_get(&lsm6dso_ctx, data_raw);
+  /* Read 5 sample and get the average vale for each axis */
+  memset(val_st_on, 0x00, 3 * sizeof(float));
+
+  for (i = 0; i < 5; i++) {
+    /* Check if new value available */
+    do {
+      lsm6dso_xl_flag_data_ready_get(&lsm6dso_ctx, &drdy);
+    } while (!drdy);
+
+    /* Read data and accumulate the mg value */
+    lsm6dso_acceleration_raw_get(&lsm6dso_ctx, data_raw);
+
+#ifdef VERBOSE
+    Log_Debug( "XL test: %d %d %d\n", data_raw[0], data_raw[1], data_raw[2] );
+#endif
+
+    for (j = 0; j < 3; j++) {
+      val_st_on[j] += lsm6dso_from_fs4_to_mg(data_raw[j]);
+    }
+  }
+
+  /* Calculate the mg average values */
+  for (i = 0; i < 3; i++) {
+    val_st_on[i] /= 5.0f;
+  }
+
+  /* Calculate the mg values for self test */
+  for (i = 0; i < 3; i++) {
+    test_val[i] = fabsf((val_st_on[i] - val_st_off[i]));
+  }
+
+  /* Check self test limit */
+  st_result = ST_PASS;
+
+  for (i = 0; i < 3; i++) {
+    if (( MIN_ST_LIMIT_mg > test_val[i] ) ||
+        ( test_val[i] > MAX_ST_LIMIT_mg)) {
+      st_result = ST_FAIL;
+    }
+  }
+
+  /* Disable Self Test */
+  lsm6dso_xl_self_test_set(&lsm6dso_ctx, LSM6DSO_XL_ST_DISABLE);
+  /* Disable sensor. */
+  lsm6dso_xl_data_rate_set(&lsm6dso_ctx, LSM6DSO_XL_ODR_OFF);
+  /*
+   * Gyroscope Self Test
+   */
+  /* Set Output Data Rate */
+  lsm6dso_gy_data_rate_set(&lsm6dso_ctx, LSM6DSO_GY_ODR_208Hz);
+  /* Set full scale */
+  lsm6dso_gy_full_scale_set(&lsm6dso_ctx, LSM6DSO_2000dps);
+  /* Wait stable output */
+  platform_delay(100);
+
+  /* Check if new value available */
+  do {
+    lsm6dso_gy_flag_data_ready_get(&lsm6dso_ctx, &drdy);
+  } while (!drdy);
+
+  /* Read dummy data and discard it */
+  lsm6dso_angular_rate_raw_get(&lsm6dso_ctx, data_raw);
+  /* Read 5 sample and get the average vale for each axis */
+  memset(val_st_off, 0x00, 3 * sizeof(float));
+
+  for (i = 0; i < 5; i++) {
+    /* Check if new value available */
+    do {
+      lsm6dso_gy_flag_data_ready_get(&lsm6dso_ctx, &drdy);
+    } while (!drdy);
+
+    /* Read data and accumulate the mg value */
+    lsm6dso_angular_rate_raw_get(&lsm6dso_ctx, data_raw);
+
+#ifdef VERBOSE
+    Log_Debug( "GY test: %d %d %d\n", data_raw[0], data_raw[1], data_raw[2] );
+#endif
+
+    for (j = 0; j < 3; j++) {
+      val_st_off[j] += lsm6dso_from_fs2000_to_mdps(data_raw[j]);
+    }
+  }
+
+  /* Calculate the mg average values */
+  for (i = 0; i < 3; i++) {
+    val_st_off[i] /= 5.0f;
+  }
+
+  /* Enable Self Test positive (or negative) */
+  lsm6dso_gy_self_test_set(&lsm6dso_ctx, LSM6DSO_GY_ST_POSITIVE);
+  //lsm6dso_gy_self_test_set(&lsm6dso_ctx, LIS2DH12_GY_ST_NEGATIVE);
+  /* Wait stable output */
+  platform_delay(100);
+  /* Read 5 sample and get the average vale for each axis */
+  memset(val_st_on, 0x00, 3 * sizeof(float));
+
+  for (i = 0; i < 5; i++) {
+    /* Check if new value available */
+    do {
+      lsm6dso_gy_flag_data_ready_get(&lsm6dso_ctx, &drdy);
+    } while (!drdy);
+
+    /* Read data and accumulate the mg value */
+    lsm6dso_angular_rate_raw_get(&lsm6dso_ctx, data_raw);
+
+#ifdef VERBOSE
+    Log_Debug( "GY test: %d %d %d\n", data_raw[0], data_raw[1], data_raw[2] );
+#endif
+
+    for (j = 0; j < 3; j++) {
+      val_st_on[j] += lsm6dso_from_fs2000_to_mdps(data_raw[j]);
+    }
+  }
+
+  /* Calculate the mg average values */
+  for (i = 0; i < 3; i++) {
+    val_st_on[i] /= 5.0f;
+  }
+
+  /* Calculate the mg values for self test */
+  for (i = 0; i < 3; i++) {
+    test_val[i] = fabsf((val_st_on[i] - val_st_off[i]));
+  }
+
+  /* Check self test limit */
+  for (i = 0; i < 3; i++) {
+    if (( MIN_ST_LIMIT_mdps > test_val[i] ) ||
+        ( test_val[i] > MAX_ST_LIMIT_mdps)) {
+      st_result = ST_FAIL;
+    }
+  }
+
+  /* Disable Self Test */
+  lsm6dso_gy_self_test_set(&lsm6dso_ctx, LSM6DSO_GY_ST_DISABLE);
+  /* Disable sensor. */
+  lsm6dso_xl_data_rate_set(&lsm6dso_ctx, LSM6DSO_GY_ODR_OFF);
+
+  if (st_result == ST_PASS) {
+    Log_Debug(  "[lsm6dso] Self Test - PASS\n" );
+  }
+
+  else {
+    Log_Debug(  "[lsm6dso] Self Test - FAIL\n" );
+  }
+
+}
+
+/**
+ * @brief check if lsm6dso is connected and operable. Accelerometer and gyro are off!
  * 
  * @param fd file descriptor for i2C bus
  * @return true 
@@ -94,18 +491,8 @@ bool lsm6dso_init(int fd)
 	lsm6dso_block_data_update_set(&lsm6dso_ctx, PROPERTY_ENABLE);
 
 	 // Set Output Data Rate
-	lsm6dso_xl_data_rate_set(&lsm6dso_ctx, LSM6DSO_XL_ODR_12Hz5);
-	lsm6dso_gy_data_rate_set(&lsm6dso_ctx, LSM6DSO_GY_ODR_12Hz5);
-
-	 // Set full scale
-	lsm6dso_xl_full_scale_set(&lsm6dso_ctx, LSM6DSO_4g);
-	lsm6dso_gy_full_scale_set(&lsm6dso_ctx, LSM6DSO_2000dps);
-
-	 // Configure filtering chain(No aux interface)
-	// Accelerometer - LPF1 + LPF2 path	
-	lsm6dso_xl_hp_path_on_out_set(&lsm6dso_ctx, LSM6DSO_LP_ODR_DIV_100);
-	lsm6dso_xl_filter_lp2_set(&lsm6dso_ctx, PROPERTY_ENABLE);
-  
+	lsm6dso_xl_data_rate_set(&lsm6dso_ctx, LSM6DSO_XL_ODR_OFF);
+	lsm6dso_gy_data_rate_set(&lsm6dso_ctx, LSM6DSO_GY_ODR_OFF);
 
   // Enable pull up on master I2C interface.
   lsm6dso_sh_pin_mode_set(&lsm6dso_ctx, LSM6DSO_INTERNAL_PULL_UP);
@@ -118,15 +505,31 @@ bool lsm6dso_read_acceleration( vector3d_t * pAcceleration )
 { 
   if( pAcceleration != NULL)
   {
+    uint8_t drdy;
+    int16_t nTimeout = 500;
     int16_t data_raw_acceleration[3];
     memset( &data_raw_acceleration, 0x00, sizeof(data_raw_acceleration));
+    
+    /* Read dummy data and discard it */
+//    lsm6dso_acceleration_raw_get(&lsm6dso_ctx, data_raw_acceleration);
+
+    do {
+      lsm6dso_xl_flag_data_ready_get(&lsm6dso_ctx, &drdy);
+    } while ( !drdy && (nTimeout-->0));
+
+    // sensor didn't react in time
+    if( nTimeout<=0 ){
+      Log_Debug("[LSM6DSO]: ERROR, reading acceleration timed out.\n" );
+      return false;
+    }
+
     if( lsm6dso_acceleration_raw_get(&lsm6dso_ctx, data_raw_acceleration) == LSM6DSO_OK ){
 
       pAcceleration->x = lsm6dso_from_fs4_to_mg( data_raw_acceleration[0]);
       pAcceleration->y = lsm6dso_from_fs4_to_mg( data_raw_acceleration[1]);
       pAcceleration->z = lsm6dso_from_fs4_to_mg( data_raw_acceleration[2]);
 
-      Log_Debug("[LSM6DSO]: Acceleration [mg]  :%4.2f\t%4.2f\t%4.2f\r\n",
+      Log_Debug("[LSM6DSO]: Acceleration [mg]  :%4.1f  %4.1f  %4.1f\r\n",
                 pAcceleration->x, pAcceleration->y, pAcceleration->z);
       return true;
     }
@@ -146,7 +549,7 @@ bool lsm6dso_read_gyro( vector3d_t * pGyro )
       pGyro->x = lsm6dso_from_fs2000_to_mdps( data_raw_angular_rate[1]);
       pGyro->x = lsm6dso_from_fs2000_to_mdps( data_raw_angular_rate[2]);
 
-      Log_Debug("[LSM6DSO]: Angular rate [mdps]:%4.2f\t%4.2f\t%4.2f\r\n",
+      Log_Debug("[LSM6DSO]: Angular rate [mdps]:%4.2f  %4.2f  %4.2f\r\n",
                 pGyro->x, pGyro->y, pGyro->z);
 
       return true;
@@ -313,9 +716,9 @@ int32_t lsm6dso_write_lps22hh_cx(void *ctx, uint8_t reg,
     lsm6dso_sh_status_get(&lsm6dso_ctx, &master_status);
   } while (!master_status.sens_hub_endop);
 
-  /* Disable I2C master and XL (trigger). */
+  /* Disable I2C master and re-enable XL. */
   lsm6dso_sh_master_set(&lsm6dso_ctx, PROPERTY_DISABLE);
-  lsm6dso_xl_data_rate_set(&lsm6dso_ctx, LSM6DSO_XL_ODR_OFF);
+  lsm6dso_xl_data_rate_set(&lsm6dso_ctx, LSM6DSO_XL_ODR_26Hz);
   return ret;
 }
 
@@ -379,5 +782,7 @@ int32_t lsm6dso_read_lps22hh_cx(void *ctx, uint8_t reg,
     Log_Debug("\n");
 #endif
 
+  // re-enable XL
+  lsm6dso_xl_data_rate_set(&lsm6dso_ctx, LSM6DSO_XL_ODR_26Hz);
   return ret;
 }

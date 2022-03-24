@@ -54,7 +54,7 @@
             "de": "Umgebung (lps22hh)"
         },
         "description": {
-            "en": "STMicroelectronics lps22hh pressure and tempereture sensor (compensated with lsm6dso temp)",
+            "en": "STMicroelectronics lps22hh pressure and temperature sensor (compensated with lsm6dso temp)",
             "de": "STMicroelectronics lps22hh Luftdruck- und Temperatursensor (kompensiert mit lsm6dso Temp)"
         }
     },

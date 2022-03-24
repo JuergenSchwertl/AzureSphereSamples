@@ -93,7 +93,7 @@ bool lps22hh_init( void )
  * @return void 
  */
 bool lps22hh_read_dataset( envdata_t *pEnvData )
-{ uint16_t data_raw_temperature = 0;
+{ int16_t data_raw_temperature = 0;
   uint32_t data_raw_pressure = 0;
 
   if( !isLps22hhReady )

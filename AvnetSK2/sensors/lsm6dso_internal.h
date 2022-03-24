@@ -32,6 +32,27 @@ typedef enum
   LSM6DSO_ERROR =-1
 } _lsm6dso_status_t;
 
+
+/**
+ * @brief Converts a 3D acceleration vector into textual orientation (e.g. "face up"). 
+ * 
+ * @param pVector pointer to 3D vector. SHALL NOT be NULL. 
+ * @return const char* 
+ */
+const char *lsm6dso_get_orientation( vector3d_t * pVector );
+
+/**
+ * @brief initialize accelerometer for 26Hz, 5G with filters 
+ * 
+ */
+void lsm6dso_start_accelerometer( void );
+
+/**
+ * @brief initialize gyro for 12.5 Hz bis 2000dps
+ * 
+ */
+void lsm6dso_start_gyro( void );
+
 /**
  * @brief check if lsm6dso is connected and operable
  * 
@@ -40,6 +61,12 @@ typedef enum
  * @return false 
  */
 bool lsm6dso_init(int fd);
+
+/**
+ * @brief self test accelerometer and gyro
+ * 
+ */
+void lsm6dso_selftest( void );
 
 /**
  * @brief reads the complete lsm6dso dataset with accel, gyro & (chip) temp

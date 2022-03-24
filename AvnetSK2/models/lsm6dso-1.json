@@ -50,12 +50,27 @@
                 "de": "(°/s)"
               },
             "schema": "dtmi:azsphere:SphereTTT:lsm6dso:Vector3D;1"
+        },
+        {
+            "@id": "dtmi:azsphere:SphereTTT:lsm6dso:orientation;1",
+            "@type":  "Property",
+            "description": {
+                "en": "Orientation of sensor in 3d space.",
+                "de": "Orientierung des Sensors im 3-dimensionalen Raum."
+            },
+            "displayName": {
+                "en": "Orientation",
+                "de": "Orientierung"
+            },
+            "name": "orientation",
+            "writable": false,
+            "schema": "string"
         }
     ],
     "schemas": [
         {
             "@id": "dtmi:azsphere:SphereTTT:lsm6dso:Vector3D;1",
-            "@type": "object",
+            "@type": "Object",
             "displayName": {
                 "en": "3D Vector",
                 "de" : "3D Vektor"

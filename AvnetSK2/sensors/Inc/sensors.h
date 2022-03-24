@@ -84,6 +84,15 @@ bool Sensors_GetAcceleration(vector3d_t *pvecAcceleration);
  */
 bool Sensors_GetGyro(vector3d_t *pvecGyro);
 
+/**
+ * @brief Converts a 3D acceleration vector into textual orientation (e.g. "face up"). 
+ * 
+ * @param pVector pointer to 3D vector. if NULL, reads new acceleration from lsm6dso sensor. 
+ * @return const char* 
+ */
+const char *Sensors_GetOrientation( vector3d_t * pVector );
+
+
 #ifdef __cplusplus
 }
 #endif

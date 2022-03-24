@@ -17,8 +17,8 @@
                 "Telemetry", "Temperature"
               ],
               "description": {
-                "en": "Temperature in degree Celsius.",
-                "de": "Temperatur in °C."
+                "en": "Temperature in degree Celsius (compensated).",
+                "de": "Temperatur in °C (kompensiert)."
               },
               "displayName": {
                 "en": "Temperature",
