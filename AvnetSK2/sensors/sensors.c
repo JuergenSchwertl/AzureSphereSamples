@@ -48,7 +48,7 @@ const char *Sensors_GetOrientation( vector3d_t * pVector )
   }
 
   const char *strOrientation = lsm6dso_get_orientation( pVector );
-  Log_Debug("[Sensor] orientation: %s", strOrientation);
+  Log_Debug("[Sensor] orientation: %s\n", strOrientation);
   return strOrientation;
 }
 

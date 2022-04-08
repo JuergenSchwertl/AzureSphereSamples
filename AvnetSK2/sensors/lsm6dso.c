@@ -567,7 +567,7 @@ bool lsm6dso_read_chiptemp( float * pTemp )
     {
 		  *pTemp = lsm6dso_from_lsb_to_celsius(data_raw_temperature);
 
-      Log_Debug("[LSM6DSO]: Temperature  [degC]: %.2f\r\n", *pTemp);
+      Log_Debug("[LSM6DSO] Temperature  [degC]: %.2f\r\n", *pTemp);
       return true;
     }
   }

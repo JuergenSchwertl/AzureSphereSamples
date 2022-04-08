@@ -132,6 +132,8 @@ static const char cstrJsonFloatFormat[] = "%.2f";
 static const char cstrMsgPressed[] = "pressed";
 static const char cstrMsgApplicationStarted[] = "Application started";
 
+static char strWiFiStatus[128];
+
 /// @brief The Azure IoT PnP Model Id and component property
 static const char cstrPnPModelId[] = "dtmi:azsphere:SphereTTT:AVNETSK;1"; 
 
@@ -310,24 +312,47 @@ static void* SetupHeapMessage(const char* messageFormat, size_t maxLength, ...)
     return message;
 }
 
-
-
 ///  @brief 
 ///     Show details of the currently connected WiFi network.
 /// 
 static void DebugPrintCurrentlyConnectedWiFiNetwork(void)
 {
+    char szBuffer[128];
+    int nPos=0, nChar = 0;
     WifiConfig_ConnectedNetwork network;
+    szBuffer[0] = '\0';
+
     int result = WifiConfig_GetCurrentNetwork(&network);
     if (result < 0) {
-        Log_Debug("INFO: Not currently connected to a WiFi network.\n");
+        if( (nChar=snprintf(&szBuffer[nPos], sizeof(szBuffer)-nPos, 
+                            "WiFi Disconnected. ")) >= 0){
+            nPos+=nChar;
+        }
     } else {
-        Log_Debug("INFO: Currently connected WiFi network: \n");
-        Log_Debug("INFO: SSID \"%.*s\", BSSID %02x:%02x:%02x:%02x:%02x:%02x, Frequency %dMHz, Signal %d.\n",
-                  network.ssidLength, network.ssid, network.bssid[0], network.bssid[1],
-                  network.bssid[2], network.bssid[3], network.bssid[4], network.bssid[5],
-                  network.frequencyMHz, network.signalRssi);
+        if( (nChar=snprintf(&szBuffer[nPos], sizeof(szBuffer)-nPos, 
+                            "SSID \"%.*s\", Freq:%dMHz, Sig:%d. ", 
+                            network.ssidLength, network.ssid, network.frequencyMHz, network.signalRssi)) >= 0){
+            nPos+=nChar;
+        }
     }
+    Networking_Interface_HardwareAddress hwAddress;
+    result = Networking_GetHardwareAddress( "wlan0", &hwAddress);
+    if( result < 0){
+        if( (nChar=snprintf(&szBuffer[nPos], sizeof(szBuffer)-nPos, 
+                            "[ERR] No MAC. ")) >= 0){
+            nPos+=nChar;
+        }
+    } else {
+        if( (nChar=snprintf(&szBuffer[nPos], sizeof(szBuffer)-nPos, 
+                            "MAC %02x:%02x:%02x:%02x:%02x:%02x. ",
+                            hwAddress.address[0], hwAddress.address[1],
+                            hwAddress.address[2], hwAddress.address[3],
+                            hwAddress.address[4], hwAddress.address[5])) >= 0){
+            nPos+=nChar;
+        }
+    }
+    Log_Debug("[INFO] %s\n", szBuffer);
+    strncpy( strWiFiStatus, szBuffer, sizeof(strWiFiStatus));
 }
 
 ///  @brief 
@@ -472,7 +497,7 @@ static void SendTelemetryMessage(void)
             jsonRootValue = json_value_init_object();
             jsonRootObject = json_value_get_object( jsonRootValue );
 
-            Log_Debug( "[Send] Temperature: %.2f °C, Pressure: %.2f\n hPa", dataset.fTemperature, dataset.fPressure_hPa);
+            Log_Debug( "[Send] Temperature: %.2f °C, Pressure: %.2f hPa\n", dataset.fTemperature, dataset.fPressure_hPa);
 
             json_object_set_number(jsonRootObject, cstrTemperatureProperty, dataset.fTemperature);
             json_object_set_number(jsonRootObject, cstrPressureProperty, dataset.fPressure_hPa);
@@ -723,6 +748,11 @@ static void IoTHubConnectionStatusChanged(bool connected, const char *statusText
 	if (connectedToIoTHub)
 	{
         Log_Debug("[IoTHubConnectionStatusChanged]: Connected.\n");
+
+        // send a "connect" event telemetry message with the WiFi status
+        DebugPrintCurrentlyConnectedWiFiNetwork();
+		SendEventMessage(cstrDevHealthComponent, cstrEvtConnected, strWiFiStatus);
+
         // send a "connect" event telemetry message with the previous disconnect reason
 		SendEventMessage(cstrDevHealthComponent, cstrEvtConnected, pstrConnectionStatus);
         pstrConnectionStatus = cstrEvtConnected;
