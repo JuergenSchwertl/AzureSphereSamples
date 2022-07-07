@@ -55,6 +55,18 @@ int UnregisterEventHandlerFromEpoll(int fdEpoll, int eventFd)
     return 0;
 }
 
+int DisarmTimerFd(int timerFd)
+{
+    struct itimerspec newValue = {.it_value = {}, .it_interval = {}};
+
+    if (timerfd_settime(timerFd, 0, &newValue, NULL) < 0) {
+        Log_Debug("ERROR: Could not disarm timerfd: %s (%d).\n", strerror(errno), errno);
+        return -1;
+    }
+
+    return 0;
+}
+
 int SetTimerFdToPeriod(int timerFd, const struct timespec *period)
 {
     struct itimerspec newValue = {.it_value = *period, .it_interval = *period};

@@ -4,7 +4,10 @@
 			"path": "."
 		}
 	],
-	"settings": {},
+    "settings": {
+        "files.associations": {
+        }
+    },
 	"launch" : {
         "configurations": [{
             "name": "Launch for Azure Sphere Applications (gdb)",

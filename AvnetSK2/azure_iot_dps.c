@@ -88,7 +88,7 @@ static void dpsPollingHandler(EventData* eventData);
 static EventData evtDpsPollingTimer = { .eventHandler = &dpsPollingHandler, .fd = -1, .context=NULL };
 
 /// DPS timeout timer
-static const struct timespec tsDpsTimeoutPeriod = {10, 0};
+static const struct timespec tsDpsTimeoutPeriod = {30, 0};
 /// @brief (Forward declared) dpsTimeoutHandler closes device registation after extended timeout 
 /// @param eventData timer event data 
 static void dpsTimeoutHandler(EventData* eventData);
@@ -105,7 +105,7 @@ static void connectionTimerHandler(EventData* eventData);
 static EventData evtConnectionTimer = { .eventHandler = &connectionTimerHandler, .fd = -1, .context=NULL };
 
 /// @brief In case of connection error, extend retry wait time
-static const int iConnectionRetryMinWaitSeconds = 2;
+static const int iConnectionRetryMinWaitSeconds = 5;
 static const int iConnectionRetryMaxWaitSeconds = 240;
 static int iConnectionRetrySeconds = iConnectionRetryMinWaitSeconds;
 
@@ -348,7 +348,7 @@ bool dpsRegisterDevice( void )
     return true;
 
 cleanup:
-     dpsCleanup();
+    dpsCleanup();
     dpsRegisterStatus = AZURE_IOT_DPS_FAILED;
     return false;
 }
@@ -518,7 +518,7 @@ static void connectionTimerHandler(EventData *eventData)
         || (hubConnectionStatus == AZURE_IOT_HUB_AUTHENTICATING) )
     {
         static time_t lastHubDoWorkLogged = 0;
-        periodicLogVarArgs(&lastHubDoWorkLogged, 5,  MODULE "%s calls in progress...\n", __func__);
+        periodicLogVarArgs(&lastHubDoWorkLogged, 10,  MODULE "%s calls in progress...\n", __func__);
 
         // DoWork - send some of the buffered events to the IoT Hub, and receive some of the
         // buffered events from the IoT Hub.
@@ -633,7 +633,7 @@ void AzureIoT_DPS_SetScopeID(const char* cstrId)
 void AzureIoT_DPS_Options(int argc, char *argv[])
 {
     static const char cszScopeIdParam[] = "--ScopeId";
-    for(int i=0; i<argc-2; i++)
+    for(int i=0; i<argc-1; i++)
     {
         if( strncmp(argv[i],cszScopeIdParam, sizeof(cszScopeIdParam)) == 0 )
         {

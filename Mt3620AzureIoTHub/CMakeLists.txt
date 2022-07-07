@@ -4,8 +4,8 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.11)
 PROJECT( Mt3620AzureIoTHub C)
 
-azsphere_configure_tools(TOOLS_REVISION "21.10")
-azsphere_configure_api(TARGET_API_SET "11")
+azsphere_configure_tools(TOOLS_REVISION "22.02")
+azsphere_configure_api(TARGET_API_SET "12")
   
 # Create executable
 ADD_EXECUTABLE(${PROJECT_NAME} main.c parson.c rgbled_utility.c epoll_timerfd_utilities.c azure_iot_utilities.c )

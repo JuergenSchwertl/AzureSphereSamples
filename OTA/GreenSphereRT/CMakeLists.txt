@@ -5,7 +5,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
 PROJECT(GreenSphereRT C)
 message("[JSchwert] Project ${PROJECT_NAME}")
 
-azsphere_configure_tools(TOOLS_REVISION "21.10")
+azsphere_configure_tools(TOOLS_REVISION "22.02")
 
 ADD_SUBDIRECTORY("../Shared.All" "${CMAKE_CURRENT_BINARY_DIR}/Shared.All")
 INCLUDE_DIRECTORIES("${SharedAll_SOURCE_DIR}")

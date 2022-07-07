@@ -6,8 +6,8 @@ PROJECT(SphereOLED C)
 
 message("Project ${PROJECT_NAME}")
 
-azsphere_configure_tools(TOOLS_REVISION "21.04")
-azsphere_configure_api(TARGET_API_SET "9")
+azsphere_configure_tools(TOOLS_REVISION "22.02")
+azsphere_configure_api(TARGET_API_SET "12")
 
 # Add the OLED display driver
 ADD_SUBDIRECTORY(SSD1308)
