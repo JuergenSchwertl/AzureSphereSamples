@@ -1,29 +1,29 @@
-# AzureSphereSamples for 21.10 Azure Sphere SDK Version
+# AzureSphereSamples for 22.02 Azure Sphere SDK Version
 
 This repo contains sources and links for Azure Sphere Bootcamp labs, amongst other Azure Sphere Samples for 
 connected MCUs, sensors and other peripherals.
 
 Prerequisites:
-Please make sure to have a Windows 10 laptop capable of running Visual Studio 2019 or Visual Studio Code with the Azure Sphere SDK 
+Please make sure to have a Windows 10 laptop capable of running Visual Studio 2022 or Visual Studio Code with the Azure Sphere SDK 
 already installed and a free USB port available. 
-* Visual Studio 2019 Download: https://visualstudio.microsoft.com/vs/ <br>
+* Visual Studio 2022 Download: https://visualstudio.microsoft.com/vs/ <br>
 In Visual Studio please go to *Extensions* -> *Manage Extensions* and download the **Azure Sphere** Extension for Visual Studio. 
 This may also download dependencies like C/C++ and the Linux development evironment for Visual Studio so it may take a little while.
 * alternatively Visual Studio Code Download: https://code.visualstudio.com/ <br>
 In Visual Studio Code, please also download the **Azure Sphere** extension (which will also download the **C/C++** and **CMake Tools** Extensions). 
 Please also follow the instructions on the Extension page to configure your settings.json!
->**Note**: If you run Visual Studio 2019 and Visual Studio Code side by side, you actually don't need to install the CMake tools and Ninja seperately 
->but can refer to the VS2019 versions in settings.json alike:
+>**Note**: If you run Visual Studio 2022 and Visual Studio Code side by side, you actually don't need to install the CMake tools and Ninja seperately 
+>but can refer to the VS2022 versions in settings.json alike:
 >```json
 >    "AzureSphere.SdkPath": "C:\\Program Files (x86)\\Microsoft Azure Sphere SDK\\",
->    "AzureSphere.ArmGnuPath": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\Linux\\gcc_arm",
->    "cmake.cmakePath": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe",
+>    "AzureSphere.ArmGnuPath": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\Community\\Linux\\gcc_arm",
+>    "cmake.cmakePath": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe",
 >    "cmake.configureSettings": {
->        "CMAKE_MAKE_PROGRAM" : "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\Ninja\\ninja.exe"
+>        "CMAKE_MAKE_PROGRAM" : "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\Ninja\\ninja.exe"
 >    }
 >```
 >The `"AzureSphere.ArmGnuPath"` needs to point to your ARM toolchain (compilers are required to be located in the ...\bin\... subdirectory underneath.
->In my example I'm referring to the toolchain installed with Visual Studio 2019 Community edition. For Enterprise edition this would be ...\2019\Enterprise\...
+>In my example I'm referring to the toolchain installed with Visual Studio 2022 Community edition. For Enterprise edition this would be ...\2022\Enterprise\...
 
 
 * Azure Sphere SDK (for Windows): https://aka.ms/azurespheresdkdownload/Windows <br>
