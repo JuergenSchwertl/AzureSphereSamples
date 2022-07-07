@@ -10,8 +10,8 @@ SET(SENSOR_TYPE BME280)
 
 message("Project ${PROJECT_NAME} with sensor ${SENSOR_TYPE}")
 
-azsphere_configure_tools(TOOLS_REVISION "21.10")
-azsphere_configure_api(TARGET_API_SET "11")
+azsphere_configure_tools(TOOLS_REVISION "22.02")
+azsphere_configure_api(TARGET_API_SET "12")
 
 # Add the Bosch sensor lib
 Add_SUBDIRECTORY(${SENSOR_TYPE})
