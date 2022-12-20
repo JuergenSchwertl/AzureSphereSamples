@@ -10,8 +10,7 @@ SET(SENSOR_TYPE BME280)
 
 message("Project ${PROJECT_NAME} with sensor ${SENSOR_TYPE}")
 
-azsphere_configure_tools(TOOLS_REVISION "22.02")
-azsphere_configure_api(TARGET_API_SET "12")
+azsphere_configure_tools(TOOLS_REVISION "22.11")
 
 # Add the Bosch sensor lib
 Add_SUBDIRECTORY(${SENSOR_TYPE})
@@ -43,6 +42,4 @@ azsphere_target_hardware_definition(${PROJECT_NAME} TARGET_DEFINITION "${TARGET_
 # Add MakeImage post-build command
 azsphere_target_add_image_package(${PROJECT_NAME})
 
-#azsphere_target_add_image_package( ${PROJECT_NAME} APP_MANIFEST "app_manifest-JSchwert.json.private")
-#azsphere_target_add_image_package( ${PROJECT_NAME} APP_MANIFEST "app_manifest-Publish.json.private")
 
