@@ -633,7 +633,7 @@ void AzureIoT_DPS_SetScopeID(const char* cstrId)
 void AzureIoT_DPS_Options(int argc, char *argv[])
 {
     static const char cszScopeIdParam[] = "--ScopeId";
-    for(int i=0; i<argc-2; i++)
+    for(int i=0; i<argc-1; i++)
     {
         if( strncmp(argv[i],cszScopeIdParam, sizeof(cszScopeIdParam)) == 0 )
         {
