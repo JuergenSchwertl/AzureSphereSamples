@@ -52,7 +52,7 @@ static int jsonDirectMethodCallback(const char* methodName, const unsigned char*
     unsigned char** response, size_t* responseSize,
     void* userContextCallback)
 {
-    Log_Debug("[IoT] Trying to invoke method %s\n", methodName);
+    Log_Debug(MODULE "Trying to invoke method %s\n", methodName);
 
     *responseSize = 0;
     *response = NULL;
@@ -82,7 +82,7 @@ static int jsonDirectMethodCallback(const char* methodName, const unsigned char*
         pMethod++;
     }
 
-    Log_Debug("[IoT] WARNING: Method '%s' not found\n", methodName);
+    Log_Debug(MODULE "WARNING: Method '%s' not found\n", methodName);
     static const char methodNotFound[] = "\"No method found\"";
     *responseSize = strlen(methodNotFound);
     *response = (unsigned char*)malloc(*responseSize);
@@ -90,7 +90,7 @@ static int jsonDirectMethodCallback(const char* methodName, const unsigned char*
         strncpy((char*)(*response), methodNotFound, *responseSize);
     }
     else {
-        Log_Debug("[IoT] ERROR: Cannot create response message for method call.\n");
+        Log_Debug(MODULE "ERROR: Cannot create response message for method call.\n");
         abort();
     }
 
@@ -111,7 +111,7 @@ static IOTHUBMESSAGE_DISPOSITION_RESULT jsonMessageReceivedCallback(IOTHUB_MESSA
     size_t nPayloadSize = 0;
     IOTHUB_MESSAGE_RESULT result;
     if ((result = IoTHubMessage_GetByteArray(message, &pBuffer, &nPayloadSize)) != IOTHUB_MESSAGE_OK) {
-        Log_Debug("[IoT] WARNING: failure performing IoTHubMessage_GetByteArray: %d\n", result);
+        Log_Debug(MODULE "WARNING: failure performing IoTHubMessage_GetByteArray: %d\n", result);
         return result;
     }
 

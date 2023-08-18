@@ -323,20 +323,20 @@ static IOTHUBMESSAGE_DISPOSITION_RESULT receiveMessageCallback(IOTHUB_MESSAGE_HA
     size_t nPayloadSize = 0;
     IOTHUB_MESSAGE_RESULT result;
     if ((result = IoTHubMessage_GetByteArray(message, &pBuffer, &nPayloadSize)) != IOTHUB_MESSAGE_OK) {
-        Log_Debug("[IoT] WARNING: failure performing IoTHubMessage_GetByteArray: %d\n", result);
+        Log_Debug(MODULE "ERROR: failure performing IoTHubMessage_GetByteArray: %d\n", result);
         return result;
     }
 
     // 'buffer' is not zero terminated.
     char* strMessage = AzureIoT_GetStringFromPayload( (const char *)pBuffer, nPayloadSize);
 
-    Log_Debug("[IoT] Received message '%s' from IoT Hub\n", strMessage);
+    Log_Debug(MODULE "Received message '%s' from IoT Hub\n", strMessage);
 
     if (lstIoTClientCallbacks.MessageReceivedHandler != 0) {
         lstIoTClientCallbacks.MessageReceivedHandler( strMessage );
     }
     else {
-        Log_Debug( MODULE "WARNING: no MessageReceived handler registered'\n");
+        Log_Debug(MODULE "WARNING: no MessageReceived handler registered'\n");
     }
     
     free(strMessage);
@@ -376,6 +376,7 @@ void AzureIoT_SetMessageConfirmationCallback(MessageDeliveryConfirmationFnType c
 
 /**
 * @brief Callback invoked when the Device Twin reported properties are accepted by IoT Hub.
+* @see IOTHUB_CLIENT_REPORTED_STATE_CALLBACK
 *
 * @param    iStatus             HTTP status code
 * @param    pContextCallback    context specific pointer
@@ -404,13 +405,13 @@ IOTHUB_CLIENT_RESULT AzureIoT_TwinReportState(
     }
 
     IOTHUB_CLIENT_RESULT result = IoTHubDeviceClient_LL_SendReportedState(hIoTHubClient, 
-            pszProperties, nPropertiesSize, reportStatusCallback, 0);
+            pszProperties, nPropertiesSize, reportStatusCallback, NULL);
     
     if (result != IOTHUB_CLIENT_OK) {
-        Log_Debug("[IoT] ERROR: IOTHUB_CLIENT_RESULT %d with properties %s\n", result, pszProperties);
+        Log_Debug(MODULE "ERROR: IOTHUB_CLIENT_RESULT %d with properties %s\n", result, pszProperties);
     }
     else {
-        Log_Debug("[IoT] reported properties %s\n", pszProperties);
+        Log_Debug(MODULE "reported properties %s\n", pszProperties);
     }
 
     return result;

@@ -111,10 +111,10 @@ static int fdResetTimer = -1;
 static int fdSensorI2c = -1;
 
 #ifdef DEBUG
-/// @brief tsTelemetryInterval is set to send teleletry every 20 seconds
+/// @brief tsTelemetryInterval is set to send teleletry every 20 seconds in DEBUG mode
 static const struct timespec tsTelemetryInterval = {20, 0};
 #else
-/// @brief tsTelemetryInterval is set to send teleletry every 60 seconds
+/// @brief tsTelemetryInterval is set to send teleletry every 60 seconds in RELEASE mode
 static const struct timespec tsTelemetryInterval = {60, 0};
 #endif
 
