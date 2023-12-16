@@ -40,7 +40,7 @@ If you want to get rolling within minutes, follow the steps to [Import IoT Centr
 dashboard manually, follow the steps layed out in [Manual IoT Central setup](#Manual-IoT-Central-setup).
 
 #### Import IoT Central Application Template
-Just click here to [import Azure Sphere with BME 280 Template (IoT PnP enabled)](https://apps.azureiotcentral.com/build/new/bc82e494-2521-40e4-8bca-593aea4ccdb2),
+Just click here to [import Azure Sphere with BME 280 Template (IoT PnP enabled)](https://apps.azureiotcentral.com/build/new/27eda059-ca8e-400d-9c98-7b419c9377c8),
 and then select the type of IoT Central application you like. There is a free version available that allows to test your application for 7 days.
 
 Since IoT Central uses Azure IoT Hub and Azure IoT Hub Device Provisioning Service under the hood, you need to setup the certificate chain 
