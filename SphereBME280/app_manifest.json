@@ -42,6 +42,7 @@
     "NetworkConfig": false,
     "SystemTime": false,
     "PowerControls" : ["ForceReboot"]
-  }
+  },
+  "MallocVersion" : 2
 }
 

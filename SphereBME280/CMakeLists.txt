@@ -43,6 +43,4 @@ azsphere_target_hardware_definition(${PROJECT_NAME} TARGET_DEFINITION "${TARGET_
 # Add MakeImage post-build command
 azsphere_target_add_image_package(${PROJECT_NAME})
 
-#azsphere_target_add_image_package( ${PROJECT_NAME} APP_MANIFEST "app_manifest-JSchwert.json.private")
-#azsphere_target_add_image_package( ${PROJECT_NAME} APP_MANIFEST "app_manifest-Publish.json.private")
 

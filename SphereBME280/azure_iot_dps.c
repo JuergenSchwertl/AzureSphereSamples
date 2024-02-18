@@ -23,6 +23,15 @@
 #include "azure_iot_dps.h"
 #define MODULE "[DPS] "
 
+#define LOG_ERROR( msg ) Log_Debug(MODULE "ERROR :" msg "\n" )
+#define LOG_ERROR_FMT( msg, ... ) Log_Debug(MODULE "ERROR :" msg "\n", __VA_ARGS__)
+/// @brief logs error as "[MODULE] ERROR : message :4 (ACCESS_DENIED)\n"
+#define LOG_ERROR_WITH_ERRNO( msg ) Log_Debug(MODULE "ERROR :" msg ":%d (%s)\n", errno, strerror(errno))
+#define LOG_WARNING( msg ) Log_Debug(MODULE "WARNING :" msg "\n" )
+#define LOG_WARNING_FMT( msg, ... ) Log_Debug(MODULE "WARNING :" msg "\n", __VA_ARGS__)
+#define LOG_INFO( msg ) Log_Debug(MODULE "INFO :" msg "\n" )
+#define LOG_INFO_FMT( msg, ... ) Log_Debug(MODULE "INFO :" msg "\n", __VA_ARGS__)
+
 /// @brief Enable IoT SDK tracing
 bool bTraceOn = true;
 
@@ -36,7 +45,7 @@ extern iothub_LL_callbacks_t lstIotHubCallbacks;
 bool dpsRegisterDevice( void );
 void dpsCleanup( void );
 bool hubInitialize( void );
-void  hubCleanup( void );
+void hubCleanup( void );
 
 /// @brief  DPS device registration status
 static AZURE_IOT_DPS_STATUS dpsRegisterStatus = AZURE_IOT_DPS_NOT_STARTED;
@@ -151,7 +160,7 @@ static bool isNetworkReady(void)
 
     // Verifies networking on device
     if (Networking_IsNetworkingReady(&isNetworkingReady) != 0) {
-        Log_Debug("[Networking] ERROR: Networking_IsNetworkingReady: %d (%s)\n", errno, strerror(errno));
+        LOG_ERROR_WITH_ERRNO( "Networking_IsNetworkingReady" );
         return false;
     }
 
@@ -163,7 +172,7 @@ static bool isNetworkReady(void)
     // Verifies authentication is ready on device
     bool isDeviceAuthReady = false;
     if (Application_IsDeviceAuthReady(&isDeviceAuthReady) != 0) {
-        Log_Debug("[Application] ERROR: Application_IsDeviceAuthReady: %d (%s)\n", errno, strerror(errno));
+        LOG_ERROR_WITH_ERRNO("Application_IsDeviceAuthReady");
         return false;
     }
 
@@ -208,7 +217,7 @@ static void dpsTimeoutHandler(EventData* eventData)
         return;
     }
 
-    Log_Debug(MODULE "ERROR: DPS registration timeout.\n");
+    LOG_ERROR("DPS registration timeout");
 
     dpsRegisterStatus = AZURE_IOT_DPS_FAILED;
     dpsCleanup();
@@ -225,7 +234,7 @@ static void dpsTimeoutHandler(EventData* eventData)
  */
 static void dpsRegisterDeviceStatusCallback(PROV_DEVICE_REG_STATUS reg_status, void* user_context)
 {
-    Log_Debug(MODULE "INFO: DPS register device status %s ...\n", PROV_DEVICE_REG_STATUSStrings(reg_status));
+    LOG_INFO_FMT( "DPS registration status: %s", PROV_DEVICE_REG_STATUSStrings(reg_status));
 }
 
 
@@ -247,7 +256,7 @@ static void dpsRegisterDeviceCallback(PROV_DEVICE_RESULT registerResult, const c
         if( MAX_HUB_URI_LENGTH > strnlen(iothub_uri, MAX_HUB_URI_LENGTH) )
         {
             strcpy( strIotHubUri, iothub_uri );
-            Log_Debug(MODULE "INFO: DPS register device succeeded. IoT Hub is %s\n", iothub_uri);
+            LOG_INFO_FMT("DPS registration succeeded. IoT Hub is %s", iothub_uri);
             dpsRegisterStatus = AZURE_IOT_DPS_COMPLETED;
             return;
         } else {
@@ -255,7 +264,7 @@ static void dpsRegisterDeviceCallback(PROV_DEVICE_RESULT registerResult, const c
         }
     }
     dpsRegisterStatus = AZURE_IOT_DPS_FAILED;
-    Log_Debug(MODULE "ERROR: DPS register device failed with %s\n", PROV_DEVICE_RESULTStrings(registerResult));
+    LOG_ERROR_FMT("DPS registration failed: %s", PROV_DEVICE_RESULTStrings(registerResult));
 }
 
 /**
@@ -297,18 +306,18 @@ bool dpsRegisterDevice( void )
 {
     PROV_DEVICE_RESULT result;
     dpsRegisterStatus = AZURE_IOT_DPS_NOT_STARTED;
-    Log_Debug(MODULE "INFO: Initializing DPS registration for scope ID %s using PnP ID '%s'\n", cstrScopeId, cstrPnPModelId);
+    LOG_INFO_FMT("Initializing DPS registration for scope ID %s using PnP ID '%s'\n", cstrScopeId, cstrPnPModelId);
 
     // Initiate security with X509 Certificate
     if (0 != prov_dev_security_init(SECURE_DEVICE_TYPE_X509)) {
-        Log_Debug(MODULE "ERROR: Failed to initiate X509 Certificate security\n");
+        LOG_ERROR("Failed to initiate X509 Certificate security");
         goto cleanup;
     }
 
     // Create Provisioning Client for communication with DPS requires MQTT protocol for IoT PnP
     hProvDevice = Prov_Device_LL_Create(cstrDpsUri, cstrScopeId, Prov_Device_MQTT_Protocol);
     if (NULL == hProvDevice) {
-        Log_Debug(MODULE "ERROR: Failed to create Provisioning Client\n");
+        LOG_ERROR("Failed to create Provisioning Client");
         goto cleanup;
     }
 
@@ -323,7 +332,7 @@ bool dpsRegisterDevice( void )
 
         int len = snprintf(strJson, MAX_MODEL_ID_BUFFER_SIZE, cstrModelIdJsonFmt, cstrPnPModelId);
         if (len < 0 || len >= MAX_MODEL_ID_BUFFER_SIZE) {
-            Log_Debug( MODULE "ERROR: Cannot write Model ID to buffer.\n");
+            LOG_ERROR("Cannot write Model ID to buffer");
             goto cleanup;
         }
 
@@ -331,7 +340,7 @@ bool dpsRegisterDevice( void )
         result = Prov_Device_LL_Set_Provisioning_Payload(hProvDevice, strJson);
         CHECK_PROV_RESULT_AND_REPORT_ERROR("set Model Id");
     } else {
-        Log_Debug(MODULE "INFO: Azure IoT PnP Model Id not specified.\n");
+        LOG_INFO("Azure IoT PnP Model Id not specified");
     }
 
 
@@ -387,14 +396,14 @@ bool hubInitialize( void )
     IOTHUB_CLIENT_RESULT result = IOTHUB_CLIENT_INVALID_ARG;
 
     if (IoTHub_Init() != 0) {
-        Log_Debug(MODULE "ERROR: failed initializing platform.\n");
+        LOG_ERROR( "failed initializing platform.\n");
         return false;
     }
 
     // Set up auth type
     int retError = iothub_security_init(IOTHUB_SECURITY_TYPE_X509);
     if (retError != 0) {
-        Log_Debug("ERROR: iothub_security_init failed with error %d.\n", retError);
+        LOG_ERROR_FMT("iothub_security_init failed with error %d", retError);
         return false;
     }
 
@@ -403,7 +412,7 @@ bool hubInitialize( void )
     hIoTHubClient = IoTHubDeviceClient_LL_CreateWithAzureSphereFromDeviceAuth(strIotHubUri, MQTT_Protocol);
     if (NULL ==  hIoTHubClient) 
     {
-        Log_Debug(MODULE "ERROR: _CreateWithAzureSphereFromDeviceAuth returned NULL.\n");
+        LOG_ERROR( "_CreateWithAzureSphereFromDeviceAuth returned NULL");
         goto cleanup;
     }
 
@@ -633,7 +642,7 @@ void AzureIoT_DPS_SetScopeID(const char* cstrId)
 void AzureIoT_DPS_Options(int argc, char *argv[])
 {
     static const char cszScopeIdParam[] = "--ScopeId";
-    for(int i=0; i<argc-2; i++)
+    for(int i=0; i<argc-1; i++)
     {
         if( strncmp(argv[i],cszScopeIdParam, sizeof(cszScopeIdParam)) == 0 )
         {

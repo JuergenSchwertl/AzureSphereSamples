@@ -178,34 +178,34 @@ static const char cstrPressureProperty[] = "pressure";
 #endif
 
 /// @brief Azure IoT PnP component "dtmi:azure:DeviceManagement:DeviceInformation;1"  
-static const char cstrDevInfoComponent[] = "deviceInformation";
+static const char   cstrDevInfoComponent[]              = "deviceInformation";
 
-static const char cstrDevInfoManufacturerProperty[] = "manufacturer";
-static const char cstrDevInfoModelProperty[] = "model";
-static const char cstrDevInfoSWVersionProperty[] = "swVersion";
-static const char cstrDevInfoOSNameProperty[] = "osName";
-static const char cstrDevInfoProcArchProperty[] = "processorArchitecture";
-static const char cstrDevInfoProcMfgrProperty[] = "processorManufacturer";
-static const char cstrDevInfoStorageProperty[] = "totalStorage";
-static const char cstrDevInfoMemoryProperty[] = "totalMemory";
+static const char   cstrDevInfoManufacturerProperty[]   = "manufacturer";
+static const char   cstrDevInfoModelProperty[]          = "model";
+static const char   cstrDevInfoSWVersionProperty[]      = "swVersion";
+static const char   cstrDevInfoOSNameProperty[]         = "osName";
+static const char   cstrDevInfoProcArchProperty[]       = "processorArchitecture";
+static const char   cstrDevInfoProcMfgrProperty[]       = "processorManufacturer";
+static const char   cstrDevInfoStorageProperty[]        = "totalStorage";
+static const char   cstrDevInfoMemoryProperty[]         = "totalMemory";
 
-static const char cstrDevInfoManufacturerValue[] = "Seeed";
-static const char cstrDevInfoModelValue[] = "MT3620 Developer Kit";
-static const char cstrDevInfoSWVersionValue[] = "SphereBME280 v24.02.01.1930";
-static const char cstrDevInfoOSNameValue[] = "Azure Sphere IoT OS";
-static const char cstrDevInfoProcArchValue[] = "ARM Core A7,M4";
-static const char cstrDevInfoProcMfgrValue[] = "MediaTek";
-static const int ciDevInfoStorageValue = 16384;
-static const int ciDevInfoMemoryValue = 4096;
+static const char   cstrDevInfoManufacturerValue[]      = "Seeed";
+static const char   cstrDevInfoModelValue[]             = "MT3620 Developer Kit";
+static const char   cstrDevInfoSWVersionValue[]         = "SphereBME280-" __DATE__;
+static const char   cstrDevInfoOSNameValue[]            = "Sphere OS-";
+static const char   cstrDevInfoProcArchValue[]          = "ARM Core A7,M4";
+static const char   cstrDevInfoProcMfgrValue[]          = "MediaTek";
+static const double cdDevInfoStorageValue               = 16000000.0;
+static const double cdDevInfoMemoryValue                = 4000000.0;
 
 /// @brief Azure IoT PnP component "dtmi:azsphere:SphereTTT:DeviceHealth;1"
-static const char cstrDevHealthComponent[] ="deviceHealth";
-static const char cstrEvtConnected[] = "connect";
-static const char cstrDevHealthTotalMemoryUsed[] ="totalMemoryUsed";
-static const char cstrDevHealthUserMemoryUsed[] ="userMemoryUsed";
-static const char cstrResetTimerProperty[] = "resetTimer";
-static const char cstrResetMethodName[] = "deviceHealth*resetMethod";
-static const char cstrResetResponseMsg[] = "Reset in %d seconds";
+static const char   cstrDevHealthComponent[]            = "deviceHealth";
+static const char   cstrEvtConnected[]                  = "connect";
+static const char   cstrDevHealthTotalMemoryUsed[]      = "totalMemoryUsed";
+static const char   cstrDevHealthUserMemoryUsed[]       = "userMemoryUsed";
+static const char   cstrResetTimerProperty[]            = "resetTimer";
+static const char   cstrResetMethodName[]               = "deviceHealth*resetMethod";
+static const char   cstrResetResponseMsg[]              = "Reset in %d seconds";
 
 static size_t nLastTotalMemoryUsed = 0;
 static size_t nLastUserMemoryUsed = 0;
@@ -466,8 +466,8 @@ static void SendTelemetryMessage(void)
             jsonRootValue = json_value_init_object();
             jsonRootObject = json_value_get_object( jsonRootValue );
 
-            json_object_set_number(jsonRootObject, cstrDevHealthTotalMemoryUsed, nTotalMemUsed);
-            json_object_set_number(jsonRootObject, cstrDevHealthUserMemoryUsed, nUserMemUsed);
+            json_object_set_number(jsonRootObject, cstrDevHealthTotalMemoryUsed, (double)( nTotalMemUsed * 1024 ));
+            json_object_set_number(jsonRootObject, cstrDevHealthUserMemoryUsed, (double) (nUserMemUsed * 1024));
     
             AzureIoT_PnP_SendJsonMessage(jsonRootValue, cstrDevHealthComponent);
             json_value_free(jsonRootValue);
@@ -614,27 +614,35 @@ static HTTP_STATUS_CODE ResetMethod(JSON_Value* jsonParameters, JSON_Value** jso
 
 static void ReportAllProperties(void)
 {
-    JSON_Value* jsonRoot = json_value_init_object();
+    JSON_Value* jsonRoot = NULL;
     JSON_Value* jsonValue = NULL;
-    JSON_Value* jsonComponentValue = NULL;
     JSON_Object *jsonObject = NULL;
+    Applications_OsVersion osversion;
+    char strDevInfoOsVersion[32];
+
+    jsonRoot = json_value_init_object();
 
     jsonValue = json_value_init_object();
     jsonObject = json_value_get_object( jsonValue );
+
+    // get the currently running OS version
+    Applications_GetOsVersion( &osversion );
+    strncpy( strDevInfoOsVersion, cstrDevInfoOSNameValue, sizeof(strDevInfoOsVersion) );
+    strncat( strDevInfoOsVersion, (const char *) osversion.version,  sizeof(strDevInfoOsVersion));
+
     json_object_set_string(jsonObject, cstrDevInfoManufacturerProperty, cstrDevInfoManufacturerValue);
     json_object_set_string(jsonObject, cstrDevInfoModelProperty, cstrDevInfoModelValue);
     json_object_set_string(jsonObject, cstrDevInfoSWVersionProperty, cstrDevInfoSWVersionValue);
-    json_object_set_string(jsonObject, cstrDevInfoOSNameProperty, cstrDevInfoOSNameValue);
+    json_object_set_string(jsonObject, cstrDevInfoOSNameProperty, strDevInfoOsVersion );
     json_object_set_string(jsonObject, cstrDevInfoProcArchProperty, cstrDevInfoProcArchValue);
     json_object_set_string(jsonObject, cstrDevInfoProcMfgrProperty, cstrDevInfoProcMfgrValue);
-    json_object_set_number(jsonObject, cstrDevInfoStorageProperty, (double) ciDevInfoStorageValue);
-    json_object_set_number(jsonObject, cstrDevInfoMemoryProperty, (double) ciDevInfoMemoryValue);
-    
+    json_object_set_number(jsonObject, cstrDevInfoStorageProperty, cdDevInfoStorageValue);
+    json_object_set_number(jsonObject, cstrDevInfoMemoryProperty, cdDevInfoMemoryValue);
+
     AzureIoT_PnP_CreateComponentPropertyJson( jsonRoot, cstrDevInfoComponent, jsonValue);
 
-
     jsonValue = json_value_init_object();
-    jsonObject = json_value_get_object( jsonComponentValue );
+    jsonObject = json_value_get_object( jsonValue );
     json_object_set_number(jsonObject, cstrBlinkRateProperty, (double) nBlinkRateValue);
 
     AzureIoT_PnP_CreateComponentPropertyJson( jsonRoot, cstrRgbledComponent, jsonValue);

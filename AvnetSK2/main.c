@@ -448,26 +448,33 @@ static void SendTelemetryMessage(void)
 
         if( Sensors_GetAcceleration( &vector ) )
         {
+            JSON_Value *jsonObjValue = NULL;
+            JSON_Object *jsonObj = NULL;
             const char *cstrOrientation = Sensors_GetOrientation(&vector);
-            if( cstrOrientation != strLastOrientation )
+
+            if( (cstrOrientation != strLastOrientation) || 
+                true
+            )
             {
                 // update "orientation" property
-                JSON_Value *jsonObjValue = json_value_init_object();
-                JSON_Object *jsonObj = json_value_get_object( jsonObjValue );
+                jsonObjValue = json_value_init_object();
+                jsonObj = json_value_get_object( jsonObjValue );
                 
                 json_object_set_string( jsonObj, cstrOrientationProperty, cstrOrientation); 
                 AzureIoT_PnP_ReportComponentProperty( cstrLSM6DSOComponent, jsonObjValue );
 
-                // create payload for "acceleration" telemetry
-                jsonObjValue = json_value_init_object();
-                jsonObj = json_value_get_object( jsonObjValue );
-
-                json_object_set_number(jsonObj, cstrXProperty, vector.x);
-                json_object_set_number(jsonObj, cstrYProperty, vector.y);
-                json_object_set_number(jsonObj, cstrZProperty, vector.z);
-                json_object_set_value( jsonRootObject, cstrAccelerationObject, jsonObjValue );
-                bHasData = true;
+                strLastOrientation = cstrOrientation;
             }
+
+            // create payload for "acceleration" telemetry
+            jsonObjValue = json_value_init_object();
+            jsonObj = json_value_get_object( jsonObjValue );
+
+            json_object_set_number(jsonObj, cstrXProperty, vector.x);
+            json_object_set_number(jsonObj, cstrYProperty, vector.y);
+            json_object_set_number(jsonObj, cstrZProperty, vector.z);
+            json_object_set_value( jsonRootObject, cstrAccelerationObject, jsonObjValue );
+            bHasData = true;
         }
 
 
