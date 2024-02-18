@@ -4,13 +4,22 @@
   "ApplicationType": "Default",
   "ComponentId": "82a16cf9-d4e1-4235-a6e5-14ed23c4cc18",
   "EntryPoint": "/bin/app",
-  "CmdArgs": [ "--ScopeId", "**your Azure IoT Central DPS Scope ID**" ],
+  "CmdArgs": [ "--ScopeId", "0ne00AAD9CD", "0ne00AAD9CD : js-climate.azureiotcentral.com"],
   "Capabilities": {
-    "AllowedConnections": [
-      "global.azure-devices-provisioning.net",
-      "**your list of Azure IoT Central IoT Hubs**"
+    "AllowedConnections": [ 
+      "global.azure-devices-provisioning.net", 
+      "iotc-2062c05b-be02-4978-8e38-c179f87bf678.azure-devices.net", 
+      "iotc-2a27b0ce-def6-49b3-99be-0552a086bd78.azure-devices.net", 
+      "iotc-5573ea13-afa5-408c-bc27-04b28f938fb4.azure-devices.net", 
+      "iotc-5874290f-2149-4c33-b813-e3ff5b579855.azure-devices.net", 
+      "iotc-4d7c5121-1d83-4192-8264-1ab16ec6c1d1.azure-devices.net", 
+      "iotc-33229186-c35d-4fc2-8258-10296585bea6.azure-devices.net", 
+      "iotc-4bd8cb3e-332c-4fd4-9fc5-90d4e90ba543.azure-devices.net", 
+      "iotc-23728482-2502-429f-87a6-5ec6e316e4e1.azure-devices.net", 
+      "iotc-dc792781-0cc1-47d1-add3-ec3be18f43ef.azure-devices.net", 
+      "iotc-ffcd08a5-9138-4700-8fec-9dcafb8511db.azure-devices.net"
     ],
-    "DeviceAuthentication": "**your Azure Sphere Tenant Id**",
+    "DeviceAuthentication": "c0b88764-9273-46ab-bab2-effecf13f91c",
     "AllowedTcpServerPorts": [],
     "AllowedUdpServerPorts": [],
     "Gpio": [

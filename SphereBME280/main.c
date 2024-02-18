@@ -110,8 +110,14 @@ static int fdTelemetryTimer = -1;
 static int fdResetTimer = -1;
 static int fdSensorI2c = -1;
 
-/// @brief tsTelemetryInterval is set to send teleletry every 30 seconds
-static const struct timespec tsTelemetryInterval = {30, 0};
+/// @brief tsTelemetryInterval is set to send telemetry every 30 seconds in DEBUG mode, otherwise every 2 minutes
+static const struct timespec tsTelemetryInterval = 
+#ifdef DEBUG
+{30, 0}
+#else
+{120, 0}
+#endif
+;
 
 /// @brief default tsResetDelay is set to reboot after 5 second (overridden by resetTimer property)
 static struct timespec tsResetDelay = { 5, 0 };
@@ -185,7 +191,7 @@ static const char cstrDevInfoMemoryProperty[] = "totalMemory";
 
 static const char cstrDevInfoManufacturerValue[] = "Seeed";
 static const char cstrDevInfoModelValue[] = "MT3620 Developer Kit";
-static const char cstrDevInfoSWVersionValue[] = "SphereBME280 v21.12.30.1300";
+static const char cstrDevInfoSWVersionValue[] = "SphereBME280 v24.02.01.1930";
 static const char cstrDevInfoOSNameValue[] = "Azure Sphere IoT OS";
 static const char cstrDevInfoProcArchValue[] = "ARM Core A7,M4";
 static const char cstrDevInfoProcMfgrValue[] = "MediaTek";
