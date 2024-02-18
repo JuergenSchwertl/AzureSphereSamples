@@ -20,11 +20,11 @@ IF( ${AVNETSK_REVISION} STREQUAL "AVNETSK_REV2")
     ## This application targets the AVNET Starter Kit Rev2
     SET(TARGET_HARDWARE "avnet_mt3620_sk_rev2")
 ELSE()
-    # This application targets the AVNET Starter Kit Rev2
+    # This application targets the original AVNET Starter Kit (Rev1)
     SET(TARGET_HARDWARE "avnet_mt3620_sk")
 ENDIF()
 
-# Add the ST Micro LSM6DSO 3D Gyro and Accelerometer sensor lib
+# Add the ST Micro LSM6DSO 3D Gyro and Accelerometer sensor libs
 # Add the ST Micro LPS22HH Temp/Pressure sensor lib (connected to LSM6DSO)
 ADD_SUBDIRECTORY(sensors)
 
