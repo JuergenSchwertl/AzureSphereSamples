@@ -96,7 +96,14 @@ static const GPIO_Id gpioLedPins[3][3] = {
 
 static RgbLedUtility_Colors colBlinkingLedColor = RgbLedUtility_Colors_Blue;
 
-static const struct timespec atsBlinkingIntervals[] = {{0, 125000000}, {0, 250000000}, {0, 500000000}};
+static const struct timespec atsBlinkingIntervals[] = {
+#ifdef Debug    
+    {0, 125000000}, {0, 250000000}, {0, 500000000}
+#else
+    {0, 500000000}, {1, 0}, {1, 500000000}
+#endif    
+    };
+
 static const size_t nBlinkingIntervalsCount = sizeof(atsBlinkingIntervals) / sizeof(*atsBlinkingIntervals);
 
 /// @brief File descriptors - initialized to invalid value
@@ -112,7 +119,7 @@ static int fdSensorI2c = -1;
 
 /// @brief tsTelemetryInterval is set to send telemetry every 30 seconds in DEBUG mode, otherwise every 2 minutes
 static const struct timespec tsTelemetryInterval = 
-#ifdef DEBUG
+#ifdef Debug
 {30, 0}
 #else
 {120, 0}
@@ -191,7 +198,19 @@ static const char   cstrDevInfoMemoryProperty[]         = "totalMemory";
 
 static const char   cstrDevInfoManufacturerValue[]      = "Seeed";
 static const char   cstrDevInfoModelValue[]             = "MT3620 Developer Kit";
-static const char   cstrDevInfoSWVersionValue[]         = "SphereBME280-" __DATE__;
+static const char   cstrDevInfoSWVersionValue[]         = 
+#ifdef BMP280 
+    "SphereBMP280" 
+#else
+    "SphereBME280" 
+#endif    
+"-" __DATE__ "-"
+#ifdef Debug
+"Dbg"
+#else
+"Rel"
+#endif
+;
 static const char   cstrDevInfoOSNameValue[]            = "Sphere OS-";
 static const char   cstrDevInfoProcArchValue[]          = "ARM Core A7,M4";
 static const char   cstrDevInfoProcMfgrValue[]          = "MediaTek";
@@ -627,8 +646,14 @@ static void ReportAllProperties(void)
 
     // get the currently running OS version
     Applications_GetOsVersion( &osversion );
-    strncpy( strDevInfoOsVersion, cstrDevInfoOSNameValue, sizeof(strDevInfoOsVersion) );
-    strncat( strDevInfoOsVersion, (const char *) osversion.version,  sizeof(strDevInfoOsVersion));
+
+    char *end = strDevInfoOsVersion + sizeof(strDevInfoOsVersion) - 1;
+    char *p = memccpy( strDevInfoOsVersion, cstrDevInfoOSNameValue, '\0', sizeof(strDevInfoOsVersion));
+    if(p != NULL)
+        p = memccpy( p-1, (const char *) osversion.version, '\0', (size_t)(end-p));
+
+    // strncpy( strDevInfoOsVersion, cstrDevInfoOSNameValue, sizeof(strDevInfoOsVersion) );
+    // strncpy( strDevInfoOsVersion+sizeof(cstrDevInfoOSNameValue)-1, (const char *) osversion.version,  sizeof(strDevInfoOsVersion)-sizeof(cstrDevInfoOSNameValue)-1);
 
     json_object_set_string(jsonObject, cstrDevInfoManufacturerProperty, cstrDevInfoManufacturerValue);
     json_object_set_string(jsonObject, cstrDevInfoModelProperty, cstrDevInfoModelValue);
