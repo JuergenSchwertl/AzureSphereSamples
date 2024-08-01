@@ -6,8 +6,9 @@ PROJECT(AVNET_StarterKit_Telemetry C)
 
 message("Project ${PROJECT_NAME}")
 
-azsphere_configure_tools(TOOLS_REVISION "23.05")
-azsphere_configure_api(TARGET_API_SET "16")
+#   no longer supported since 24.03
+#azsphere_configure_tools(TOOLS_REVISION "23.05")
+#azsphere_configure_api(TARGET_API_SET "16")
 
 # This application targets the AVNET Starter Kit Rev1
 #SET(AVNETSK_REVISION "AVNETSK_REV1")

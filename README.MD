@@ -1,16 +1,16 @@
-# AzureSphereSamples for 22.02 Azure Sphere SDK Version
+# AzureSphereSamples for 24.03 Azure Sphere SDK Version
 
 This repo contains sources and links for Azure Sphere Bootcamp labs, amongst other Azure Sphere Samples for 
 connected MCUs, sensors and other peripherals.
 
 Prerequisites:
-Please make sure to have a Windows 10 laptop capable of running Visual Studio 2022 or Visual Studio Code with the Azure Sphere SDK 
+Please make sure to have a Windows 11 laptop capable of running Visual Studio 2022 or Visual Studio Code with the Azure Sphere SDK 
 already installed and a free USB port available. 
 * Visual Studio 2022 Download: https://visualstudio.microsoft.com/vs/ <br>
 In Visual Studio please go to *Extensions* -> *Manage Extensions* and download the **Azure Sphere** Extension for Visual Studio. 
 This may also download dependencies like C/C++ and the Linux development evironment for Visual Studio so it may take a little while.
 * alternatively Visual Studio Code Download: https://code.visualstudio.com/ <br>
-In Visual Studio Code, please also download the **Azure Sphere** extension (which will also download the **C/C++** and **CMake Tools** Extensions). 
+In Visual Studio Code, please also download the **Azure Sphere** extension (which will also download the **C/C++** and **CMake Tools** Extensions).<br> 
 Please also follow the instructions on the Extension page to configure your settings.json!
 >**Note**: If you run Visual Studio 2022 and Visual Studio Code side by side, you actually don't need to install the CMake tools and Ninja seperately 
 >but can refer to the VS2022 versions in settings.json alike:
@@ -24,13 +24,15 @@ Please also follow the instructions on the Extension page to configure your sett
 >```
 >The `"AzureSphere.ArmGnuPath"` needs to point to your ARM toolchain (compilers are required to be located in the ...\bin\... subdirectory underneath.
 >In my example I'm referring to the toolchain installed with Visual Studio 2022 Community edition. For Enterprise edition this would be ...\2022\Enterprise\...
+>
+>You can also download the original [ARM GNU Toolchain](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads) and install into a directory of your choice and update `"AzureSphere.ArmGnuPath"` accordingly. 
 
 
 * Azure Sphere SDK (for Windows): https://aka.ms/azurespheresdkdownload/Windows <br>
 This download package installs the AzSphere.Exe command line tool as well as the network & FTDI drivers 
 
 Although you may be able to follow the labs also using Visual Studio Code running on Linux, your milage may vary (i.e. I have mainly tested the 
-lab projects on Windows using Visual Studio and Visual Studio Code and only tried some of them on Ubuntu 20.04 Linux).
+lab projects on Windows using Visual Studio and Visual Studio Code and only tried some of them on Ubuntu 20.04/22.04 Linux).
 
 You will also need an active Azure subscription and a user account with sufficient rights to create Azure Resources such as 
 * Azure Resource Groups 
