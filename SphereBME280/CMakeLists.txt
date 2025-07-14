@@ -1,7 +1,7 @@
 #  Copyright (c) Microsoft Corporation. All rights reserved.
 #  Licensed under the MIT License.
 
-CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.20)
 PROJECT(SphereBME280 C)
 
 # set the used sensor type (uncomment the line as appropriate)
@@ -9,9 +9,6 @@ SET(SENSOR_TYPE BME280)
 #SET(SENSOR_TYPE BMP280)
 
 message("Project ${PROJECT_NAME} with sensor ${SENSOR_TYPE}")
-
-azsphere_configure_tools(TOOLS_REVISION "23.05")
-azsphere_configure_api(TARGET_API_SET "16")
 
 # Add the Bosch sensor lib
 Add_SUBDIRECTORY(${SENSOR_TYPE})
