@@ -13,7 +13,7 @@ directly connect a sensor to the MT3620.
 
 Hardware Setup.
 This lab requires four (4) pieces of hardware:
-* MT3620 – Azure Sphere
+* MT3620 ï¿½ Azure Sphere
 * Micro USB cable (to program and power the MT3620)
 * DHT22 or DHT11 Sensor
 * Breadboard or female to female jumper cables
@@ -52,7 +52,7 @@ is being added to the list of include directories.
 
 Step 1. In Visual Studio, in the Team Explorer Window open the CmakeLists.txt file in the IoTConnectHL directory using **File->Open...->Cmake...**.
 
-Step 2. To prepares your *app_manifest.json* with your Azure IoT Hub settings, a CMake project does not offer the "Connect to Service..." Wizard.
+Step 2. To prepare your *app_manifest.json* with your Azure IoT Hub settings, a CMake project does not offer the "Connect to Service..." Wizard.
 We therefore need to manually copy the settings from the Azure Portal. 
 ```json
 {
@@ -231,16 +231,17 @@ static void LedUpdateHandler(event_data_t *eventData)
 The DHT11 library project implements a static library to read the sensor data from a DHT 11 or DHT 22 sensor. The DHT 11 uses a 
 single wire protocol, where a 18ms low pulse from the Azure Sphere GPIO-port (configured as output) to pull the line to 0 to 
 initialize the data transfer.
-Then the DHT starts sending data after a 80µs low and 80µs high preamble. Each bit to be transferred is indicated by a 50µs low, followed
-by a  26-28 µsec indicating a "0" bit or a 70 µsec indicating a "1" bit.
+Then the DHT starts sending data after a 80ï¿½s low and 80ï¿½s high preamble. Each bit to be transferred is indicated by a 50ï¿½s low, followed
+by a  26-28 ï¿½sec indicating a "0" bit or a 70 ï¿½sec indicating a "1" bit.
 To disect that protocol DHTlib.c implements a mechanism called bit-banging, checking the line state in a counter loop looking for 
 state transitions. 
 
-This is the typical way how you would implement this in a micro-controller since the code there is mostly deterministic during runtime. With
-Azure Sphere, your high level application runs within a Linux process and may be preempted by the operating system at any time. If the OS chooses 
-to consume some cycles, the counter loop though may miss one or more state transitions and the sensor reading fails.
-
-If you run this sample application for a while, you'll see that every once in a while the sensor reading reports an error reading the data.
+>Important note:<br>
+>This is the typical way how you would implement this in a micro-controller since the code there is mostly deterministic during runtime. With
+>Azure Sphere, your high level application runs within a Linux process and may be preempted by the operating system at any time. If the OS chooses 
+>to consume some cycles, the counter loop though may miss one or more state transitions and the sensor reading fails.
+>
+>If you run this sample application for a while, you'll see that every once in a while the sensor reading reports an error reading the data.
 
 ---
 [Go back to root](../README.MD#lab-3-connecting-a-dht-sensor-and-send-telemetry-to-azure-iot-hub)

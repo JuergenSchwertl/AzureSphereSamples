@@ -7,7 +7,6 @@ PROJECT(SphereBME280 C)
 # set the used sensor type (uncomment the line as appropriate)
 SET(SENSOR_TYPE BME280)
 #SET(SENSOR_TYPE BMP280)
-
 message("Project ${PROJECT_NAME} with sensor ${SENSOR_TYPE}")
 
 # Add the Bosch sensor lib
@@ -27,7 +26,8 @@ set( SOURCE_FILES
 # Create executable
 ADD_EXECUTABLE(${PROJECT_NAME} ${SOURCE_FILES} )
 
-TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PUBLIC ${SENSOR_TYPE})
+# added _GNU_SOURCE to get memccpy()
+TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} PUBLIC ${SENSOR_TYPE} ${CMAKE_BUILD_TYPE} _GNU_SOURCE)
 
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} m azureiot applibs pthread gcc_s c ${SENSOR_TYPE})
 

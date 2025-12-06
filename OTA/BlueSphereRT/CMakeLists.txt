@@ -5,7 +5,9 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
 PROJECT(BlueSphereRT C)
 message("[JSchwert] Project ${PROJECT_NAME}")
 
-azsphere_configure_tools(TOOLS_REVISION "22.02")
+#   no longer supported since 24.03
+#azsphere_configure_tools(TOOLS_REVISION "23.05")
+# real-time capable apps didn't need the API-set
 
 ADD_SUBDIRECTORY("../Shared.All" "${CMAKE_CURRENT_BINARY_DIR}/Shared.All")
 INCLUDE_DIRECTORIES("${SharedAll_SOURCE_DIR}")
