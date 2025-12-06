@@ -606,13 +606,13 @@ static HTTP_STATUS_CODE ResetMethod(JSON_Value* jsonParameters, JSON_Value** jso
         time_t tResetInterval = (time_t) json_object_get_number(jsonRootObject, cstrResetTimerProperty);
         if ((tResetInterval > 1) && (tResetInterval < 10)) {
 
-            tsResetDelay.tv_sec = (time_t)tResetInterval;
+            tsResetDelay.tv_sec = tResetInterval;
             // arm count down timer
             SetTimerFdToSingleExpiry(fdResetTimer, &tsResetDelay);
-            Log_Debug("[ResetMethod]: set timer to %d seconds.\n", tsResetDelay.tv_sec);
+            Log_Debug("[ResetMethod]: set timer to %d seconds.\n", (long) tResetInterval);
 
             json_object_set_boolean(jsonObject, cstrSuccessProperty, true);
-            char* pszMsg = SetupHeapMessage(cstrResetResponseMsg, 64, (int)tResetInterval);
+            char* pszMsg = SetupHeapMessage(cstrResetResponseMsg, 64, (int) tResetInterval);
             json_object_set_string(jsonObject, cstrMessageProperty, pszMsg);
             free(pszMsg);
 
