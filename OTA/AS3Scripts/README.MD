@@ -1,5 +1,14 @@
 # Over-the-air (OTA) deployment
 
+
+>**Note:**: 
+>Please be aware that the  [Legacy service interface (PAPI) and azsphere CLI will be retired](https://techcommunity.microsoft.com/blog/iotblog/migrate-to-azure-sphere-integrated-ahead-of-sept-2027-retirement-of-legacy-servi/4237398). 
+>
+>The shell and PowerShell scripts in this directory were initially written for the initial (V1) azsphere.exe command line tool and I only partially adapted them
+>to V2 as the V2 json output progressed over time. I haven't had the time yet to have a deeper look into the [Azure CLI integration](https://learn.microsoft.com/en-us/azure-sphere/product-overview/az-sphere-integrated?view=azure-sphere-integrated&preserve-view=true) to see what changes would be required.
+>In any case, see [Install the Sphere Azure CLI extension](https://learn.microsoft.com/en-us/azure-sphere/reference/cli/overview?view=azure-sphere-integrated&preserve-view=true) for further reference.
+
+
 This directory is part of the Multi-Core OTA sample. On information how build, run and deploy the sample OTA please refer 
 to the documentation in the [master directory](../README.MD).
 

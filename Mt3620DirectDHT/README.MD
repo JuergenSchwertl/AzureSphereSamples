@@ -231,8 +231,8 @@ static void LedUpdateHandler(event_data_t *eventData)
 The DHT11 library project implements a static library to read the sensor data from a DHT 11 or DHT 22 sensor. The DHT 11 uses a 
 single wire protocol, where a 18ms low pulse from the Azure Sphere GPIO-port (configured as output) to pull the line to 0 to 
 initialize the data transfer.
-Then the DHT starts sending data after a 80�s low and 80�s high preamble. Each bit to be transferred is indicated by a 50�s low, followed
-by a  26-28 �sec indicating a "0" bit or a 70 �sec indicating a "1" bit.
+Then the DHT starts sending data after a 80&micro;s low and 80&micro;s high preamble. Each bit to be transferred is indicated by a 50&micro;s low, followed
+by a  26-28 &micro;sec indicating a "0" bit or a 70 &micro;sec indicating a "1" bit.
 To disect that protocol DHTlib.c implements a mechanism called bit-banging, checking the line state in a counter loop looking for 
 state transitions. 
 
