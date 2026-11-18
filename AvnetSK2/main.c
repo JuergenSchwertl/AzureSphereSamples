@@ -324,12 +324,12 @@ static void DebugPrintCurrentlyConnectedWiFiNetwork(void)
 
     int result = WifiConfig_GetCurrentNetwork(&network);
     if (result < 0) {
-        if( (nChar=snprintf(&szBuffer[nPos], sizeof(szBuffer)-nPos, 
+        if( (nChar=snprintf(&szBuffer[nPos], sizeof(szBuffer)-(size_t)nPos, 
                             "WiFi Disconnected. ")) >= 0){
             nPos+=nChar;
         }
     } else {
-        if( (nChar=snprintf(&szBuffer[nPos], sizeof(szBuffer)-nPos, 
+        if( (nChar=snprintf(&szBuffer[nPos], sizeof(szBuffer)-(size_t)nPos, 
                             "SSID \"%.*s\", Freq:%dMHz, Sig:%d. ", 
                             network.ssidLength, network.ssid, network.frequencyMHz, network.signalRssi)) >= 0){
             nPos+=nChar;
@@ -338,12 +338,12 @@ static void DebugPrintCurrentlyConnectedWiFiNetwork(void)
     Networking_Interface_HardwareAddress hwAddress;
     result = Networking_GetHardwareAddress( "wlan0", &hwAddress);
     if( result < 0){
-        if( (nChar=snprintf(&szBuffer[nPos], sizeof(szBuffer)-nPos, 
+        if( (nChar=snprintf(&szBuffer[nPos], sizeof(szBuffer)-(size_t)nPos, 
                             "[ERR] No MAC. ")) >= 0){
             nPos+=nChar;
         }
     } else {
-        if( (nChar=snprintf(&szBuffer[nPos], sizeof(szBuffer)-nPos, 
+        if( (nChar=snprintf(&szBuffer[nPos], sizeof(szBuffer)-(size_t)nPos, 
                             "MAC %02x:%02x:%02x:%02x:%02x:%02x. ",
                             hwAddress.address[0], hwAddress.address[1],
                             hwAddress.address[2], hwAddress.address[3],

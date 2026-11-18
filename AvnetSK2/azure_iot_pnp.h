@@ -12,8 +12,8 @@
 
 #include "parson.h"
 
-const char cstrPnpComponentProperty[4];
-const char cstrPnPComponentValue[2];
+extern const char cstrPnpComponentProperty[4];
+extern const char cstrPnPComponentValue[2];
 
 /** 
 * @brief    Creates and enqueues a JSON formatted message string to be delivered to the IoT Hub. The message is not actually
