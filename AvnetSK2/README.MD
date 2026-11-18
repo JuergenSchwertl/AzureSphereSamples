@@ -1,7 +1,8 @@
 ## Send telemetry from AVNET Starter Kit Rev2 to Azure IoT Central
 
->**Note**: This sample is still work in progress for the upcoming train-the-trainer bootcamp
-
+>**Note:** As [Azure IoT Central is nearing EOL](https://techcommunity.microsoft.com/blog/iotblog/azure-iot-central-is-evolving-what-you-need-to-know/4554570), as of September 2026, 
+>you can likely no longer Import my Application Template and create a new Azure IoT Application Instance. 
+>I'm actively working on refactoring the sample to work with a local [Home Assistant](../Homeassistant/README.MD) instead.
 
 ## Seting up Azure IoT Central
 If you want to get rolling within minutes, follow the steps to [Import IoT Central Application Template](#Import-IoT-Central-Application-Template) , if you want to setup your 
