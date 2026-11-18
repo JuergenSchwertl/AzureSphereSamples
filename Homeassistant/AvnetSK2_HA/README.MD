@@ -1,6 +1,65 @@
-## Send telemetry from AVNET Starter Kit Rev2 to Home Assistant
+## Connect an AVNET Starter Kit Rev2 to Home Assistant over MQTT
 
->**Note**: This sample is still work in progress.
+This application publishes sensor readings to an MQTT broker and uses Home Assistant MQTT
+discovery to create entities automatically. It does not use Azure IoT Hub, DPS, or IoT Central.
+
+### Broker setup
+
+Enable the Home Assistant MQTT integration and configure a broker reachable from the device.
+The default broker is `homeassistant.local` on TCP port `1883`; this matches the manifest's
+`AllowedConnections` entry. If your broker uses a different host, update that entry in
+`app_manifest.json` and pass the new broker host to the application.
+
+The client supports the following arguments:
+
+| Argument | Default | Description |
+| --- | --- | --- |
+| `--Broker` | `homeassistant.local` | MQTT broker hostname or IP address |
+| `--Port` | `1883` | MQTT TCP port |
+| `--Username` | empty | Optional MQTT username (required when specifying a password) |
+| `--Password` | empty | Optional MQTT password |
+| `--ClientId` | `avnet_sk2` | MQTT client identifier |
+
+Azure Sphere passes application arguments from the manifest's `CmdArgs` array. For example,
+to configure an authenticated broker, use:
+
+```json
+"CmdArgs": [
+  "--Broker", "homeassistant.local",
+  "--Port", "1883",
+  "--Username", "mqtt-user",
+  "--Password", "mqtt-password"
+]
+```
+
+**Security:** this client uses plain MQTT over TCP; it does not support TLS. MQTT credentials
+are sent unencrypted and arguments embedded in `CmdArgs` are included in the application
+package. Use only on a trusted network with an appropriately isolated broker; do not use
+this configuration over an untrusted network.
+
+### Home Assistant entities and MQTT topics
+
+Home Assistant discovery creates temperature, pressure, acceleration, orientation, memory,
+LED blink-rate, LED color, and restart entities. Sensor state is published every 30 seconds
+and immediately after connecting or pressing button B. Button events are published on
+`avnet_sk2/event/button_a` and `avnet_sk2/event/button_b`.
+
+The blink-rate number accepts `0` through `2`, and the color select accepts `white`, `blue`,
+`cyan`, `green`, `red`, `yellow`, `magenta`, or `off`. These command topics are subscribed:
+
+* `avnet_sk2/command/blink_rate`
+* `avnet_sk2/command/led_color`
+* `avnet_sk2/command/reset` (a value from `2` through `9` seconds)
+
+Commands should not be retained. Retained commands are ignored to prevent old commands from
+being replayed after a reconnect. Discovery and state values are retained; broker availability
+is reported on `avnet_sk2/status`.
+
+### Building
+
+Build this project using the Azure Sphere SDK and the ARM-Debug or ARM-Release CMake
+configuration. The MQTT client is implemented in the project and has no external MQTT library
+dependency.
 
 
 

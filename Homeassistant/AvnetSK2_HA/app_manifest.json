@@ -1,0 +1,35 @@
+{
+  "SchemaVersion": 1,
+  "Name": "AvnetSK_HomeAssistant_Telemetry",
+  "ApplicationType": "Default",
+  "ComponentId": "6521ee2c-4197-4d29-965b-21c292a97d7b",
+  "EntryPoint": "/bin/app",
+  "CmdArgs": [],
+  "Capabilities": {
+    "AllowedConnections": [
+      "homeassistant.local"
+    ],
+    "AllowedTcpServerPorts": [],
+    "AllowedUdpServerPorts": [],
+    "Uart": [],
+    "Pwm" : [],
+    "I2cMaster": [ "$AVNET_MT3620_SK_ISU2_I2C" ],
+    "Gpio": [ 
+      "$AVNET_MT3620_SK_USER_LED_RED",
+      "$AVNET_MT3620_SK_USER_LED_GREEN",
+      "$AVNET_MT3620_SK_USER_LED_BLUE",
+      "$AVNET_MT3620_SK_APP_STATUS_LED_YELLOW",
+      "$AVNET_MT3620_SK_WLAN_STATUS_LED_YELLOW",
+      "$AVNET_MT3620_SK_USER_BUTTON_A",
+      "$AVNET_MT3620_SK_USER_BUTTON_B"
+       ],
+    "SpiMaster": [],
+    "WifiConfig": true,
+    "NetworkConfig": false,
+    "SystemTime": false,
+    "PowerControls": [
+      "ForceReboot"
+    ]
+  }
+}
+
