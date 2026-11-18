@@ -23,14 +23,14 @@
 #include "azure_iot_dps.h"
 #define MODULE "[DPS] "
 
-#define LOG_ERROR( msg ) Log_Debug(MODULE "ERROR :" msg "\n" )
-#define LOG_ERROR_FMT( msg, ... ) Log_Debug(MODULE "ERROR :" msg "\n", __VA_ARGS__)
+#define LOG_ERROR( msg ) Log_Debug(MODULE "ERROR: " msg "\n" )
+#define LOG_ERROR_FMT( msg, ... ) Log_Debug(MODULE "ERROR: " msg "\n", __VA_ARGS__)
 /// @brief logs error as "[MODULE] ERROR : message :4 (ACCESS_DENIED)\n"
-#define LOG_ERROR_WITH_ERRNO( msg ) Log_Debug(MODULE "ERROR :" msg ":%d (%s)\n", errno, strerror(errno))
-#define LOG_WARNING( msg ) Log_Debug(MODULE "WARNING :" msg "\n" )
-#define LOG_WARNING_FMT( msg, ... ) Log_Debug(MODULE "WARNING :" msg "\n", __VA_ARGS__)
-#define LOG_INFO( msg ) Log_Debug(MODULE "INFO :" msg "\n" )
-#define LOG_INFO_FMT( msg, ... ) Log_Debug(MODULE "INFO :" msg "\n", __VA_ARGS__)
+#define LOG_ERROR_WITH_ERRNO( msg ) Log_Debug(MODULE "ERROR: " msg ":%d (%s)\n", errno, strerror(errno))
+#define LOG_WARNING( msg ) Log_Debug(MODULE "WARNING: " msg "\n" )
+#define LOG_WARNING_FMT( msg, ... ) Log_Debug(MODULE "WARNING: " msg "\n", __VA_ARGS__)
+#define LOG_INFO( msg ) Log_Debug(MODULE "INFO: " msg "\n" )
+#define LOG_INFO_FMT( msg, ... ) Log_Debug(MODULE "INFO: " msg "\n", __VA_ARGS__)
 
 /// @brief Enable IoT SDK tracing
 bool bTraceOn = true;
@@ -97,7 +97,7 @@ static void dpsPollingHandler(EventData* eventData);
 static EventData evtDpsPollingTimer = { .eventHandler = &dpsPollingHandler, .fd = -1, .context=NULL };
 
 /// DPS timeout timer
-static const struct timespec tsDpsTimeoutPeriod = {10, 0};
+static const struct timespec tsDpsTimeoutPeriod = {15, 0};
 /// @brief (Forward declared) dpsTimeoutHandler closes device registation after extended timeout 
 /// @param eventData timer event data 
 static void dpsTimeoutHandler(EventData* eventData);
