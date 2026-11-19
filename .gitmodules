@@ -4,3 +4,6 @@
 [submodule "AvnetSK2/sensors/lps22hh"]
 	path = AvnetSK2/sensors/lps22hh
 	url = https://github.com/STMicroelectronics/lps22hh.git
+[submodule "Homeassistant/AvnetSK2_HA/MQTT-C"]
+	path = Homeassistant/AvnetSK2_HA/MQTT-C
+	url = https://github.com/LiamBindle/MQTT-C.git

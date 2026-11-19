@@ -16,9 +16,8 @@ The client supports the following arguments:
 | --- | --- | --- |
 | `--Broker` | `homeassistant.local` | MQTT broker hostname or IP address |
 | `--Port` | `1883` | MQTT TCP port |
-| `--Username` | empty | Optional MQTT username (required when specifying a password) |
-| `--Password` | empty | Optional MQTT password |
-| `--ClientId` | `avnet_sk2` | MQTT client identifier |
+| `--Password` | empty | MQTT password. The Azure Sphere Device ID is always used as the MQTT username. |
+| `--ClientId` | Azure Sphere Device ID | Optional MQTT client identifier |
 
 Azure Sphere passes application arguments from the manifest's `CmdArgs` array. For example,
 to configure an authenticated broker, use:
@@ -27,7 +26,6 @@ to configure an authenticated broker, use:
 "CmdArgs": [
   "--Broker", "homeassistant.local",
   "--Port", "1883",
-  "--Username", "mqtt-user",
   "--Password", "mqtt-password"
 ]
 ```
@@ -44,6 +42,10 @@ LED blink-rate, LED color, and restart entities. Sensor state is published every
 and immediately after connecting or pressing button B. Button events are published on
 `avnet_sk2/event/button_a` and `avnet_sk2/event/button_b`.
 
+Sensor telemetry is combined into a single JSON payload on `avnet_sk2/telemetry`, containing
+temperature, pressure, acceleration, orientation, and memory values. This minimizes MQTT
+packet traffic compared with publishing each sensor value separately.
+
 The blink-rate number accepts `0` through `2`, and the color select accepts `white`, `blue`,
 `cyan`, `green`, `red`, `yellow`, `magenta`, or `off`. These command topics are subscribed:
 
@@ -58,8 +60,8 @@ is reported on `avnet_sk2/status`.
 ### Building
 
 Build this project using the Azure Sphere SDK and the ARM-Debug or ARM-Release CMake
-configuration. The MQTT client is implemented in the project and has no external MQTT library
-dependency.
+configuration. The MQTT-C library is included as the `MQTT-C` Git submodule. Initialize submodules after
+checkout and build the project with the Azure Sphere SDK.
 
 
 

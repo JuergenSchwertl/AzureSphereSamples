@@ -4,11 +4,16 @@
   "ApplicationType": "Default",
   "ComponentId": "6521ee2c-4197-4d29-965b-21c292a97d7b",
   "EntryPoint": "/bin/app",
-  "CmdArgs": [],
+  "CmdArgs": [
+    "--Broker", "homeassistant.local",
+    "--Port", "1883",
+    "--Password", "**mqtt-password**"
+  ],
   "Capabilities": {
     "AllowedConnections": [
       "homeassistant.local"
     ],
+    "DeviceAuthentication": "c0b88764-9273-46ab-bab2-effecf13f91c",
     "AllowedTcpServerPorts": [],
     "AllowedUdpServerPorts": [],
     "Uart": [],

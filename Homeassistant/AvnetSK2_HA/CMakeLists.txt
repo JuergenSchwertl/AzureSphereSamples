@@ -28,15 +28,26 @@ set( SOURCE_FILES
     epoll_timerfd_utilities.c
     mqtt_client.c
     rgbled_utility.c 
+    get_device_id.c
+    get_os_version.c
+    parson.c
     main.c)
+
+add_library(mqttc STATIC
+    MQTT-C/src/mqtt_pal.c
+    MQTT-C/src/mqtt.c)
+target_include_directories(mqttc PUBLIC MQTT-C/include)
+set_source_files_properties(MQTT-C/src/mqtt.c PROPERTIES COMPILE_FLAGS -Wno-conversion)
+set_source_files_properties(MQTT-C/src/mqtt_pal.c PROPERTIES COMPILE_FLAGS -Wno-conversion)
  
 # Create executable
 ADD_EXECUTABLE(${PROJECT_NAME} ${SOURCE_FILES} )
+TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PRIVATE MQTT-C/include)
 
 TARGET_COMPILE_DEFINITIONS(${PROJECT_NAME} 
     PUBLIC ${AVNETSK_REVISION})
 
-TARGET_LINK_LIBRARIES(${PROJECT_NAME} m applibs pthread gcc_s c sensors)
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} m applibs pthread gcc_s c sensors mqttc wolfssl tlsutils)
 
 # Target hardware for the sample.
 SET(TARGET_DEFINITION "${TARGET_HARDWARE}.json")

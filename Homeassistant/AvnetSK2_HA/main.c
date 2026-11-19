@@ -1,6 +1,6 @@
 ﻿/**
  * @file main.c
- * @author Juergen Schwertl (jschwert@microsoft.com)
+ * @author Juergen Schwertl (jschwert@hotmail.com, Ex-MSFT)
  * @brief Connects an AVNET Starter Kit Rev.2 (Azure Sphere) to Home Assistant using MQTT.
  *
  * A description of the sample follows:
@@ -16,8 +16,8 @@
  * - log (messages shown in Visual Studio's Device Output window during debugging);
  * - wificonfig (configure WiFi settings);
  * - sockets (MQTT connection to a local broker).
- * @version 21.10
- * @date 2021-12-27
+ * @version 26.11
+ * @date 2026-11-19
  * 
  * @copyright Copyright (c) 2021
  * 
@@ -56,6 +56,7 @@
 #include "rgbled_utility.h"
 #include "epoll_timerfd_utilities.h"
 #include "mqtt_client.h"
+#include "parson.h"
 
 
 // An array defining the RGB GPIOs for each LED on the device
@@ -167,6 +168,7 @@ static volatile sig_atomic_t terminationRequired = false;
 ///  @brief 
 ///     Signal handler for termination requests. This handler must be async-signal-safe.
 /// 
+/// @param signalNumber Signal received by the process.
 static void TerminationHandler(int signalNumber)
 {
     // Don't use Log_Debug here, as it is not guaranteed to be async-signal-safe.
@@ -220,6 +222,7 @@ static void DebugPrintCurrentlyConnectedWiFiNetwork(void)
 ///  @brief 
 ///     Helper function to blink AppStatusLed once.
 /// 
+/// @param color LED color whose blink timer duration determines the blink behavior.
 static void BlinkAppStatusLedOnce( RgbLedUtility_Colors color )
 {
     GPIO_SetValue( fdAppStatusLedGpio, GPIO_Value_Low );
@@ -266,26 +269,10 @@ static size_t SetLedRate(size_t nValue)
 }
 
 
-static bool PublishState(const char *entity, const char *payload)
-{
-    char topic[128];
-    int length = snprintf(topic, sizeof(topic), "avnet_sk2/sensor/%s", entity);
-    if (length < 0 || (size_t)length >= sizeof(topic) ||
-        !MqttClient_Publish(topic, payload, true)) {
-        Log_Debug("[MQTT] Failed to publish state for %s.\n", entity);
-        return false;
-    }
-    return true;
-}
-
-static void PublishNumber(const char *entity, double value)
-{
-    char payload[32];
-    snprintf(payload, sizeof(payload), "%.2f", value);
-    PublishState(entity, payload);
-}
-
-static void SendEventMessage(const char *event, const char *payload)
+/// @brief Publish an application event.
+/// @param event Event name used to construct the MQTT topic.
+/// @param payload Event payload to publish.
+static void PublishEvent(const char *event, const char *payload)
 {
     char topic[128];
     int length = snprintf(topic, sizeof(topic), "avnet_sk2/event/%s", event);
@@ -298,6 +285,10 @@ static void SendEventMessage(const char *event, const char *payload)
     BlinkAppStatusLedOnce(RgbLedUtility_Colors_Green);
 }
 
+/// @brief Publish Home Assistant discovery configuration for a sensor.
+/// @param id Sensor identifier and MQTT state suffix.
+/// @param name Human-readable sensor name.
+/// @param attributes Additional JSON attributes appended to the discovery payload.
 static void PublishSensorDiscovery(const char *id, const char *name, const char *attributes)
 {
     char topic[160];
@@ -318,6 +309,7 @@ static void PublishSensorDiscovery(const char *id, const char *name, const char 
     }
 }
 
+/// @brief Publish Home Assistant discovery configuration for sensors and controls.
 static void PublishDiscovery(void)
 {
     PublishSensorDiscovery("temperature", "Temperature",
@@ -372,6 +364,7 @@ static void PublishDiscovery(void)
     }
 }
 
+/// @brief Publish the current LED blink-rate and color control states.
 static void PublishControlState(void)
 {
     char blinkRate[8];
@@ -383,6 +376,7 @@ static void PublishControlState(void)
     }
 }
 
+/// @brief Read sensors and publish a combined JSON telemetry payload.
 static void SendTelemetryMessage(void)
 {
     if (!connectedToBroker) {
@@ -391,13 +385,29 @@ static void SendTelemetryMessage(void)
         return;
     }
 
+    JSON_Value *rootValue = json_value_init_object();
+    if (rootValue == NULL) {
+        Log_Debug("[MQTT] Failed to allocate telemetry JSON.\n");
+        return;
+    }
+    JSON_Object *root = json_value_get_object(rootValue);
+
     vector3d_t vector;
     if (Sensors_GetAcceleration(&vector)) {
-        PublishNumber("acceleration_x", vector.x);
-        PublishNumber("acceleration_y", vector.y);
-        PublishNumber("acceleration_z", vector.z);
+        JSON_Value *accelerationValue = json_value_init_object();
+        if (accelerationValue != NULL) {
+            JSON_Object *acceleration = json_value_get_object(accelerationValue);
+            if (acceleration != NULL) {
+                json_object_set_number(acceleration, "x", vector.x);
+                json_object_set_number(acceleration, "y", vector.y);
+                json_object_set_number(acceleration, "z", vector.z);
+                json_object_set_value(root, "acceleration", accelerationValue);
+            } else {
+                json_value_free(accelerationValue);
+            }
+        }
         strLastOrientation = Sensors_GetOrientation(&vector);
-        PublishState("orientation", strLastOrientation);
+        json_object_set_string(root, "orientation", strLastOrientation);
     }
 
     // Read the accelerometer before the pressure sensor, which resets the accelerometer.
@@ -405,22 +415,41 @@ static void SendTelemetryMessage(void)
     if (Sensors_GetEnvironmentData(&dataset)) {
         Log_Debug("[Send] Temperature: %.2f C, Pressure: %.2f hPa\n", dataset.fTemperature,
                   dataset.fPressure_hPa);
-        PublishNumber("temperature", dataset.fTemperature);
-        PublishNumber("pressure", dataset.fPressure_hPa);
+        json_object_set_number(root, "temperature", dataset.fTemperature);
+        json_object_set_number(root, "pressure", dataset.fPressure_hPa);
     }
 
     size_t totalMemoryUsed = Applications_GetTotalMemoryUsageInKB();
     size_t userMemoryUsed = Applications_GetUserModeMemoryUsageInKB();
-    if (nLastTotalMemoryUsed != totalMemoryUsed || nLastUserMemoryUsed != userMemoryUsed) {
-        nLastTotalMemoryUsed = totalMemoryUsed;
-        nLastUserMemoryUsed = userMemoryUsed;
-        PublishNumber("total_memory", (double)totalMemoryUsed);
-        PublishNumber("user_memory", (double)userMemoryUsed);
-    }
+    nLastTotalMemoryUsed = totalMemoryUsed;
+    nLastUserMemoryUsed = userMemoryUsed;
+    json_object_set_number(root, "total_memory_kb", (double)totalMemoryUsed);
+    json_object_set_number(root, "user_memory_kb", (double)userMemoryUsed);
 
-    BlinkAppStatusLedOnce(RgbLedUtility_Colors_Green);
+    char *payload = json_serialize_to_string(rootValue);
+    if (payload != NULL) {
+        char topic[] = "avnet_sk2/telemetry";
+        if (!MqttClient_Publish(topic, payload, false)) {
+            Log_Debug("[MQTT] Failed to publish combined telemetry JSON.\n");
+            BlinkAppStatusLedOnce(RgbLedUtility_Colors_Red);
+        } else {
+            BlinkAppStatusLedOnce(RgbLedUtility_Colors_Green);
+        }
+        json_free_serialized_string(payload);
+    } else {
+        Log_Debug("[MQTT] Failed to serialize telemetry JSON.\n");
+        BlinkAppStatusLedOnce(RgbLedUtility_Colors_Red);
+    }
+    json_value_free(rootValue);
 }
 
+/// @brief Parse an integer MQTT command and validate its inclusive range.
+/// @param payload MQTT command payload.
+/// @param payloadSize Number of bytes in payload.
+/// @param minimum Minimum permitted value.
+/// @param maximum Maximum permitted value.
+/// @param value Receives the parsed value when parsing succeeds.
+/// @returns True if the payload contains a valid integer within the requested range.
 static bool ParseIntegerCommand(const char *payload, size_t payloadSize, long minimum, long maximum,
                                long *value)
 {
@@ -440,6 +469,11 @@ static bool ParseIntegerCommand(const char *payload, size_t payloadSize, long mi
     return true;
 }
 
+/// @brief Handle an MQTT command or ignore retained command payloads.
+/// @param topic MQTT topic that received the message.
+/// @param payload MQTT message payload.
+/// @param payloadSize Number of bytes in payload.
+/// @param retained True if the broker delivered a retained publish.
 static void MqttMessageReceived(const char *topic, const char *payload, size_t payloadSize,
                                 bool retained)
 {
@@ -483,6 +517,8 @@ static void MqttMessageReceived(const char *topic, const char *payload, size_t p
     }
 }
 
+/// @brief Update application MQTT state and configure subscriptions and discovery.
+/// @param connected True when connected to the broker; false after disconnection.
 static void MqttConnectionChanged(bool connected)
 {
     connectedToBroker = connected;
@@ -495,8 +531,8 @@ static void MqttConnectionChanged(bool connected)
 
     Log_Debug("[MQTT] Broker connected.\n");
     DebugPrintCurrentlyConnectedWiFiNetwork();
-    SendEventMessage("connect", strWiFiStatus);
-    SendEventMessage("connect", pstrConnectionStatus);
+    PublishEvent("connect", strWiFiStatus);
+    PublishEvent("connect", pstrConnectionStatus);
     pstrConnectionStatus = "MQTT connected";
 
     static const char *commandTopics[] = {
@@ -523,6 +559,7 @@ static void MqttConnectionChanged(bool connected)
 ///  @brief 
 ///     Handle the blinking for UserLed.
 /// 
+/// @param eventData Timer event data containing the timer file descriptor.
 static void UserLedUpdateHandler(EventData *eventData)
 {
     if (ConsumeTimerFdEvent(fdUserLedBlinkTimer) != 0) {
@@ -539,6 +576,7 @@ static void UserLedUpdateHandler(EventData *eventData)
 ///  @brief 
 ///     Handle the blinking for the AppStatus LED.
 /// 
+/// @param eventData Timer event data containing the timer file descriptor.
 static void AppStatusLedUpdateHandler(EventData *eventData)
 {
     if (ConsumeTimerFdEvent(fdAppStatusLedFlashTimer) != 0) {
@@ -553,8 +591,8 @@ static void AppStatusLedUpdateHandler(EventData *eventData)
 ///  @brief 
 ///     Check whether a given button has just been pressed.
 /// 
-/// @param fdThe button file descriptor
-/// @param oldStateOld state of the button (pressed or released)
+/// @param fd The button file descriptor.
+/// @param oldState Pointer to the previously observed button state.
 /// @returns true if pressed, false otherwise
 static bool IsButtonPressed(int fd, GPIO_Value_Type *oldState)
 {
@@ -576,6 +614,7 @@ static bool IsButtonPressed(int fd, GPIO_Value_Type *oldState)
 
 ///  @brief 
 /// Show network and MQTT broker connectivity status.
+///
 void NetworkLedUpdateHandler(void)
 {
     Networking_IsNetworkingReady(&bIsNetworkReady);
@@ -587,6 +626,7 @@ void NetworkLedUpdateHandler(void)
 ///  @brief 
 ///     Handle button timer event: if the button is pressed, change the LED blink rate.
 /// 
+/// @param eventData Timer event data containing the timer file descriptor.
 void ButtonPollTimerHandler(EventData *eventData)
 {
     if (ConsumeTimerFdEvent(fdButtonPollTimer) != 0) {
@@ -602,7 +642,7 @@ void ButtonPollTimerHandler(EventData *eventData)
         SetLedRate( nBlinkRateValue + 1 );
         if (connectedToBroker) {
             PublishControlState();
-            SendEventMessage("button_a", cstrMsgPressed);
+            PublishEvent("button_a", cstrMsgPressed);
         }
     }
 
@@ -610,7 +650,7 @@ void ButtonPollTimerHandler(EventData *eventData)
     static GPIO_Value_Type messageButtonState;
     if (IsButtonPressed(fdSendMessageButtonGpio, &messageButtonState)) {
         if (connectedToBroker) {
-		    SendEventMessage("button_b", cstrMsgPressed);
+		    PublishEvent("button_b", cstrMsgPressed);
 		    SendTelemetryMessage();
         }
     }
@@ -620,6 +660,7 @@ void ButtonPollTimerHandler(EventData *eventData)
 ///  @brief 
 ///     Handle telemetry timer event.
 /// 
+/// @param eventData Timer event data containing the timer file descriptor.
 void TelemetryTimerHandler(EventData *eventData)
 {
 	if (ConsumeTimerFdEvent(eventData->fd) != 0) {
@@ -630,6 +671,8 @@ void TelemetryTimerHandler(EventData *eventData)
 	SendTelemetryMessage();
 }
 
+/// @brief Reconnect to the MQTT broker when networking becomes ready.
+/// @param eventData Timer event data containing the timer file descriptor.
 static void MqttReconnectTimerHandler(EventData *eventData)
 {
     if (ConsumeTimerFdEvent(eventData->fd) != 0) {
@@ -643,6 +686,8 @@ static void MqttReconnectTimerHandler(EventData *eventData)
     }
 }
 
+/// @brief Perform MQTT client background work and keepalive processing.
+/// @param eventData Timer event data containing the timer file descriptor.
 static void MqttWorkTimerHandler(EventData *eventData)
 {
     if (ConsumeTimerFdEvent(eventData->fd) != 0) {
@@ -659,6 +704,7 @@ int InitPeripheralsAndHandlers(int argc, char *argv[]);
 ///  @brief 
 ///     Handle reset timer event.
 /// 
+/// @param eventData Timer event data containing the timer file descriptor.
 void ResetTimerHandler(EventData* eventData)
 {
     if (ConsumeTimerFdEvent(eventData->fd) != 0) {
@@ -847,6 +893,9 @@ void ClosePeripheralsAndHandlers(void)
 ///  @brief 
 ///     Main entry point for this application.
 /// 
+/// @param argc Number of command-line arguments.
+/// @param argv Command-line argument vector.
+/// @returns Zero after the application shuts down.
 int main(int argc, char *argv[])
 {
     Log_Debug("INFO: AVNET Starter Kit MQTT application starting.\n");
