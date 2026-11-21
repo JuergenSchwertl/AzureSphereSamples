@@ -164,14 +164,13 @@ static const char szMqttCommandSetBlinkRate[] = "blink_rate";
 static const char szMqttCommandSetLedColor[] = "led_color";
 static const char szMqttCommandReset[] = "reset";
 
-static const char *apszMqttCommands[] = {
-    szMqttCommandSetBlinkRate,
-    szMqttCommandSetLedColor,
-    szMqttCommandReset
+static const MqttCommand aMqttCommands[] = {
+    {szMqttCommandSetBlinkRate, &MqttCommandHandler_SetBlinkRate, NULL},
+    {szMqttCommandSetLedColor, &MqttCommandHandler_SetLedColor, NULL},
+    {szMqttCommandReset, &MqttCommandHandler_Reset, NULL}
 };
 
-
-
+#define MQTT_COMMANDS_COUNT (sizeof(aMqttCommands) / sizeof(*aMqttCommands))
 
 
 

@@ -18,6 +18,7 @@
 
 
 #define MQTT_MODULE "[MQTT] "
+#define MQTT_COMMANDS_MAX   8    
 #define MQTT_HOST_MAX 128
 #define MQTT_USERNAME_MAX 128
 #define MQTT_PASSWORD_MAX 128
@@ -43,6 +44,11 @@ typedef struct MqttClient {
     uint8_t sendBuffer[MQTT_TX_BUFFER_SIZE];
     uint8_t receiveBuffer[MQTT_RX_BUFFER_SIZE];
 } MqttClient;
+
+
+
+static MqttCommand aMqttCommands[MQTT_COMMANDS_MAX] = {0};
+static size_t nMqttCommandsCount = 0;
 
 static MqttClient mqttClient = {.epollFd = -1, .socketFd = -1};
 
@@ -100,7 +106,7 @@ static const char szClientIdDefault[] = "AzureSphere";
 /// @param pszValue Null-terminated source value.
 /// @param pszOptionName Configuration option name used in diagnostic output.
 /// @returns True if value fit and was copied; false otherwise.
-static bool ParseStringOption(char *pszDestination, size_t nDestinationSize, const char *pszValue, const char *pszOptionName)
+static bool parseStringOption(char *pszDestination, size_t nDestinationSize, const char *pszValue, const char *pszOptionName)
 {
     size_t valueSize = strnlen(pszValue, nDestinationSize);
     if (valueSize >= nDestinationSize) {
@@ -120,7 +126,7 @@ static bool ParseStringOption(char *pszDestination, size_t nDestinationSize, con
 /// @param pszValue 
 /// @param pszOptionName 
 /// @return 
-static bool ParseNumericOption(uint16_t *pnDestination, const char *pszValue, const char *pszOptionName)
+static bool parseNumericOption(uint16_t *pnDestination, const char *pszValue, const char *pszOptionName)
 {
     char *end = NULL;
     unsigned long number = strtoul(pszValue, &end, 10);
@@ -175,7 +181,7 @@ static bool RegisterSocketEvents(void)
 }
 
 /// @brief Close the broker socket and notify the application after a connection loss.
-static void DisconnectSocket(void)
+static void disconnectSocket(void)
 {
     bool wasConnected = mqttClient.connected;
     if (mqttClient.socketFd >= 0) {
@@ -193,7 +199,7 @@ static void DisconnectSocket(void)
 /// @param host Broker hostname or IP address.
 /// @param port Broker TCP port.
 /// @returns Connected socket file descriptor, or -1 if opening the socket failed.
-static int OpenSocket(const char *host, uint16_t port)
+static int openSocket(const char *host, uint16_t port)
 {
     char portString[6];
     snprintf(portString, sizeof(portString), "%u", port);
@@ -238,10 +244,6 @@ static int OpenSocket(const char *host, uint16_t port)
 }
 
 
-static void MqttClient_BuildCommandTopic(char *pszBuffer, size_t nBufferSize, const char *pszCommand)
-{
-    snprintf(pszBuffer, nBufferSize, "%s/%s/%s", szMqttTopicIdPrefix, szMqttCommandTopicPrefix, pszCommand);
-}
 
 /// @brief Reconnect an MQTT-C client and send an MQTT CONNECT packet.
 /// @param mqtt MQTT-C client to reconnect.
@@ -253,7 +255,7 @@ static void Reconnect(struct mqtt_client *mqtt, void **reconnectState)
         close(mqtt->socketfd);
     }
 
-    int socketFd = OpenSocket(mqttClient.host, mqttClient.port);
+    int socketFd = openSocket(mqttClient.host, mqttClient.port);
     if (socketFd < 0) {
         mqttClient.socketFd = -1;
         mqtt->socketfd = -1;
@@ -278,7 +280,7 @@ static void Reconnect(struct mqtt_client *mqtt, void **reconnectState)
                                           connectFlags, MQTT_KEEPALIVE_SECONDS);
     if (result != MQTT_OK) {
         Log_Debug(MQTT_MODULE "MQTT CONNECT failed: %s.\n", mqtt_error_str(result));
-        DisconnectSocket();
+        disconnectSocket();
         return;
     }
     RegisterSocketEvents();
@@ -303,23 +305,23 @@ bool MqttClient_Init(int fdEpoll, int argc, char *argv[], MqttMessageHandler mes
     // try to pick up broker settings from command line arguments, but fall back to defaults if not provided
     for (int i = 1; i < argc; ++i) {
         if (strncmp(argv[i], szBrokerParam, sizeof(szBrokerParam) - 1) == 0 && i + 1 < argc) {
-            if (!ParseStringOption(mqttClient.host, sizeof(mqttClient.host), argv[++i], szBrokerParam)) {
+            if (!parseStringOption(mqttClient.host, sizeof(mqttClient.host), argv[++i], szBrokerParam)) {
                 return false;
             }
         } else if (strncmp(argv[i], szPortParam, sizeof(szPortParam) - 1) == 0 && i + 1 < argc) {
-            if(!ParseNumericOption(&mqttClient.port, argv[++i], szPortParam)) {
+            if(!parseNumericOption(&mqttClient.port, argv[++i], szPortParam)) {
                 return false;
             }
         } else if (strncmp(argv[i], szUsernameParam, sizeof(szUsernameParam) - 1) == 0 && i + 1 < argc) {
-            if (!ParseStringOption(mqttClient.username, sizeof(mqttClient.username), argv[++i], szUsernameParam)) {
+            if (!parseStringOption(mqttClient.username, sizeof(mqttClient.username), argv[++i], szUsernameParam)) {
                 return false;
             }
         } else if (strncmp(argv[i], szPasswordParam, sizeof(szPasswordParam) - 1) == 0 && i + 1 < argc) {
-            if (!ParseStringOption(mqttClient.password, sizeof(mqttClient.password), argv[++i], szPasswordParam)) {
+            if (!parseStringOption(mqttClient.password, sizeof(mqttClient.password), argv[++i], szPasswordParam)) {
                 return false;
             }
         } else if (strncmp(argv[i], szClientIdParam, sizeof(szClientIdParam) - 1) == 0 && i + 1 < argc) {
-            if (!ParseStringOption(mqttClient.clientId, sizeof(mqttClient.clientId), argv[++i], szClientIdParam)) {
+            if (!parseStringOption(mqttClient.clientId, sizeof(mqttClient.clientId), argv[++i], szClientIdParam)) {
                 return false;
             }
         } 
@@ -450,14 +452,14 @@ void MqttClient_HandleSocketEvent(EventData *eventData)
         return;
     }
     if ((eventData->events & (EPOLLERR | EPOLLHUP | EPOLLRDHUP)) != 0) {
-        DisconnectSocket();
+        disconnectSocket();
         return;
     }
 
     enum MQTTErrors result = mqtt_sync(&mqttClient.mqtt);
     if (result != MQTT_OK) {
         Log_Debug(MQTT_MODULE "MQTT sync failed: %s.\n", mqtt_error_str(result));
-        DisconnectSocket();
+        disconnectSocket();
     }
 }
 
@@ -470,7 +472,7 @@ void MqttClient_DoWork(void)
     enum MQTTErrors result = mqtt_sync(&mqttClient.mqtt);
     if (result != MQTT_OK) {
         Log_Debug(MQTT_MODULE "MQTT keepalive failed: %s.\n", mqtt_error_str(result));
-        DisconnectSocket();
+        disconnectSocket();
     }
 }
 
@@ -478,7 +480,7 @@ void MqttClient_DoWork(void)
 void MqttClient_Close(void)
 {
     mqttClient.closeRequested = true;
-    DisconnectSocket();
+    disconnectSocket();
     mqttClient.epollFd = -1;
     mqttClient.messageHandler = NULL;
     mqttClient.connectionHandler = NULL;
