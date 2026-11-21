@@ -39,6 +39,7 @@
 #include <applibs/networking.h>
 #include <applibs/wificonfig.h>
 #include <applibs/powermanagement.h>
+#include <applibs/application.h>
 #include <applibs/applications.h>
 
 // include the appropriate AVNET Starter Kit revision header file. 
@@ -139,16 +140,14 @@ static EventData evtdataMqttWorkTimer = { .eventHandler = &MqttWorkTimerHandler 
 // forward declarations for close handlers
 void ClosePeripheralsAndHandlers(void);
 
-///  @brief 
-/// network connectivety status. Frequently updated in ButtonPollTimerHandler
-/// 
+///  @brief network connectivety status. Frequently updated in ButtonPollTimerHandler
 static bool bIsNetworkReady = false;
+
+/// @brief Device authentication status. Also frequently updated in ButtonPollTimerHandler. This is used to determine if the Azure Sphere Device ID can be retrieved.
+static bool bIsDeviceAuthReady = false;
+
 ///  @brief 
-/// MQTT broker client status
-/// 
-static bool connectedToBroker = false;
-///  @brief 
-/// Reason for last disconnect
+/// Reason for reconnect/last disconnect
 /// 
 static const char* pstrConnectionStatus = cstrMsgApplicationStarted;
 
@@ -156,13 +155,24 @@ static const char* pstrConnectionStatus = cstrMsgApplicationStarted;
 /// Current blink-rate preset.
 static size_t nBlinkRateValue = 0;
 
-static int applicationArgc;
-static char **applicationArgv;
-
 ///  @brief 
 /// Termination state
 /// 
 static volatile sig_atomic_t terminationRequired = false;
+
+static const char szMqttCommandSetBlinkRate[] = "blink_rate";
+static const char szMqttCommandSetLedColor[] = "led_color";
+static const char szMqttCommandReset[] = "reset";
+
+static const char *apszMqttCommands[] = {
+    szMqttCommandSetBlinkRate,
+    szMqttCommandSetLedColor,
+    szMqttCommandReset
+};
+
+
+
+
 
 
 ///  @brief 
@@ -302,6 +312,8 @@ static void PublishSensorDiscovery(const char *id, const char *name, const char 
         "\"device\":{\"identifiers\":[\"avnet_sk2\"],\"name\":\"AVNET Starter Kit\","
         "\"manufacturer\":\"AVNET\",\"model\":\"MT3620 Starter Kit Rev2\"}%s}",
         name, id, id, attributes);
+
+    Log_Debug("[MQTT] Publishing discovery for sensor %s as\n\t%s\n", id, payload);
     if (topicLength < 0 || (size_t)topicLength >= sizeof(topic) || payloadLength < 0 ||
         (size_t)payloadLength >= sizeof(payload) ||
         !MqttClient_Publish(topic, payload, true)) {
@@ -377,9 +389,9 @@ static void PublishControlState(void)
 }
 
 /// @brief Read sensors and publish a combined JSON telemetry payload.
-static void SendTelemetryMessage(void)
+static void SendTelemetry(void)
 {
-    if (!connectedToBroker) {
+    if (!MqttClient_IsConnected()) {
         Log_Debug("[MQTT] Not connected; sensor telemetry was not sent.\n");
         BlinkAppStatusLedOnce(RgbLedUtility_Colors_Red);
         return;
@@ -521,10 +533,11 @@ static void MqttMessageReceived(const char *topic, const char *payload, size_t p
 /// @param connected True when connected to the broker; false after disconnection.
 static void MqttConnectionChanged(bool connected)
 {
-    connectedToBroker = connected;
     if (!connected) {
         Log_Debug("[MQTT] Broker disconnected.\n");
         SetTimerFdToPeriod(fdTelemetryTimer, &tsNullInterval);
+        SetTimerFdToPeriod(fdMqttWorkTimer, &tsNullInterval);
+        SetTimerFdToPeriod(fdMqttReconnectTimer, &tsMqttReconnectInterval);
         pstrConnectionStatus = "MQTT disconnected";
         return;
     }
@@ -535,25 +548,21 @@ static void MqttConnectionChanged(bool connected)
     PublishEvent("connect", pstrConnectionStatus);
     pstrConnectionStatus = "MQTT connected";
 
-    static const char *commandTopics[] = {
-        "avnet_sk2/command/blink_rate",
-        "avnet_sk2/command/led_color",
-        "avnet_sk2/command/reset"
-    };
-    for (size_t i = 0; i < sizeof(commandTopics) / sizeof(commandTopics[0]); ++i) {
-        if (!MqttClient_Subscribe(commandTopics[i])) {
-            Log_Debug("[MQTT] Failed to subscribe to %s.\n", commandTopics[i]);
+
+    for (size_t i = 0; i < sizeof(apszMqttCommands ) / sizeof(apszMqttCommands[0]); ++i) {
+        MqttClient_CreateCommandTopic(apszMqttCommands[i], );
+        if (!MqttClient_Subscribe(apszMqttCommands[i])) {
+            Log_Debug("[MQTT] Failed to subscribe to %s.\n", apszMqttCommands[i]);
         }
     }
 
     PublishDiscovery();
     MqttClient_Publish("avnet_sk2/status", "online", true);
     PublishControlState();
-    if (SetTimerFdToPeriod(fdTelemetryTimer, &tsTelemetryInterval) != 0) {
-        terminationRequired = true;
-    } else {
-        SendTelemetryMessage();
-    }
+
+    SetTimerFdToPeriod(fdTelemetryTimer, &tsTelemetryInterval);
+    SetTimerFdToPeriod(fdMqttWorkTimer, &tsMqttWorkInterval);
+    SetTimerFdToPeriod(fdMqttReconnectTimer, &tsNullInterval);
 }
 
 ///  @brief 
@@ -619,7 +628,7 @@ void NetworkLedUpdateHandler(void)
 {
     Networking_IsNetworkingReady(&bIsNetworkReady);
     GPIO_SetValue(fdWifiStatusLedGpio,
-                  (bIsNetworkReady && connectedToBroker) ? GPIO_Value_Low : GPIO_Value_High);
+                  (bIsNetworkReady && MqttClient_IsConnected()) ? GPIO_Value_Low : GPIO_Value_High);
 }
 
 
@@ -640,7 +649,7 @@ void ButtonPollTimerHandler(EventData *eventData)
     static GPIO_Value_Type blinkButtonState;
     if (IsButtonPressed(fdBlinkRateButtonGpio, &blinkButtonState)) {
         SetLedRate( nBlinkRateValue + 1 );
-        if (connectedToBroker) {
+        if (MqttClient_IsConnected()) {
             PublishControlState();
             PublishEvent("button_a", cstrMsgPressed);
         }
@@ -649,9 +658,9 @@ void ButtonPollTimerHandler(EventData *eventData)
     // Button B publishes an event and triggers an immediate sensor update.
     static GPIO_Value_Type messageButtonState;
     if (IsButtonPressed(fdSendMessageButtonGpio, &messageButtonState)) {
-        if (connectedToBroker) {
+        if (MqttClient_IsConnected()) {
 		    PublishEvent("button_b", cstrMsgPressed);
-		    SendTelemetryMessage();
+		    SendTelemetry();
         }
     }
 }
@@ -668,7 +677,7 @@ void TelemetryTimerHandler(EventData *eventData)
 		return;
 	}
 
-	SendTelemetryMessage();
+	SendTelemetry();
 }
 
 /// @brief Reconnect to the MQTT broker when networking becomes ready.
@@ -680,9 +689,25 @@ static void MqttReconnectTimerHandler(EventData *eventData)
         return;
     }
 
-    if (!connectedToBroker && Networking_IsNetworkingReady(&bIsNetworkReady) == 0 &&
-        bIsNetworkReady) {
-        MqttClient_Connect();
+    if (!MqttClient_IsConnected())
+    {
+        bIsNetworkReady = false;
+        bIsDeviceAuthReady = false;
+
+        Networking_IsNetworkingReady(&bIsNetworkReady);
+        if( bIsNetworkReady )
+        {
+            Application_IsDeviceAuthReady(&bIsDeviceAuthReady);
+            if( bIsDeviceAuthReady )
+            {  
+                Log_Debug( "[MqttReconnectTimerHandler] Network & Auth ready, attempting MQTT reconnect.\n");
+                MqttClient_InitDeviceId();
+                MqttClient_Reconnect();
+            }
+        }
+    } else {
+        Log_Debug( "[MqttReconnectTimerHandler] MQTT already connected, stopping reconnect timer.\n");
+        SetTimerFdToSingleExpiry(fdMqttReconnectTimer, &tsNullInterval);
     }
 }
 
@@ -694,6 +719,7 @@ static void MqttWorkTimerHandler(EventData *eventData)
         terminationRequired = true;
         return;
     }
+
     MqttClient_DoWork();
 }
 
@@ -718,7 +744,6 @@ void ResetTimerHandler(EventData* eventData)
     if( -1 == PowerManagement_ForceSystemReboot())
     {
         Log_Debug("[ResetTimerHandler] Reboot failed %d (%s).\n", errno, strerror(errno));
-        InitPeripheralsAndHandlers(applicationArgc, applicationArgv);
     }
 }
 
@@ -801,13 +826,6 @@ int InitPeripheralsAndHandlers(int argc, char *argv[])
         return -1;
     }
 
-
-    if (!MqttClient_Init(fdEpoll, argc, argv, MqttMessageReceived, MqttConnectionChanged)) {
-        Log_Debug("ERROR: Cannot initialize the MQTT client.\n");
-        return -1;
-    }
-
-
     // Set up a timer for UserLed blinking
     fdUserLedBlinkTimer =
         CreateTimerFdAndAddToEpoll(fdEpoll, &tsBlinkingLedInterval, &evtdataUserLedUpdate, EPOLLIN);
@@ -844,19 +862,25 @@ int InitPeripheralsAndHandlers(int argc, char *argv[])
         return -1;
     }
 
+    // Initialize the MqttClient data structures
+    if (!MqttClient_Init(fdEpoll, argc, argv, MqttMessageReceived, MqttConnectionChanged)) {
+        Log_Debug("ERROR: Cannot initialize the MQTT client.\n");
+        return -1;
+    }
+
+    // Create a timer for the MQTT client reconnect attempts. This timer is armed by default to wait until network and authentication are available, 
+    // disarmed when the MQTT client connects to the broker and re-armed when the MQTT client disconnects from the broker.
     fdMqttReconnectTimer = CreateTimerFdAndAddToEpoll(fdEpoll, &tsMqttReconnectInterval,
         &evtdataMqttReconnectTimer, EPOLLIN);
     if (fdMqttReconnectTimer < 0) {
         return -1;
     }
-    fdMqttWorkTimer = CreateTimerFdAndAddToEpoll(fdEpoll, &tsMqttWorkInterval,
+
+    // Create a disarmed timer for the MQTT client work and keepalive processing. This timer is armed when the MQTT client connects to the broker.
+    fdMqttWorkTimer = CreateTimerFdAndAddToEpoll(fdEpoll, &tsNullInterval,
         &evtdataMqttWorkTimer, EPOLLIN);
     if (fdMqttWorkTimer < 0) {
         return -1;
-    }
-
-    if (Networking_IsNetworkingReady(&bIsNetworkReady) == 0 && bIsNetworkReady) {
-        MqttClient_Connect();
     }
 
     return 0;
@@ -899,8 +923,6 @@ void ClosePeripheralsAndHandlers(void)
 int main(int argc, char *argv[])
 {
     Log_Debug("INFO: AVNET Starter Kit MQTT application starting.\n");
-    applicationArgc = argc;
-    applicationArgv = argv;
 
     int initResult = InitPeripheralsAndHandlers(argc, argv);
     if (initResult != 0) {

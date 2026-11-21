@@ -64,6 +64,31 @@ configuration. The MQTT-C library is included as the `MQTT-C` Git submodule. Ini
 checkout and build the project with the Azure Sphere SDK.
 
 
+## Avnet Starter Kit Rev2 Hardware Information
+
+Since there is not much information on the Avnet Azure Sphere Family page anymore and you need to do a deeper search to find the
+[Azure Sphere MT3620 Starter Kit Rev2](https://www.avnet.com/wcm/connect/95788050-54f3-4d6c-a698-8b1de2888c09/FY23_969_Azure_Sphere_Starter_Kit_Product_Brief_r3.pdf?MOD=AJPERES) data sheet, I'll list some of the HW specifics directly here:
+
+On the lower right side of the board you'll find 5 LEDs lined up, from top to bottom these are the
+
+
+|LED Name     |LED type| GPIO('s)   |C #define|
+|-------------|--------|------------|----------|
+|Power LED    |green   | n/a        | n/a |
+|USB Led      |yellow  | n/a        | n/a |
+|App Led      |yellow  | GPIO4      | AVNET_MT3620_SK_APP_STATUS_LED_YELLOW |
+|WLAN         |green   | GPIO0      | AVNET_MT3620_SK_WLAN_STATUS_LED_YELLOW |
+|User         |RGB     | GPIO8,9,10 | AVNET_MT3620_SK_USER_LED_RED, AVNET_MT3620_SK_USER_LED_GREEN, AVNET_MT3620_SK_USER_LED_BLUE |
+
+
+> **please Note**: Even though these LED pins can be multiplexed with other functions such as PWM, the way that the MT3620 organizes the PWM channels is in **groups of 4**!
+> This means, if you want to change the AVNET_MT3620_SK_USER_LED_RED (GPIO 8) from GPIO to PWM, ist also switches GPIO 9, 10 and 11 to PWM: i.e. you can dim the RGB Led in all colors.
+> There is also another limitation for high level apps: The PWM clock is pre-set to 2 MHz; with the 16bit period and duty cycle compare registers that results in a 
+> minimum duty cycle resolution of 500ns to a maximum period of 32.77 ms: it necely dims LEDs down to 30Hz but you cannot use it to regularly flash or blink an LED in PWM hardware.  
+> See also ["Use PWMs in high-level applications"](https://learn.microsoft.com/en-us/azure-sphere/app-development/pwm) and [MT3620 Support Status](https://learn.microsoft.com/en-us/azure-sphere/hardware/mt3620-product-status)
+> If you'd like to use other clock frequencies you'd need to write a low level application running on one of the M4 cores: 
+> there you could switch the PWM frequency to 32kHz or 26MHz as well.
+
 
 
 ---

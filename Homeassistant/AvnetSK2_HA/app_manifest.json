@@ -7,7 +7,8 @@
   "CmdArgs": [
     "--Broker", "homeassistant.local",
     "--Port", "1883",
-    "--Password", "**mqtt-password**"
+    "--Username", "homeassistant",
+    "--Password", "__**password_not_changed**__"
   ],
   "Capabilities": {
     "AllowedConnections": [

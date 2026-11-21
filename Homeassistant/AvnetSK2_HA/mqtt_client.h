@@ -12,7 +12,8 @@ typedef void (*MqttConnectionHandler)(bool connected);
 
 bool MqttClient_Init(int fdEpoll, int argc, char *argv[], MqttMessageHandler messageHandler,
                      MqttConnectionHandler connectionHandler);
-bool MqttClient_Connect(void);
+bool MqttClient_InitDeviceId(void);
+void MqttClient_Reconnect(struct mqtt_client *mqtt, void **reconnectState);
 bool MqttClient_IsConnected(void);
 bool MqttClient_Publish(const char *topic, const char *payload, bool retained);
 bool MqttClient_Subscribe(const char *topic);

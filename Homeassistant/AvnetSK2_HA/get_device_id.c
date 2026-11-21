@@ -26,17 +26,17 @@ int GetDeviceID(char* deviceId, size_t deviceIdLength)
 
     bool isDeviceAuthReady = false;
     if (Application_IsDeviceAuthReady(&isDeviceAuthReady) < 0) {
-        Log_Debug("ERROR: Device authentication could not be checked: %d (%s)\n", errno, strerror(errno));
+        Log_Debug(MODULE_GET_DEVICE_ID"ERROR: Device authentication could not be checked: %d (%s)\n", errno, strerror(errno));
         goto cleanup;
     }
 
     if (!isDeviceAuthReady) {
-        Log_Debug("ERROR: Device has not authenticated: %d (%s)\n", errno, strerror(errno));
+        Log_Debug(MODULE_GET_DEVICE_ID "ERROR: Device has not authenticated: %d (%s)\n", errno, strerror(errno));
         goto cleanup;
     }
 
     if (wolfSSL_Init() != WOLFSSL_SUCCESS) {
-        Log_Debug("ERROR: wolfSSL_Init(): %d (%s)\n", errno, strerror(errno));
+        Log_Debug(MODULE_GET_DEVICE_ID "ERROR: wolfSSL_Init(): %d (%s)\n", errno, strerror(errno));
         goto cleanup;
     }
     wolfSslInitialized = true;
@@ -44,13 +44,13 @@ int GetDeviceID(char* deviceId, size_t deviceIdLength)
     deviceCert = wolfSSL_X509_load_certificate_file(DeviceAuth_GetCertificatePath(), WOLFSSL_FILETYPE_PEM);
     if (deviceCert == NULL)
     {
-        Log_Debug("wolfSSL_X509_load_certificate_file error %d (%s)\n", errno, strerror(errno));
+        Log_Debug(MODULE_GET_DEVICE_ID "wolfSSL_X509_load_certificate_file error %d (%s)\n", errno, strerror(errno));
         goto cleanup;
     }
 
     WOLFSSL_X509_NAME* subjectName = wolfSSL_X509_get_subject_name(deviceCert);
     if (subjectName == NULL) {
-        Log_Debug("ERROR: invalid data: %d (%s)\n", errno, strerror(errno));
+        Log_Debug(MODULE_GET_DEVICE_ID "ERROR: invalid data: %d (%s)\n", errno, strerror(errno));
         goto cleanup;
     }
 
@@ -58,12 +58,13 @@ int GetDeviceID(char* deviceId, size_t deviceIdLength)
 
     if (wolfSSL_X509_NAME_oneline(subjectName, (char*)&localDeviceId, sizeof(localDeviceId)) < 0)
     {
-        Log_Debug("ERROR: Failed to get device id: %d (%s)\n", errno, strerror(errno));
+        Log_Debug(MODULE_GET_DEVICE_ID "ERROR: Failed to get device id: %d (%s)\n", errno, strerror(errno));
         goto cleanup;
     }
 
-    snprintf(deviceId, deviceIdLength, "%s", localDeviceId + 4);
-
+    // The device ID starts after "/CN="" in the subject name, so we skip the first 4 characters.
+    memcpy(deviceId, localDeviceId + 4, deviceIdLength - 1);
+    deviceId[deviceIdLength - 1] = '\0';
     result = 0;
 
 cleanup:
