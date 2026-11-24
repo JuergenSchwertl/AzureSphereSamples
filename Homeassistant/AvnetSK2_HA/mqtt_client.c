@@ -26,6 +26,11 @@
 #define MQTT_TX_BUFFER_SIZE 2048
 #define MQTT_RX_BUFFER_SIZE 2048
 #define MQTT_KEEPALIVE_SECONDS 30
+#define MQTT_TOPIC_MAX  512
+
+/// @brief Forward declaration of the MQTT message received callback to allow it to be used as a default handler in the MqttClient structure.
+static void messageReceived(const char *topic, const char *payload, size_t payloadSize, bool retained);
+
 
 typedef struct MqttClient {
     int epollFd;
@@ -38,7 +43,7 @@ typedef struct MqttClient {
     uint16_t port;
     bool connected;
     bool closeRequested;
-    MqttMessageHandler messageHandler;
+    MqttMessageHandler messageHandler = messageReceived;
     MqttConnectionHandler connectionHandler;
     struct mqtt_client mqtt;
     uint8_t sendBuffer[MQTT_TX_BUFFER_SIZE];
@@ -72,7 +77,7 @@ static const char szMqttSensorTopicPrefix[] = "sensor";
  * 
  ********************************************************************************************************************/
 /// @brief Broker Parameter name "--Broker". Can be omitted to use the default Home Assistant broker hostname "homeassistant.local", but can be overridden for testing.
-/// Update app_manifest.json "AllowedConnections"accordingly if you change the default broker hostname.
+/// Update app_manifest.json "AllowedConnections" accordingly if you change the default broker hostname.
 static const char szBrokerParam[] = "--Broker";
 /// @brief Port Parameter name "--Port"
 static const char szPortParam[] = "--Port";
@@ -151,12 +156,13 @@ static void PublishCallback(void **state, struct mqtt_response_publish *publishe
 
     char *topic = malloc((size_t)published->topic_name_size + 1);
     char *payload = malloc(published->application_message_size + 1);
-    if (topic == NULL || payload == NULL) {
-        free(topic);
-        free(payload);
-        Log_Debug(MQTT_MODULE "ERROR: Out of memory receiving an MQTT publish.\n");
-        return;
-    }
+    //// Normally you would add some out of memory handling here, but Azure Sphere just aborts the application if malloc() fails, so we don't need to check for NULL here.
+    // if (topic == NULL || payload == NULL) {
+    //     free(topic);
+    //     free(payload);
+    //     Log_Debug(MQTT_MODULE "ERROR: Out of memory receiving an MQTT publish.\n");
+    //     return;
+    // }
 
     memcpy(topic, published->topic_name, published->topic_name_size);
     topic[published->topic_name_size] = '\0';
@@ -178,6 +184,55 @@ static bool RegisterSocketEvents(void)
     uint32_t events = EPOLLIN | EPOLLOUT | EPOLLERR | EPOLLHUP | EPOLLRDHUP;
     return RegisterEventHandlerToEpoll(mqttClient.epollFd, mqttClient.socketFd, &mqttClient.socketEvent,
                                        events) == 0;
+}
+
+
+/// @brief Handle an MQTT command or ignore retained command payloads.
+/// @param topic MQTT topic that received the message.
+/// @param payload MQTT message payload.
+/// @param payloadSize Number of bytes in payload.
+/// @param retained True if the broker delivered a retained publish.
+static void messageReceived(const char *topic, const char *payload, size_t payloadSize,
+                                bool retained)
+{
+    BlinkAppStatusLedOnce(RgbLedUtility_Colors_Blue);
+    if (retained) {
+        Log_Debug("[MQTT] Ignoring retained command on %s.\n", topic);
+        return;
+    }
+
+    if (strcmp(topic, "avnet_sk2/command/blink_rate") == 0) {
+        long rate;
+        if (ParseIntegerCommand(payload, payloadSize, 0, 2, &rate)) {
+            SetLedRate((size_t)rate);
+            PublishControlState();
+        } else {
+            Log_Debug("[MQTT] Invalid blink-rate command.\n");
+            BlinkAppStatusLedOnce(RgbLedUtility_Colors_Red);
+        }
+    } else if (strcmp(topic, "avnet_sk2/command/led_color") == 0) {
+        RgbLedUtility_Colors color =
+            RgbLedUtility_GetColorFromString(payload, payloadSize);
+        if (color != RgbLedUtility_Colors_Unknown) {
+            colBlinkingLedColor = color;
+            PublishControlState();
+        } else {
+            Log_Debug("[MQTT] Invalid LED color command.\n");
+            BlinkAppStatusLedOnce(RgbLedUtility_Colors_Red);
+        }
+    } else if (strcmp(topic, "avnet_sk2/command/reset") == 0) {
+        long resetSeconds;
+        if (ParseIntegerCommand(payload, payloadSize, 2, 9, &resetSeconds)) {
+            tsResetDelay.tv_sec = (time_t)resetSeconds;
+            if (SetTimerFdToSingleExpiry(fdResetTimer, &tsResetDelay) != 0) {
+                terminationRequired = true;
+            }
+            Log_Debug("[MQTT] Restart timer set to %ld seconds.\n", resetSeconds);
+        } else {
+            Log_Debug("[MQTT] Invalid reset command; expected 2 through 9 seconds.\n");
+            BlinkAppStatusLedOnce(RgbLedUtility_Colors_Red);
+        }
+    }
 }
 
 /// @brief Close the broker socket and notify the application after a connection loss.
@@ -428,6 +483,29 @@ bool MqttClient_Publish(const char *topic, const char *payload, bool retained)
     return result == MQTT_OK;
 }
 
+int createCommandTopic(const char *pszCommand, char **ppszTopic)
+{
+    if (pszCommand == NULL || ppszTopic == NULL ) {
+        return -1;
+    }
+    char szTopic[MQTT_TOPIC_MAX];
+    int nResult = snprintf(szTopic, sizeof(szTopic), "%s/%s/%s", szMqttClientIdPrefix, szMqttCommandTopicPrefix, pszCommand);
+    if (nResult < 0 || (size_t)nResult >= sizeof(szTopic)) {
+        Log_Debug(MQTT_MODULE "ERROR: Command topic buffer is too small for command '%s'.\n", pszCommand);
+        return -1;
+    }
+    char *pszTopic = malloc((size_t)nResult + 1);
+
+    //// Normally, you would do some malloc() error correction, but Azure Sphere just aborts the process if malloc() fails, so we will not check for NULL here.
+    // if (pszTopic == NULL) {
+    //     Log_Debug(MQTT_MODULE "ERROR: Out of memory allocating command topic for '%s'.\n", pszCommand);
+    //     return -1;
+    // } 
+    memcpy(pszTopic, szTopic, (size_t)nResult + 1);
+    *ppszTopic = pszTopic;  
+    return 0;
+}
+
 /// @brief Subscribe to an MQTT topic.
 /// @param topic MQTT topic name or topic filter.
 /// @returns True if MQTT-C accepted and synchronized the subscription.
@@ -442,6 +520,25 @@ bool MqttClient_Subscribe(const char *topic)
         return false;
     }
     return mqtt_sync(&mqttClient.mqtt) == MQTT_OK;
+}
+
+bool MqttClient_SubscribeCommands(const MqttCommand *aCommands, size_t nCommandsCount)
+{
+    if (aCommands == NULL || nCommandsCount == 0 || nCommandsCount > MQTT_COMMANDS_MAX) {
+        Log_Debug(MQTT_MODULE "ERROR: Invalid command subscription parameters.\n");
+        return false;
+    }
+
+    nMqttCommandsCount = nCommandsCount;
+    memcpy(aMqttCommands, aCommands, nCommandsCount * sizeof(MqttCommand));
+
+    for (size_t i = 0; i < nCommandsCount; ++i) {
+        MqttClient_CreateCommandTopic(aMqttCommands[i].pszCommand, &aMqttCommands[i].pszTopicName);
+        if (!MqttClient_Subscribe(aMqttCommands[i].pszTopicName)) {
+            Log_Debug(MQTT_MODULE "Failed to subscribe to %s.\n", aMqttCommands[i].pszTopicName);
+        }
+    }
+    return true;
 }
 
 /// @brief Process broker socket events and synchronize MQTT-C traffic.

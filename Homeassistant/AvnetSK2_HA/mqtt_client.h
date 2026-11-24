@@ -36,6 +36,7 @@ void MqttClient_Reconnect(struct mqtt_client *mqtt, void **reconnectState);
 bool MqttClient_IsConnected(void);
 bool MqttClient_Publish(const char *topic, const char *payload, bool retained);
 bool MqttClient_Subscribe(const char *topic);
+bool MqttClient_SubscribeCommands(const MqttCommand *aCommands, size_t nCommandsCount);
 void MqttClient_HandleSocketEvent(EventData *eventData);
 void MqttClient_DoWork(void);
 void MqttClient_Close(void);

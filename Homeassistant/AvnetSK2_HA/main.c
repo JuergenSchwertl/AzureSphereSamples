@@ -164,13 +164,20 @@ static const char szMqttCommandSetBlinkRate[] = "blink_rate";
 static const char szMqttCommandSetLedColor[] = "led_color";
 static const char szMqttCommandReset[] = "reset";
 
-static const MqttCommand aMqttCommands[] = {
-    {szMqttCommandSetBlinkRate, &MqttCommandHandler_SetBlinkRate, NULL},
-    {szMqttCommandSetLedColor, &MqttCommandHandler_SetLedColor, NULL},
-    {szMqttCommandReset, &MqttCommandHandler_Reset, NULL}
-};
+/// @brief Forward declaration of the MQTT command handlers to allow them to be used in the mqttCommandHandlers array.
+void MqttCommandHandler_SetBlinkRate(const char *payload, size_t payloadSize);
+void MqttCommandHandler_SetLedColor(const char *payload, size_t payloadSize);
+MqttCommandHandler_Reset(const char *payload, size_t payloadSize);
 
-#define MQTT_COMMANDS_COUNT (sizeof(aMqttCommands) / sizeof(*aMqttCommands))
+MqttCommand aMqttCommands[] = {
+    {szMqttCommandSetBlinkRate, MqttCommandHandler_SetBlinkRate},
+    {szMqttCommandSetLedColor, MqttCommandHandler_SetLedColor},
+    {szMqttCommandReset, MqttCommandHandler_Reset}};
+
+#define MQTT_COMMAND_COUNT (sizeof(aMqttCommands) / sizeof(*aMqttCommands))
+
+
+
 
 
 
@@ -480,53 +487,7 @@ static bool ParseIntegerCommand(const char *payload, size_t payloadSize, long mi
     return true;
 }
 
-/// @brief Handle an MQTT command or ignore retained command payloads.
-/// @param topic MQTT topic that received the message.
-/// @param payload MQTT message payload.
-/// @param payloadSize Number of bytes in payload.
-/// @param retained True if the broker delivered a retained publish.
-static void MqttMessageReceived(const char *topic, const char *payload, size_t payloadSize,
-                                bool retained)
-{
-    BlinkAppStatusLedOnce(RgbLedUtility_Colors_Blue);
-    if (retained) {
-        Log_Debug("[MQTT] Ignoring retained command on %s.\n", topic);
-        return;
-    }
 
-    if (strcmp(topic, "avnet_sk2/command/blink_rate") == 0) {
-        long rate;
-        if (ParseIntegerCommand(payload, payloadSize, 0, 2, &rate)) {
-            SetLedRate((size_t)rate);
-            PublishControlState();
-        } else {
-            Log_Debug("[MQTT] Invalid blink-rate command.\n");
-            BlinkAppStatusLedOnce(RgbLedUtility_Colors_Red);
-        }
-    } else if (strcmp(topic, "avnet_sk2/command/led_color") == 0) {
-        RgbLedUtility_Colors color =
-            RgbLedUtility_GetColorFromString(payload, payloadSize);
-        if (color != RgbLedUtility_Colors_Unknown) {
-            colBlinkingLedColor = color;
-            PublishControlState();
-        } else {
-            Log_Debug("[MQTT] Invalid LED color command.\n");
-            BlinkAppStatusLedOnce(RgbLedUtility_Colors_Red);
-        }
-    } else if (strcmp(topic, "avnet_sk2/command/reset") == 0) {
-        long resetSeconds;
-        if (ParseIntegerCommand(payload, payloadSize, 2, 9, &resetSeconds)) {
-            tsResetDelay.tv_sec = (time_t)resetSeconds;
-            if (SetTimerFdToSingleExpiry(fdResetTimer, &tsResetDelay) != 0) {
-                terminationRequired = true;
-            }
-            Log_Debug("[MQTT] Restart timer set to %ld seconds.\n", resetSeconds);
-        } else {
-            Log_Debug("[MQTT] Invalid reset command; expected 2 through 9 seconds.\n");
-            BlinkAppStatusLedOnce(RgbLedUtility_Colors_Red);
-        }
-    }
-}
 
 /// @brief Update application MQTT state and configure subscriptions and discovery.
 /// @param connected True when connected to the broker; false after disconnection.
@@ -546,14 +507,6 @@ static void MqttConnectionChanged(bool connected)
     PublishEvent("connect", strWiFiStatus);
     PublishEvent("connect", pstrConnectionStatus);
     pstrConnectionStatus = "MQTT connected";
-
-
-    for (size_t i = 0; i < sizeof(apszMqttCommands ) / sizeof(apszMqttCommands[0]); ++i) {
-        MqttClient_CreateCommandTopic(apszMqttCommands[i], );
-        if (!MqttClient_Subscribe(apszMqttCommands[i])) {
-            Log_Debug("[MQTT] Failed to subscribe to %s.\n", apszMqttCommands[i]);
-        }
-    }
 
     PublishDiscovery();
     MqttClient_Publish("avnet_sk2/status", "online", true);
@@ -620,6 +573,7 @@ static bool IsButtonPressed(int fd, GPIO_Value_Type *oldState)
 }
 
 
+
 ///  @brief 
 /// Show network and MQTT broker connectivity status.
 ///
@@ -629,6 +583,38 @@ void NetworkLedUpdateHandler(void)
     GPIO_SetValue(fdWifiStatusLedGpio,
                   (bIsNetworkReady && MqttClient_IsConnected()) ? GPIO_Value_Low : GPIO_Value_High);
 }
+
+
+
+MqttCommandHandler_SetBlinkRate(const char *payload, size_t payloadSize)
+{
+    long newBlinkRate;
+    if (!ParseIntegerCommand(payload, payloadSize, 0, (long)nBlinkingIntervalsCount - 1,
+                             &newBlinkRate)) {
+        Log_Debug("[MQTT] Invalid blink rate command: %.*s\n", (int)payloadSize, payload);
+        BlinkAppStatusLedOnce(RgbLedUtility_Colors_Red);
+        return;
+    }
+
+    SetLedRate((size_t)newBlinkRate);
+    PublishControlState();
+    BlinkAppStatusLedOnce(RgbLedUtility_Colors_Green);
+}    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ///  @brief 
@@ -862,7 +848,7 @@ int InitPeripheralsAndHandlers(int argc, char *argv[])
     }
 
     // Initialize the MqttClient data structures
-    if (!MqttClient_Init(fdEpoll, argc, argv, MqttMessageReceived, MqttConnectionChanged)) {
+    if (!MqttClient_Init(fdEpoll, argc, argv, MqttConnectionChanged, aMqttCommands, MQTT_COMMAND_COUNT)) {
         Log_Debug("ERROR: Cannot initialize the MQTT client.\n");
         return -1;
     }
