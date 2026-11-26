@@ -14,8 +14,9 @@
 #include <unistd.h>
 
 #include <applibs/log.h>
+#include "parson.h"
 #include "get_device_id.h"
-
+#include "strnsplit.h"
 
 #define MQTT_MODULE "[MQTT] "
 #define MQTT_COMMANDS_MAX   8    
@@ -32,7 +33,7 @@
 static void messageReceived(const char *topic, const char *payload, size_t payloadSize, bool retained);
 
 
-typedef struct MqttClient {
+typedef struct MqttClientType {
     int epollFd;
     int socketFd;
     EventData socketEvent;
@@ -43,7 +44,7 @@ typedef struct MqttClient {
     uint16_t port;
     bool connected;
     bool closeRequested;
-    MqttMessageHandler messageHandler = messageReceived;
+    MqttMessageHandler messageHandler;
     MqttConnectionHandler connectionHandler;
     struct mqtt_client mqtt;
     uint8_t sendBuffer[MQTT_TX_BUFFER_SIZE];
@@ -51,11 +52,37 @@ typedef struct MqttClient {
 } MqttClient;
 
 
+typedef struct MqttTopicType {
+    char *pszDeviceId;
+    char *pszTopicType;
+    char *pszName;
+} MqttTopic;
+
+#define MQTT_TOPIC_MAX_SEGMENTS 3
+
+typedef union MqttTopicSegmentsType {
+    char *segments[MQTT_TOPIC_MAX_SEGMENTS];
+    MqttTopic mqttTopic;
+} MqttTopicSegments;
 
 static MqttCommand aMqttCommands[MQTT_COMMANDS_MAX] = {0};
 static size_t nMqttCommandsCount = 0;
 
-static MqttClient mqttClient = {.epollFd = -1, .socketFd = -1};
+static MqttClient mqttClient = {
+    .epollFd = -1, 
+    .socketFd = -1, 
+    .messageHandler = messageReceived, 
+    .connectionHandler = NULL, 
+    .port = 0, 
+    .connected = false, 
+    .closeRequested = false, 
+    .host = {0}, 
+    .username = {0}, 
+    .password = {0}, 
+    .clientId = {0}, 
+    .sendBuffer = {0}, 
+    .receiveBuffer = {0}
+};
 
 /********************************************************************************************************************
  * 
@@ -69,6 +96,8 @@ static char szMqttAzSphereClientId[32] ;
 
 static const char szMqttCommandTopicPrefix[] = "command";
 static const char szMqttSensorTopicPrefix[] = "sensor";
+static const char szMqttTelemetryTopicPrefix[] = "telemetry";
+static const char szMqttMessageTopicPrefix[] = "message";
 
 
 /********************************************************************************************************************
@@ -105,44 +134,27 @@ static const char szPasswordDefault[] = "__**password_not_changed**__";
 /// @brief Default MQTT client ID. Typically overriden by Azure Sphere Device ID (first 8 chars only for readability).
 static const char szClientIdDefault[] = "AzureSphere";
 
-/// @brief Copy a configuration option while enforcing a destination size limit.
-/// @param pszDestination Buffer that receives the copied value.
-/// @param nDestinationSize Size of destination in bytes.
-/// @param pszValue Null-terminated source value.
-/// @param pszOptionName Configuration option name used in diagnostic output.
-/// @returns True if value fit and was copied; false otherwise.
-static bool parseStringOption(char *pszDestination, size_t nDestinationSize, const char *pszValue, const char *pszOptionName)
+
+JSON_Value* _json_from_payload(const unsigned char* pbPayload, size_t nPayloadSize)
 {
-    size_t valueSize = strnlen(pszValue, nDestinationSize);
-    if (valueSize >= nDestinationSize) {
-        Log_Debug(MQTT_MODULE "ERROR: %s value is too long.\n", pszOptionName);
-        return false;
-    } else if (valueSize == 0) {
-        Log_Debug(MQTT_MODULE "ERROR: %s value is missing.\n", pszOptionName);
-        return false;
-    }
-    memcpy(pszDestination, pszValue, valueSize + 1);
-    Log_Debug(MQTT_MODULE "INFO: %s set to '%s'.\n", pszOptionName, pszDestination);
-    return true;
+    char* pszPayloadString = malloc(nPayloadSize + 1); // +1 to store null char at the end.
+    // Normally you would add some out of memory handling here, but Azure Sphere just aborts the application if malloc() fails, so we don't need to check for NULL here.
+    // if (pszPayloadString == NULL) {
+    //     Log_Debug( MQTT_MODULE "ERROR: Not enough memory\n");
+    //     abort();
+    // }
+    memcpy(pszPayloadString, pbPayload, nPayloadSize);
+    pszPayloadString[nPayloadSize] = '\0'; // Null terminated string.
+
+    Log_Debug( MQTT_MODULE "Payload received %s\n",pszPayloadString);
+
+    JSON_Value* jsonRootValue = json_parse_string(pszPayloadString);
+    free(pszPayloadString);
+
+    return jsonRootValue;
 }
 
-/// @brief  Parse a numeric configuration option while enforcing a destination size limit and range.
-/// @param pnDestination 
-/// @param pszValue 
-/// @param pszOptionName 
-/// @return 
-static bool parseNumericOption(uint16_t *pnDestination, const char *pszValue, const char *pszOptionName)
-{
-    char *end = NULL;
-    unsigned long number = strtoul(pszValue, &end, 10);
-    if (end == pszValue || *end != '\0' || number == 0 || number > UINT16_MAX) {
-        Log_Debug(MQTT_MODULE "ERROR: %s must be between 1 and 65535.\n", pszOptionName);
-        return false;
-    }
-    *pnDestination = (uint16_t)number;
-    Log_Debug(MQTT_MODULE "INFO: %s set to '%d'.\n", pszOptionName, number);
-    return true;
-}
+
 
 /// @brief Dispatch an MQTT publish received from the broker.
 /// @param state Pointer to callback state supplied by MQTT-C.
@@ -187,6 +199,7 @@ static bool RegisterSocketEvents(void)
 }
 
 
+
 /// @brief Handle an MQTT command or ignore retained command payloads.
 /// @param topic MQTT topic that received the message.
 /// @param payload MQTT message payload.
@@ -195,42 +208,35 @@ static bool RegisterSocketEvents(void)
 static void messageReceived(const char *topic, const char *payload, size_t payloadSize,
                                 bool retained)
 {
-    BlinkAppStatusLedOnce(RgbLedUtility_Colors_Blue);
-    if (retained) {
-        Log_Debug("[MQTT] Ignoring retained command on %s.\n", topic);
-        return;
-    }
+    Log_Debug(MQTT_MODULE "Message received on topic: %s.\n", topic);
 
-    if (strcmp(topic, "avnet_sk2/command/blink_rate") == 0) {
-        long rate;
-        if (ParseIntegerCommand(payload, payloadSize, 0, 2, &rate)) {
-            SetLedRate((size_t)rate);
-            PublishControlState();
-        } else {
-            Log_Debug("[MQTT] Invalid blink-rate command.\n");
-            BlinkAppStatusLedOnce(RgbLedUtility_Colors_Red);
-        }
-    } else if (strcmp(topic, "avnet_sk2/command/led_color") == 0) {
-        RgbLedUtility_Colors color =
-            RgbLedUtility_GetColorFromString(payload, payloadSize);
-        if (color != RgbLedUtility_Colors_Unknown) {
-            colBlinkingLedColor = color;
-            PublishControlState();
-        } else {
-            Log_Debug("[MQTT] Invalid LED color command.\n");
-            BlinkAppStatusLedOnce(RgbLedUtility_Colors_Red);
-        }
-    } else if (strcmp(topic, "avnet_sk2/command/reset") == 0) {
-        long resetSeconds;
-        if (ParseIntegerCommand(payload, payloadSize, 2, 9, &resetSeconds)) {
-            tsResetDelay.tv_sec = (time_t)resetSeconds;
-            if (SetTimerFdToSingleExpiry(fdResetTimer, &tsResetDelay) != 0) {
-                terminationRequired = true;
+    MqttTopicSegments topicSegments;
+    int nCount = strnsplit( (char *)topic, '/', topicSegments.segments, MQTT_TOPIC_MAX_SEGMENTS);
+    if (nCount >= 2 ){
+        if( strncmp( topicSegments.mqttTopic.pszTopicType, szMqttMessageTopicPrefix, sizeof(szMqttMessageTopicPrefix) - 1) == 0 ) {
+            JSON_Value* jsonParameters = _json_from_payload(payload, payloadSize);
+
+            mqttClient.messageHandler(topic, jsonParameters);
+
+            if (jsonParameters != NULL) {
+                json_value_free(jsonParameters);
             }
-            Log_Debug("[MQTT] Restart timer set to %ld seconds.\n", resetSeconds);
-        } else {
-            Log_Debug("[MQTT] Invalid reset command; expected 2 through 9 seconds.\n");
-            BlinkAppStatusLedOnce(RgbLedUtility_Colors_Red);
+            return;
+        }
+
+        if( nCount >=3 && strncmp( topicSegments.mqttTopic.pszName, szMqttCommandTopicPrefix, sizeof(szMqttCommandTopicPrefix) - 1) == 0 ) {
+            for (size_t i = 0; i < nMqttCommandsCount; ++i) {
+                if (strcmp(topicSegments.mqttTopic.pszName, aMqttCommands[i].pszTopicName) == 0) {
+                    JSON_Value* jsonParameters = _json_from_payload(payload, payloadSize);
+
+                    aMqttCommands[i].pfnCommandHandler(JSON_Value* jsonParameters);
+
+                    if (jsonParameters != NULL) {
+                        json_value_free(jsonParameters);
+                    }
+                    return;
+                }
+            }
         }
     }
 }
@@ -533,7 +539,7 @@ bool MqttClient_SubscribeCommands(const MqttCommand *aCommands, size_t nCommands
     memcpy(aMqttCommands, aCommands, nCommandsCount * sizeof(MqttCommand));
 
     for (size_t i = 0; i < nCommandsCount; ++i) {
-        MqttClient_CreateCommandTopic(aMqttCommands[i].pszCommand, &aMqttCommands[i].pszTopicName);
+        createCommandTopic(aMqttCommands[i].pszCommand, &aMqttCommands[i].pszTopicName);
         if (!MqttClient_Subscribe(aMqttCommands[i].pszTopicName)) {
             Log_Debug(MQTT_MODULE "Failed to subscribe to %s.\n", aMqttCommands[i].pszTopicName);
         }

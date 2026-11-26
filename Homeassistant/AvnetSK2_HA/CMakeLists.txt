@@ -31,6 +31,7 @@ set( SOURCE_FILES
     get_device_id.c
     get_os_version.c
     parson.c
+    strnsplit.c
     main.c)
 
 add_library(mqttc STATIC

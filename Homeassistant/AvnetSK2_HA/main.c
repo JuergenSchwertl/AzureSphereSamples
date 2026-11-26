@@ -160,14 +160,14 @@ static size_t nBlinkRateValue = 0;
 /// 
 static volatile sig_atomic_t terminationRequired = false;
 
-static const char szMqttCommandSetBlinkRate[] = "blink_rate";
 static const char szMqttCommandSetLedColor[] = "led_color";
 static const char szMqttCommandReset[] = "reset";
+static const char szMqttCommandSetBlinkRate[] = "blink_rate";
 
 /// @brief Forward declaration of the MQTT command handlers to allow them to be used in the mqttCommandHandlers array.
-void MqttCommandHandler_SetBlinkRate(const char *payload, size_t payloadSize);
-void MqttCommandHandler_SetLedColor(const char *payload, size_t payloadSize);
-MqttCommandHandler_Reset(const char *payload, size_t payloadSize);
+int MqttCommandHandler_SetBlinkRate(JSON_Value *jsonParameters);
+int MqttCommandHandler_SetLedColor(JSON_Value *jsonParameters);
+int MqttCommandHandler_Reset(JSON_Value *jsonParameters);
 
 MqttCommand aMqttCommands[] = {
     {szMqttCommandSetBlinkRate, MqttCommandHandler_SetBlinkRate},
@@ -177,8 +177,41 @@ MqttCommand aMqttCommands[] = {
 #define MQTT_COMMAND_COUNT (sizeof(aMqttCommands) / sizeof(*aMqttCommands))
 
 
+static const char cstrSetColorMethodName[] = "rgbLed*setColorMethod";
+static const char cstrColorResponseMsg[] = "LED color set to %s";
+static const char cstrColorProperty[] = "color";
+static const char cstrBlinkRateProperty[] = "blinkRateProperty";
+static const char cstrBlinkRatePropertyPath[] = "rgbLed.blinkRateProperty";
 
+/// @brief Azure IoT PnP component "dtmi:azure:DeviceManagement:DeviceInformation;1"  
+static const char   cstrDevInfoComponent[]              = "deviceInformation";
 
+static const char   cstrDevInfoManufacturerProperty[]   = "manufacturer";
+static const char   cstrDevInfoModelProperty[]          = "model";
+static const char   cstrDevInfoSWVersionProperty[]      = "swVersion";
+static const char   cstrDevInfoOSNameProperty[]         = "osName";
+static const char   cstrDevInfoProcArchProperty[]       = "processorArchitecture";
+static const char   cstrDevInfoProcMfgrProperty[]       = "processorManufacturer";
+static const char   cstrDevInfoStorageProperty[]        = "totalStorage";
+static const char   cstrDevInfoMemoryProperty[]         = "totalMemory";
+
+static const char   cstrDevInfoManufacturerValue[]      = "Seeed";
+static const char   cstrDevInfoModelValue[]             = "MT3620 Developer Kit";
+
+static const char   cstrDevInfoOSNameValue[]            = "Sphere OS-";
+static const char   cstrDevInfoProcArchValue[]          = "ARM Core A7,M4";
+static const char   cstrDevInfoProcMfgrValue[]          = "MediaTek";
+static const double cdDevInfoStorageValue               = 16000000.0;
+static const double cdDevInfoMemoryValue                = 4000000.0;
+
+/// @brief Azure IoT PnP component "dtmi:azsphere:SphereTTT:DeviceHealth;1"
+static const char   cstrDevHealthComponent[]            = "deviceHealth";
+static const char   cstrEvtConnected[]                  = "connect";
+static const char   cstrDevHealthTotalMemoryUsed[]      = "totalMemoryUsed";
+static const char   cstrDevHealthUserMemoryUsed[]       = "userMemoryUsed";
+static const char   cstrResetTimerProperty[]            = "resetTimer";
+static const char   cstrResetMethodName[]               = "deviceHealth*resetMethod";
+static const char   cstrResetResponseMsg[]              = "Reset in %d seconds";
 
 
 ///  @brief 
@@ -461,33 +494,6 @@ static void SendTelemetry(void)
     json_value_free(rootValue);
 }
 
-/// @brief Parse an integer MQTT command and validate its inclusive range.
-/// @param payload MQTT command payload.
-/// @param payloadSize Number of bytes in payload.
-/// @param minimum Minimum permitted value.
-/// @param maximum Maximum permitted value.
-/// @param value Receives the parsed value when parsing succeeds.
-/// @returns True if the payload contains a valid integer within the requested range.
-static bool ParseIntegerCommand(const char *payload, size_t payloadSize, long minimum, long maximum,
-                               long *value)
-{
-    char buffer[16];
-    if (payloadSize == 0 || payloadSize >= sizeof(buffer)) {
-        return false;
-    }
-    memcpy(buffer, payload, payloadSize);
-    buffer[payloadSize] = '\0';
-
-    char *end = NULL;
-    long parsed = strtol(buffer, &end, 10);
-    if (end != buffer + payloadSize || parsed < minimum || parsed > maximum) {
-        return false;
-    }
-    *value = parsed;
-    return true;
-}
-
-
 
 /// @brief Update application MQTT state and configure subscriptions and discovery.
 /// @param connected True when connected to the broker; false after disconnection.
@@ -584,27 +590,75 @@ void NetworkLedUpdateHandler(void)
                   (bIsNetworkReady && MqttClient_IsConnected()) ? GPIO_Value_Low : GPIO_Value_High);
 }
 
+void MqttMessageReceived(const char *topic, JSON_Value *jsonParameters)
+{
+    Log_Debug("[MQTT] Received message on topic '%s'.\n", topic);
 
+}
 
-MqttCommandHandler_SetBlinkRate(const char *payload, size_t payloadSize)
+int MqttCommandHandler_SetBlinkRate(JSON_Value *jsonParameters)
 {
     long newBlinkRate;
-    if (!ParseIntegerCommand(payload, payloadSize, 0, (long)nBlinkingIntervalsCount - 1,
-                             &newBlinkRate)) {
-        Log_Debug("[MQTT] Invalid blink rate command: %.*s\n", (int)payloadSize, payload);
-        BlinkAppStatusLedOnce(RgbLedUtility_Colors_Red);
-        return;
+    if (jsonParameters != NULL) {
+        JSON_Object* jsonRootObject = json_value_get_object(jsonParameters);
+        newBlinkRate = (long) json_object_get_number(jsonRootObject, cstrBlinkRateProperty);
+        if ((newBlinkRate >= 0) && (newBlinkRate < (long)nBlinkingIntervalsCount)) {
+            SetLedRate((size_t)newBlinkRate);
+            PublishControlState();
+            BlinkAppStatusLedOnce(RgbLedUtility_Colors_Green);
+            return 0;
+        }
     }
 
-    SetLedRate((size_t)newBlinkRate);
-    PublishControlState();
-    BlinkAppStatusLedOnce(RgbLedUtility_Colors_Green);
-}    
+    Log_Debug("[MQTT] Invalid blink rate command.\n");
+    BlinkAppStatusLedOnce(RgbLedUtility_Colors_Red);
+    return -1;
+}
 
+int MqttCommandHandler_SetLedColor(JSON_Value *jsonParameters)
+{
+    Log_Debug("[SetColorMethod]: Invoked.\n");
 
+    RgbLedUtility_Colors ledColor = RgbLedUtility_Colors_Unknown;
 
+    // The payload should contain JSON such as: { "color": "red"}
+    if (jsonParameters != NULL) {
+        JSON_Object* jsonRootObject = json_value_get_object(jsonParameters);
+        const char* pszColorName = json_object_get_string(jsonRootObject, cstrColorProperty);
+        if (pszColorName != NULL) {
+            size_t nColorNameLength = strlen(pszColorName);
+            ledColor = RgbLedUtility_GetColorFromString(pszColorName, nColorNameLength);
+            if (ledColor != RgbLedUtility_Colors_Unknown) { // Color's name has been identified.
 
+                // Set the blinking LED color.
+                colBlinkingLedColor = ledColor;
+                Log_Debug("[SetColorMethod]: LED color set to: '%s'.\n", pszColorName);
+            }
+        }
+    }
 
+    return 0;
+}
+
+int MqttCommandHandler_Reset(JSON_Value *jsonParameters)
+{
+Log_Debug("[ResetMethod]: Invoked.\n");
+
+    // The payload should contain JSON such as: { "resetTimer": 5}
+    if (jsonParameters != NULL) {
+        JSON_Object* jsonRootObject = json_value_get_object(jsonParameters);
+        time_t tResetInterval = (time_t) json_object_get_number(jsonRootObject, cstrResetTimerProperty);
+        if ((tResetInterval > 1) && (tResetInterval < 10)) {
+
+            tsResetDelay.tv_sec = tResetInterval;
+            // arm count down timer
+            SetTimerFdToSingleExpiry(fdResetTimer, &tsResetDelay);
+            Log_Debug("[ResetMethod]: set timer to %d seconds.\n", (long) tResetInterval);
+        }
+    }
+
+    return 0;
+}
 
 
 
@@ -848,7 +902,7 @@ int InitPeripheralsAndHandlers(int argc, char *argv[])
     }
 
     // Initialize the MqttClient data structures
-    if (!MqttClient_Init(fdEpoll, argc, argv, MqttConnectionChanged, aMqttCommands, MQTT_COMMAND_COUNT)) {
+    if (!MqttClient_Init(fdEpoll, argc, argv, MqttMessageReceived, MqttConnectionChanged, aMqttCommands, MQTT_COMMAND_COUNT)) {
         Log_Debug("ERROR: Cannot initialize the MQTT client.\n");
         return -1;
     }

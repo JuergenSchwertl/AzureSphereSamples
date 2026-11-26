@@ -5,15 +5,13 @@
 #include <stdint.h>
 
 #include "epoll_timerfd_utilities.h"
+#include "parson.h"
 
-/// @brief Callback invoked for received MQTT commands. The command payload is not null-terminated, 
-/// so the payload size must be used to process the payload.
-typedef  void (MqttCommandHandler)(const char *pszPayload, size_t nPayloadSize);
+/// @brief Callback invoked for received MQTT commands. 
+typedef  int (MqttCommandHandler)(JSON_Value *jsonParameters);
 
-/// @brief Callback invoked for received MQTT publishes. The payload is not null-terminated,
-/// so the payload size must be used to process the payload.
-typedef void (*MqttMessageHandler)(const char *topic, const char *payload, size_t payloadSize,
-                                   bool retained);
+/// @brief Callback invoked for received MQTT publishes. 
+typedef void (*MqttMessageHandler)(const char *topic, JSON_Value *jsonParameters);
 
 /// @brief Callback invoked when the MQTT broker connection state changes.
 typedef void (*MqttConnectionHandler)(bool connected);
